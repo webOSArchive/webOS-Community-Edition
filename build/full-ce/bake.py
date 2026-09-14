@@ -3840,6 +3840,83 @@ def main():
       "end script\n", 0o644)
     log("  ce-register-ipk-handler job installed (runtime addResourceHandler)")
 
+    # (b-2) Video mimetypes -> the CE Videos app, the same way. The stock
+    # system-default entries point at com.palm.app.videoplayer (streamable),
+    # whose app-assistant is now a forwarding shim -- that works, but the
+    # Browser -> headless Mojo shim -> new card chain left an extra Videos card
+    # behind (seen on hardware 2026-09-14); registering the app directly as the
+    # active handler gives Browser + one Videos card. addResourceHandler only
+    # ADDS an alternate here (a system-default already exists), so each type is
+    # then made active with swapResourceHandler (param is mimeType, not mime).
+    # Two lookups exist: by the server's Content-Type (Browser: video/mp4) and
+    # by extension, which resolves through Palm pseudo-mimes such as
+    # video/mp4-generic (file:// opens, attachments). Both are registered: the
+    # canonical mime and whatever mimeTypeForExtension reports at runtime.
+    # Verify-then-flag on a probe .mp4 file URI, like the ipk job.
+    VIDEO_TYPES = (("mp4", "video/mp4"), ("m4v", "video/x-m4v"), ("3gp", "video/3gpp"),
+                   ("3g2", "video/3gpp2"), ("mov", "video/quicktime"),
+                   ("webm", "video/webm"), ("mkv", "video/x-matroska"))
+    vreg = "".join(
+        f"    register {ext} {mime}\n"
+        f"    register {ext} \"$(mime_for_ext {ext})\"\n" for ext, mime in VIDEO_TYPES)
+    w("etc/event.d/ce-register-video-handler",
+      "# ce-register-video-handler — webOS CE: make the Videos app\n"
+      "# (org.webosarchive.videos) the active, streamable handler for video\n"
+      "# files and URLs, at RUNTIME (see ce-register-ipk-handler for why not a\n"
+      "# static command-resource-handlers.json entry). The stock system-default\n"
+      "# entries stay as alternates; com.palm.app.videoplayer itself is a shim.\n"
+      "\n"
+      "start on first-use-finished\n"
+      "\n"
+      "console none\n"
+      "\n"
+      "script\n"
+      "    FLAG=/var/luna/preferences/ce-video-handler-registered\n"
+      "    LOG=/var/log/ce-register-video-handler.log\n"
+      "    [ -f $FLAG ] && exit 0\n"
+      "    AM=palm://com.palm.applicationManager\n"
+      "    APP=org.webosarchive.videos\n"
+      "    n=0\n"
+      "    while [ $n -lt 60 ]; do\n"
+      "        pidof LunaSysMgr >/dev/null 2>&1 && break\n"
+      "        sleep 2; n=$((n+1))\n"
+      "    done\n"
+      "    sleep 12\n"
+      "    mime_for_ext() {\n"
+      "        luna-send -n 1 $AM/mimeTypeForExtension \"{\\\"extension\\\":\\\"$1\\\"}\" </dev/null 2>/dev/null \\\n"
+      "            | sed -n 's/.*\"mimeType\": *\"\\([^\"]*\\)\".*/\\1/p' | sed 's#\\\\/#/#g'\n"
+      "    }\n"
+      "    register() {\n"
+      "        [ -n \"$2\" ] || return 0\n"
+      "        luna-send -n 1 $AM/addResourceHandler \\\n"
+      "            \"{\\\"extension\\\":\\\"$1\\\",\\\"mimeType\\\":\\\"$2\\\",\\\"appId\\\":\\\"$APP\\\"}\" \\\n"
+      "            </dev/null >/dev/null 2>&1\n"
+      "        R=$(luna-send -n 1 $AM/listAllHandlersForMime \"{\\\"mime\\\":\\\"$2\\\"}\" </dev/null 2>&1)\n"
+      "        # only the activeHandler block counts -- the alternates follow it\n"
+      "        A=$(echo \"$R\" | sed -n 's/.*\"activeHandler\": *{\\([^}]*\\)}.*/\\1/p')\n"
+      "        case \"$A\" in *$APP*) return 0 ;; esac\n"
+      "        IDX=$(echo \"$R\" | tr '}' '\\n' | grep \"$APP\" | grep -o '\"index\": *[0-9]*' | grep -o '[0-9]*' | head -1)\n"
+      "        [ -n \"$IDX\" ] && luna-send -n 1 $AM/swapResourceHandler \\\n"
+      "            \"{\\\"mimeType\\\":\\\"$2\\\",\\\"index\\\":$IDX}\" </dev/null >/dev/null 2>&1\n"
+      "    }\n"
+      + vreg +
+      "    sleep 2\n"
+      "    mkdir -p /media/internal/downloads 2>/dev/null\n"
+      "    touch /media/internal/downloads/.ce-probe.mp4 2>/dev/null\n"
+      "    R=$(luna-send -n 1 $AM/getResourceInfo \\\n"
+      "        '{\"uri\":\"file:///media/internal/downloads/.ce-probe.mp4\"}' </dev/null 2>&1)\n"
+      "    case \"$R\" in\n"
+      "        *$APP*canStream*true*|*canStream*true*$APP*)\n"
+      "            touch $FLAG\n"
+      "            echo \"$(date 2>/dev/null) registered: $R\" >> $LOG 2>/dev/null ;;\n"
+      "        *)\n"
+      "            echo \"$(date 2>/dev/null) NOT registered, will retry next boot: $R\" \\\n"
+      "                 >> $LOG 2>/dev/null ;;\n"
+      "    esac\n"
+      "    rm -f /media/internal/downloads/.ce-probe.mp4 2>/dev/null\n"
+      "end script\n", 0o644)
+    log("  ce-register-video-handler job installed (runtime add+swapResourceHandler)")
+
     # (c) LunaCE tweak definitions: Tweaks-framework preference files that
     # surface LunaCE's extra features (mini cards, gestures, wave launcher,
     # ...) in the Tweaks app. They belong in the tweaks.prefs service's
