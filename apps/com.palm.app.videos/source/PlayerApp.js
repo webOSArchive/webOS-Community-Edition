@@ -256,8 +256,13 @@ enyo.kind({
 	errorText: function (s) {
 		var e = String(s.error || "");
 		var never = !s.currentTime || s.currentTime < 0.5;    // nothing was ever shown
-		if (s.isHttp && /^error:[23]$|^deadline:load$/.test(e) && never) {
-			return "Couldn't open this stream.\nIf the link leads to an HTTPS server, the stock webOS media stack can't play it: install the media TLS update.";
+		if (e === "deadline:load" && never) {
+			// the data arrives but the decoder never starts: seen with H.264 High
+			// profile, whatever the transport (2026-09-14)
+			return "This video didn't start.\nIt may use a format this TouchPad can't decode, such as H.264 High profile.";
+		}
+		if (s.isHttp && /^error:[23]$/.test(e) && never) {
+			return "Couldn't open this stream.\nIf the link leads to an HTTPS server, install the Media TLS update.";
 		}
 		if (/^error:2$/.test(e)) { return "The connection to the server was lost."; }
 		if (/^error:3$/.test(e)) { return "This video can't be decoded on this device."; }

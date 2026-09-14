@@ -78,6 +78,25 @@ glibc 2.8 is needed). Packaged as `org.webosarchive.media-tls13`
   after `mdat`, which cannot start quickly on any source. (The element itself
   handles moov-at-end: on a local clip the demuxer's Range jump to the index
   reaches the server and playback starts in 4.5 s.)
+- **libcurl must not be linked, and must not be DEEPBIND-loaded.** Stock
+  `libgstpdksink.so` → `libpdl.so` pulls the stock `/usr/lib/libcurl.so.4`
+  (7.21.7, OpenSSL 0.9.8) into media-pipeline whenever the registry is
+  rescanned; a plugin with NEEDED `libcurl.so.4` then binds to it and ignores
+  its RPATH (trace: `plugin_init, libcurl/7.21.7`, then an SSLv3 handshake
+  alert against a modern host). The element dlopens the CE OpenSSL 1.1 and
+  libcurl by full path, `RTLD_LOCAL`, and calls curl through a function
+  table. `RTLD_DEEPBIND` was tried first and crashed media-pipeline in
+  glibc's `__libc_calloc` (rdxd 4–6): the process preloads
+  `libptmalloc3.so`, and DEEPBIND makes curl allocate from glibc's heap too.
+- The element logs its transfers to syslog (`curlhttpsrc:` lines — start,
+  status, DNS/connect/TLS timings, curl result); media-pipeline runs with
+  `--gst-debug=1`, so GST_DEBUG output is invisible. `curl 23` / `curl 42`
+  lines are transfers aborted by a seek, not failures.
+- **H.264 High profile stalls the TouchPad decoder** regardless of transport:
+  the test-videos.co.uk clip (High, level 5.0, no audio) never prerolls over
+  HTTPS *or* plain HTTP; the same video re-encoded Main (with or without
+  B-frames) or Baseline plays. Adding audio or rewriting the level flag does
+  not help. The app says so after the second load timeout.
 - **An app that gives up must release the pipeline.** The engine's `fail()`
   left the `<video>` loaded; mediaserver kept prerolling, hit its own preroll
   timeout, waited for an element error that never came, and its watchdog

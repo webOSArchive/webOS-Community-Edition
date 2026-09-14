@@ -624,6 +624,13 @@ VideoEngine.prototype = {
 			this.fail(why);
 			return;
 		}
+		// a load that times out twice without a frame is a format the decoder
+		// won't start (H.264 High profile stalls this way); a third try is just
+		// another 15 s of spinner
+		if (neverPlayed && why === "deadline:load" && this.recoverCount >= 2) {
+			this.fail(why);
+			return;
+		}
 		if (this.recoverCount > this.MAX_RECOVERIES || !this.url) {
 			this.fail(why);
 			return;
