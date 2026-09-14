@@ -3857,11 +3857,10 @@ def main():
     log("  ce-register-ipk-handler job installed (runtime addResourceHandler)")
 
     # (b-2) Video mimetypes -> the CE Videos app, the same way. The stock
-    # system-default entries point at com.palm.app.videoplayer (streamable),
-    # whose app-assistant is now a forwarding shim -- that works, but the
-    # Browser -> headless Mojo shim -> new card chain left an extra Videos card
-    # behind (seen on hardware 2026-09-14); registering the app directly as the
-    # active handler gives Browser + one Videos card. addResourceHandler only
+    # system-default entries point at com.palm.app.videoplayer (streamable);
+    # handing off through that id left an extra card behind the Browser (seen
+    # on hardware 2026-09-14), so the app is registered directly as the
+    # active handler: Browser + one Videos card. addResourceHandler only
     # ADDS an alternate here (a system-default already exists), so each type is
     # then made active with swapResourceHandler (param is mimeType, not mime).
     # Two lookups exist: by the server's Content-Type (Browser: video/mp4) and
@@ -3880,7 +3879,7 @@ def main():
       "# (com.palm.app.videos) the active, streamable handler for video\n"
       "# files and URLs, at RUNTIME (see ce-register-ipk-handler for why not a\n"
       "# static command-resource-handlers.json entry). The stock system-default\n"
-      "# entries stay as alternates; com.palm.app.videoplayer itself is a shim.\n"
+      "# entries stay as alternates; com.palm.app.videoplayer hosts the same player.\n"
       "\n"
       "start on first-use-finished\n"
       "\n"

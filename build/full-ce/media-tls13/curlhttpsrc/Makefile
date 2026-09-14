@@ -2,7 +2,7 @@
 # ABI, glibc 2.8, GStreamer 0.10.29, GLib 2.16.6) against the CE libcurl
 # 7.88.1 / OpenSSL 1.1.1 in /usr/lib/ssl11.
 #
-# Inputs (see scripts/media-tls13-env.sh, which populates them):
+# Inputs (all under WORK; `scripts/media-tls13.sh setup` populates them):
 #   SYSROOT  headers for glib 2.16 / gstreamer 0.10.30 (Debian armel -dev packages)
 #   ROOTFS   the stock TouchPad rootfs, for the libraries we link against
 #   CURLINC  curl 7.88.1 include/
@@ -13,7 +13,7 @@
 
 WORK    ?= $(abspath ../../../work/curlhttpsrc)
 SYSROOT ?= $(WORK)/sysroot
-ROOTFS  ?= /tmp/claude-1000/-home-jonwise-Projects-webos-doctor-ce/9b0f82ab-334a-4568-b17a-ad445a2e306f/scratchpad/tls/rootfs
+ROOTFS  ?= $(WORK)/rootfs
 CURLINC ?= $(WORK)/src/curl-7.88.1/include
 SSL11   ?= $(WORK)/ssl11
 OUT     ?= $(WORK)/out

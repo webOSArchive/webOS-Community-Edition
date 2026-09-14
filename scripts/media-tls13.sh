@@ -2,6 +2,7 @@
 # Build/package/deploy org.webosarchive.media-tls13: the libcurl souphttpsrc
 # replacement (build/full-ce/media-tls13/curlhttpsrc).
 #
+#   scripts/media-tls13.sh setup      -> fetch/extract the build inputs (once per checkout)
 #   scripts/media-tls13.sh build      -> cross-compile libgstcurlhttpsrc.so (make)
 #   scripts/media-tls13.sh feed       -> build + the Preware ipk in build/work/ipk/
 #   scripts/media-tls13.sh deploy     -> install it on the connected device as
@@ -23,8 +24,38 @@ SO="$ROOT/build/work/curlhttpsrc/out/libgstcurlhttpsrc.so"
 dev() { novacom run file:///bin/sh; }
 
 case "$1" in
+setup)
+    # Recreate every build input under build/work/curlhttpsrc (WORK= to
+    # override). Needs build/work/webos/nova-cust-image-topaz.rootfs.tar.gz
+    # (produced by the Doctor build from the stock JAR) and network access.
+    W="${WORK:-$ROOT/build/work/curlhttpsrc}"
+    mkdir -p "$W/debs" "$W/sysroot" "$W/src" "$W/ssl11" "$W/rootfs"
+    # glib 2.16 / gstreamer 0.10.30 headers: Debian lenny/squeeze armel -dev
+    for u in \
+      http://archive.debian.org/debian/pool/main/g/glib2.0/libglib2.0-dev_2.16.6-3_armel.deb \
+      http://archive.debian.org/debian/pool/main/g/gstreamer0.10/libgstreamer0.10-dev_0.10.30-1_armel.deb \
+      http://archive.debian.org/debian/pool/main/g/gst-plugins-base0.10/libgstreamer-plugins-base0.10-dev_0.10.30-1_armel.deb; do
+        f="$W/debs/$(basename "$u")"
+        [ -s "$f" ] || curl -sfL -o "$f" "$u"
+        (cd "$W/debs" && ar x "$f" data.tar.gz && tar xzf data.tar.gz -C "$W/sysroot" && rm -f data.tar.gz)
+    done
+    # curl headers matching the CE libcurl (7.88.1)
+    [ -s "$W/src/curl-7.88.1.tar.gz" ] || curl -sfL -o "$W/src/curl-7.88.1.tar.gz" https://curl.se/download/curl-7.88.1.tar.gz
+    tar xzf "$W/src/curl-7.88.1.tar.gz" -C "$W/src" curl-7.88.1/include
+    # the CE libcurl + OpenSSL 1.1 exactly as the browser-tls13 tier installs them
+    B=$(ls "$ROOT"/AddToImage/PatchOrReplace/org.webosinternals.browser-tls13_*.ipk | tail -1)
+    T=$(mktemp -d); (cd "$T" && ar x "$B" data.tar.gz && tar xzf data.tar.gz \
+        --wildcards '*/files/ssl11/libcurl.so.4.8.0' '*/files/ssl11/libssl.so.1.1' '*/files/ssl11/libcrypto.so.1.1' \
+        && find . -name 'lib*.so*' -exec cp {} "$W/ssl11/" \;); rm -rf "$T"
+    # the stock device libraries the element links against, and libc for the symbol check
+    tar xzf "$ROOT/build/work/webos/nova-cust-image-topaz.rootfs.tar.gz" -C "$W/rootfs" --wildcards \
+        './lib/libc-2.8.so' './usr/lib/libglib-2.0.so.0*' './usr/lib/libgobject-2.0.so.0*' \
+        './usr/lib/libgthread-2.0.so.0*' './usr/lib/libgmodule-2.0.so.0*' \
+        './usr/lib/libgstreamer-0.10.so.0*' './usr/lib/libgstbase-0.10.so.0*' './usr/lib/libz.so.1*'
+    echo "build inputs ready in $W"
+    ;;
 build)
-    make -C "$MT/curlhttpsrc"
+    make -C "$MT/curlhttpsrc" ${WORK:+WORK="$WORK"}
     ;;
 feed)
     "$0" build

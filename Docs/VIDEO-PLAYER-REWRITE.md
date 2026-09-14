@@ -1,17 +1,10 @@
 # Video player rewrite — plan
 
-**Status (2026-09-14): Phases 0–2 done on the `video-player` branch. The app
-lives in `apps/com.palm.app.videos/` (dev loop: `scripts/videos-app.sh`),
-passes every Phase 0 recipe by self-test, and is wired into `bake.py` (Videos
-tier, Photos handoff patch, `com.palm.app.videoplayer` shim, Tweaks toggle).
-Browser hand-off verified end to end (one card) via the runtime
-`ce-register-video-handler` job. Delivery is a **Preware feed ipk**
-(`scripts/videos-app.sh feed` / `deploy` / `undeploy`;
-`build/full-ce/videos-app/feed/`), since 3.1.0 is released — the bake
-wiring stays for a future 3.2.0. The stock id `com.palm.app.videoplayer`
-hosts the player itself (a forwarding shim left a blank pre-created card
-behind whenever a card app launched it by id). Not yet: a baked flash,
-`ce-test-full.sh` section, the soak (Phase 3).**
+**Status: parked on the `video-player` branch for a future 3.2.0
+(2026-09-14). For the current state, install path, 3.2.0 checklist and every
+learning, read `Docs/VIDEO-3.2.0-NOTES.md` first — this file is the original
+plan plus the phase log, and its later sections describe designs that were
+superseded (the forwarding shim, the https refusal).**
 
 Things learned building it that the plan below did not predict:
 - WebKit reports `seekable=[0-duration]` even for HTTP hosts that ignore
@@ -105,8 +98,8 @@ glibc 2.8 is needed). Packaged as `org.webosarchive.media-tls13`
 
 This is a plan, not a change log. Stock sources are pulled to
 `build/work/stock-videoplayer/` (gitignored; re-pull with the command in §1.3).
-Server-side requirements for streaming hosts are a separate, self-contained
-document: `Docs/STREAMING-SERVER-REQUIREMENTS.md`.
+The server-side requirements for streaming hosts were written separately and
+now live in the streaming server's own project.
 
 ---
 
