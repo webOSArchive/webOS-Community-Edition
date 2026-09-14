@@ -50,8 +50,18 @@ fi
 # appinfo.json are replaced (backed up); our source/css/depends.js and four
 # images are added beside the untouched Mojo files and removed on uninstall.
 VPD=/usr/palm/applications/com.palm.app.videoplayer
+# "already installed" means every file we would copy is byte-identical
+vp_current() {
+    for f in index.html depends.js source/*.js css/*.css; do
+        cmp -s "$APP/$f" "$VPD/$f" || return 1
+    done
+    for i in menu-icons.png command-menu-gradient.png command-menu-gradient-top.png palm-menu-button.png; do
+        cmp -s "$APP/images/$i" "$VPD/images/$i" || return 1
+    done
+    cmp -s "$PAY/videoplayer-appinfo.json" "$VPD/appinfo.json"
+}
 if [ -d "$VPD" ]; then
-    if [ "$(md5 "$VPD/index.html")" = "$(md5 "$APP/index.html")" ] && [ "$(md5 "$VPD/source/VideoEngine.js")" = "$(md5 "$APP/source/VideoEngine.js")" ]; then
+    if (cd "$APP" && vp_current); then
         log "videoplayer: already the CE player"
     elif [ "$(md5 "$VPD/index.html")" != "@VP_INDEX_STOCK_MD5@" ] && [ ! -f "$VPD/index.html.webosce-orig" ]; then
         log "videoplayer: index.html is not the stock file ($(md5 "$VPD/index.html")); left alone"
