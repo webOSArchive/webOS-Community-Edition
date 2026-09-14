@@ -1,8 +1,36 @@
 # Video player rewrite — plan
 
-**Status: Phase 0 done (2026-09-14) — all three complaints reproduced on
-hardware with bus + pipeline traces; see §2.5. Decisions taken: standalone app,
-no preview seeks, shim the Mojo handler. Nothing built yet.**
+**Status (2026-09-14): Phases 0–2 done on the `video-player` branch. The app
+lives in `apps/org.webosarchive.videos/` (dev loop: `scripts/videos-app.sh`),
+passes every Phase 0 recipe by self-test, and is wired into `bake.py` (Videos
+tier, Photos handoff patch, `com.palm.app.videoplayer` shim, Tweaks toggle).
+Not yet: a baked flash, `ce-test-full.sh` section, mimetype handling from
+Browser/Email verified end to end, the soak (Phase 3).**
+
+Things learned building it that the plan below did not predict:
+- WebKit reports `seekable=[0-duration]` even for HTTP hosts that ignore
+  Range, so Rule 9 cannot detect them; a failed HTTP seek (or a network error
+  within 10 s of one) marks the URL unseekable for the session and recovery
+  reloads from 0.
+- The periodic crash is `media-pipeline` SIGSEGV in the video sink's RGB frame
+  capture when a seek lands before a freshly loaded pipeline has a frame
+  (§2.5). `readyState` lies; the engine holds the first seek after load
+  (1.2 s), or — when resuming with autoplay — muted-plays until the first
+  `timeupdate` and seeks then (340 ms).
+- mediaserver's `currentTime` property lags `seeked` over the bus; trust the
+  seek target until a `timeupdate` agrees.
+- The platform pauses video ~0.5 s after the card leaves the foreground. The
+  app's default is to resume it (users wanted background play); the Tweaks
+  toggle "Pause video when minimized" restores the old behaviour. What remains
+  visible is card-view compositing of the sink's snapshot — above the app.
+- `x-palm-media-extended-overlay-playback` (which Photos sets) causes a black
+  flash on every play/pause; without it the controls still draw over the
+  video. Not set.
+- db8 denies other apps the `com.palm.media.*` kinds (get and merge), so
+  Photos passes path/title/lastPlayTime in the launch params and the app keeps
+  its own resume positions in localStorage.
+- Enyo 1.0's `AppMenu` creates its items lazily — touching them in `create()`
+  white-screens the app. The preference moved to Tweaks anyway.
 
 This is a plan, not a change log. Stock sources are pulled to
 `build/work/stock-videoplayer/` (gitignored; re-pull with the command in §1.3).
