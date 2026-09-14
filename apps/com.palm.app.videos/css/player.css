@@ -50,5 +50,5 @@ html, body { background: #000; margin: 0; padding: 0; overflow: hidden; }
 .scrub.disabled .enyo-slider-button { visibility: hidden; }
 .scrub.disabled { opacity: 0.6; }
 
-.notice { position: absolute; left: 0; right: 0; top: 45%; text-align: center; color: #ccc; font-size: 22px; }
+.notice { position: absolute; left: 40px; right: 40px; top: 42%; text-align: center; color: #ccc; font-size: 22px; line-height: 1.4; white-space: pre-line; }
 .notice.hidden { display: none; }

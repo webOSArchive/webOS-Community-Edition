@@ -105,6 +105,15 @@ enyo.kind({
 			this.showNotice("No video to play");
 			return;
 		}
+		if (/^https:/i.test(url)) {
+			// gstsouphttpsrc -> libsoup 2.4.1 -> GnuTLS 2.x: no TLS 1.2, no SNI. Say so
+			// instead of letting the engine retry into the same handshake failure.
+			this.log("https target refused: " + url);
+			var name = title || url.replace(/[?#].*$/, "").substring(url.lastIndexOf("/") + 1);
+			this.$.title.setContent(enyo.string.escapeHtml(name));
+			this.showNotice("This is an HTTPS stream.\nThe webOS media stack can't play HTTPS yet; only http:// streams work.");
+			return;
+		}
 		this.open(url, title, p.initialPos || 0, !p.noAutoPlay);
 		if (p.selftest) {
 			this.selfTest = new SelfTest(this.engine, this.log, p.selftest, p);
@@ -197,7 +206,7 @@ enyo.kind({
 		this.$.status.setContent(st);
 		this.$.scrub.addRemoveClass("disabled", !s.seekable);
 		if (s.phase === "error") {
-			this.showNotice("Could not play this video (" + s.error + ")");
+			this.showNotice(this.errorText(s));
 		} else if (s.phase === "playing") {
 			this.showNotice(null);
 		}
@@ -234,6 +243,21 @@ enyo.kind({
 		var h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
 		var mm = (h ? (m < 10 ? "0" : "") : "") + m, ss = (s < 10 ? "0" : "") + s;
 		return (h ? h + ":" : "") + mm + ":" + ss;
+	},
+
+	// engine.error is "error:<MediaError code>", "deadline:<op>", "exception in <op>"...
+	// Plain words for the user; the raw reason stays in the log.
+	errorText: function (s) {
+		var e = String(s.error || "");
+		var never = !s.currentTime || s.currentTime < 0.5;    // nothing was ever shown
+		if (s.isHttp && /^error:[23]$|^deadline:load$/.test(e) && never) {
+			return "Couldn't open this stream.\nIf the link leads to an HTTPS server, the webOS media stack can't play it yet.";
+		}
+		if (/^error:2$/.test(e)) { return "The connection to the server was lost."; }
+		if (/^error:3$/.test(e)) { return "This video can't be decoded on this device."; }
+		if (/^error:4$/.test(e)) { return "This video format isn't supported."; }
+		if (/^deadline:/.test(e)) { return "The video stopped responding and couldn't be restarted."; }
+		return "Couldn't play this video.";
 	},
 
 	showNotice: function (text) {
