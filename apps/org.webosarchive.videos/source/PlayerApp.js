@@ -135,9 +135,46 @@ enyo.kind({
 		if (!name) { name = url.replace(/[?#].*$/, ""); name = name.substring(name.lastIndexOf("/") + 1); }
 		this.$.title.setContent(enyo.string.escapeHtml(name));
 		this.showNotice(null);
+		if (!(pos > 0)) { pos = this.loadPosition(url); }
 		this.engine.load(url, pos);
 		if (autoplay) { this.engine.play(); }
 		this.showControls();
+	},
+
+	// ---- resume positions --------------------------------------------------------
+	// Photos keeps lastPlayTime on com.palm.media.video.file:1, but db8 denies other
+	// apps that kind (verified: "db: permission denied" for both get and merge), so
+	// the player remembers positions itself, per device, keyed by path/URL.
+
+	POS_KEY: "org.webosarchive.videos.positions",
+	MIN_RESUME_SECS: 10,        // same thresholds as the stock Mojo player
+	END_MARGIN_SECS: 10,
+
+	readPositions: function () {
+		try { var raw = window.localStorage.getItem(this.POS_KEY); return raw ? enyo.json.parse(raw) : {}; } catch (e) { return {}; }
+	},
+
+	loadPosition: function (url) {
+		var p = this.readPositions()[url];
+		return (p && p.t > this.MIN_RESUME_SECS) ? p.t : 0;
+	},
+
+	savePosition: function () {
+		if (!this.engine || !this.url) { return; }
+		var s = this.engine.snapshot();
+		if (!isFinite(s.duration) || s.duration <= 0) { return; }
+		var t = s.currentTime;
+		if (s.atEnd || t < this.MIN_RESUME_SECS || t > s.duration - this.END_MARGIN_SECS) { t = 0; }
+		try {
+			var all = this.readPositions(), keys = [], k;
+			all[this.url] = {t: Math.floor(t), at: new Date().getTime()};
+			for (k in all) { if (all.hasOwnProperty(k)) { keys.push(k); } }
+			if (keys.length > 60) {                       // keep the 60 most recent
+				keys.sort(function (a, b) { return all[b].at - all[a].at; });
+				for (var i = 60; i < keys.length; i++) { delete all[keys[i]]; }
+			}
+			window.localStorage.setItem(this.POS_KEY, enyo.json.stringify(all));
+		} catch (e) {}
 	},
 
 	// ---- engine -> UI ------------------------------------------------------
@@ -160,6 +197,7 @@ enyo.kind({
 			this.showNotice(null);
 		}
 		this.setBlockTimeout(s.phase === "playing");
+		if (s.phase === "paused" || s.phase === "ended") { this.savePosition(); }
 		if (s.phase === "playing") { this.scheduleHide(); }
 		else { this.cancelHide(); if (!this.controlsShown) { this.showControls(); } }
 		this.refresh();
@@ -289,6 +327,7 @@ enyo.kind({
 	// on return is worse than a video playing small in card view). App menu toggle.
 	windowDeactivated: function () {
 		this.log("window deactivated, pauseWhenCarded=" + this.prefs.pauseWhenCarded);
+		this.savePosition();
 		if (this.engine && !this.selfTest && this.prefs.pauseWhenCarded) { this.engine.pause(); }
 	},
 
@@ -299,6 +338,7 @@ enyo.kind({
 
 	unload: function () {
 		this.log("unload");
+		this.savePosition();
 		if (this.tickTimer) { clearInterval(this.tickTimer); this.tickTimer = 0; }
 		this.cancelHide();
 		if (this.selfTest) { this.selfTest.stop(); }

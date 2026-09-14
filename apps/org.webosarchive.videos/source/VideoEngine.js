@@ -310,6 +310,14 @@ VideoEngine.prototype = {
 		this.phase = "loading";
 		this.atEnd = false;
 		this.lastTime = this.startPos || 0; this.lastWall = 0;
+		// Resuming: the pipeline must play from 0 for a moment before it is safe to
+		// seek (see POST_LOAD_SEEK_HOLD). Mute that moment so the user hears nothing
+		// from the wrong place; the seek is issued on the first timeupdate instead of
+		// after the fixed hold, and the volume comes back once it lands.
+		this.resumeMuted = false;
+		if (this.startPos > 0) {
+			try { this.el.volume = 0; this.resumeMuted = true; } catch (e) {}
+		}
 		this.changed();
 		this.arm("load");
 		var url = this.url;
@@ -426,9 +434,12 @@ VideoEngine.prototype = {
 				if (!this.seekableDecided) { this.decideSeekable(); }
 				this.lastSeekIssued = this.now() + this.POST_LOAD_SEEK_HOLD - this.MIN_SEEK_SPACING;
 				this.finish();
+				if (!this.seekable) { this.startPos = 0; this.unmuteResume(); }
 				// a seek the user requested during load/recovery outranks the resume position
-				if (this.pendingSeek === null && this.startPos > 0 && this.seekable) { this.pendingSeek = this.startPos; }
-				this.startPos = 0;
+				if (this.pendingSeek !== null) { this.startPos = 0; this.unmuteResume(); }
+				// when playback is wanted, the resume seek waits for the first timeupdate
+				// (frames flowing = safe to seek); otherwise it goes after the hold
+				if (this.startPos > 0 && !this.wantPlaying && !this.queuedPlay()) { this.pendingSeek = this.startPos; this.startPos = 0; }
 				this.pump();
 			}
 			break;
@@ -466,6 +477,7 @@ VideoEngine.prototype = {
 			this.changed();
 			break;
 		case "seeked":
+			this.unmuteResume();
 			if (op && op.kind === "seek") {
 				// trust the target, not the element (see acceptTime)
 				this.lastTime = op.target; this.lastWall = 0;
@@ -482,6 +494,14 @@ VideoEngine.prototype = {
 			break;
 		case "timeupdate":
 			if (!el.paused && !el.seeking) {
+				if (this.startPos > 0 && el.currentTime > 0 && !op) {
+					// frames are flowing on the fresh pipeline: now the resume seek is safe
+					this.log("resume: first frames at " + this.fmt(el.currentTime) + ", seeking to " + this.fmt(this.startPos));
+					this.pendingSeek = this.startPos; this.startPos = 0;
+					this.lastSeekIssued = 0;
+					this.pump();
+					break;
+				}
 				this.setTime(el.currentTime, this.now());
 				if (this.phase !== "playing" && this.phase !== "ended" && this.phase !== "seeking" && op === null) { this.phase = "playing"; }
 			}
@@ -596,6 +616,7 @@ VideoEngine.prototype = {
 
 	fail: function (why) {
 		this.clearOpTimer();
+		this.unmuteResume();
 		this.op = null;
 		this.queue = [];
 		this.pendingSeek = null;
@@ -614,6 +635,17 @@ VideoEngine.prototype = {
 			self.healthyTimer = 0;
 			if (self.phase === "playing") { self.recoverCount = 0; self.started = true; }
 		}, this.HEALTHY_AFTER_MS);
+	},
+
+	unmuteResume: function () {
+		if (!this.resumeMuted) { return; }
+		this.resumeMuted = false;
+		try { if (this.el) { this.el.volume = 1; } } catch (e) {}
+	},
+
+	queuedPlay: function () {
+		for (var i = 0; i < this.queue.length; i++) { if (this.queue[i].kind === "play") { return true; } }
+		return false;
 	},
 
 	// ---- utils -----------------------------------------------------------

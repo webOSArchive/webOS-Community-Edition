@@ -9,6 +9,8 @@
 #                                            -> launch in self-test mode and wait for the summary
 #   scripts/videos-app.sh log                -> the app's console lines from /var/log/messages
 #   scripts/videos-app.sh close              -> close every open card of the app
+#   scripts/videos-app.sh release            -> package and copy the ipk into AddToImage/NewApps
+#                                               (bake.py picks the highest version there)
 #
 # Pushed Enyo edits are cached by WebAppMgr: 'install' closes the app first, and if
 # a change still does not show up, restart Luna (see memory: enyo-app-cache-luna-restart).
@@ -74,6 +76,10 @@ EOF
     ;;
 close)
     close_app
+    ;;
+release)
+    "$0" package
+    cp -v "$IPK" "$ROOT/AddToImage/NewApps/"
     ;;
 *)
     sed -n '2,16p' "$0"; exit 2

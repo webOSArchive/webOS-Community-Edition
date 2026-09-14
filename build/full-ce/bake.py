@@ -215,6 +215,10 @@ IPK = {
     "govnah":      ati_ipk(NEWAPPS, "org.webosinternals.govnah"),
     "usb":         ati_ipk(NEWAPPS, "com.webosarchive.usbsettings"),
     "bt":          ati_ipk(NEWAPPS, "org.webosarchive.btgamepad"),
+    # the CE video player (apps/org.webosarchive.videos, packaged by
+    # scripts/videos-app.sh release); Photos and the stock mimetype handler
+    # hand off to it -- see Docs/VIDEO-PLAYER-REWRITE.md
+    "videos":      ati_ipk(NEWAPPS, "org.webosarchive.videos"),
     # woce-backup: a working Backup/Restore that stores on the device.
     # PatchOrReplace, not NewApps -- it takes over the stock
     # com.palm.app.backup id (the stock app is a dead UI over Palm's
@@ -1973,6 +1977,12 @@ def main():
         # synergy PictureMode patch above -- it is generated against that result.
         run_patch(approot, os.path.join(PEX, "patches/PictureMode-filename.js.patch"))
         run_patch(approot, os.path.join(PEX, "patches/PictureMode-filename.css.patch"))
+        # Tapping a video in the album grid launches the CE Videos app
+        # (org.webosarchive.videos) instead of the carousel's DbViewVideo. The
+        # launch params carry path/title/lastPlayTime because db8 denies other
+        # apps the media kinds. Generated against stock AlbumGridView.js, which
+        # no other patch touches.
+        run_patch(approot, os.path.join(HERE, "videos-app/patches/AlbumGridView-videos-handoff.js.patch"))
         shutil.copy(os.path.join(PEX, "assets/icn-slidetiming.png"),
                     os.path.join(approot, "images/"))
         for png in sorted(glob.glob(os.path.join(PHI, "assets/syn-*.png"))):
@@ -2941,6 +2951,27 @@ def main():
 
     # 16) BT gamepad : payload is just the shim + udev rule (no app UI) — bake
     # those and replay the postinst's stock-file patches.
+    # 15d) Videos: the CE video player. The app itself bakes like USB Settings;
+    # two hand-offs point the stock entry points at it:
+    #  - com.palm.app.videoplayer (the hidden Mojo mimetype handler Browser/
+    #    Email/Messaging launch for video files and URLs) keeps its id, appinfo
+    #    and icon -- Messaging and Device Info reference them -- but its
+    #    app-assistant.js becomes a forwarding shim;
+    #  - Photos' album grid launches it for videos (patch in edit_photos()).
+    # Its Tweaks toggle ("Pause video when minimized") rides into the cryptofs
+    # seed next to the LunaCE definitions (tier 19b-c).
+    log(f"tier: Videos app BAKED ({os.path.basename(IPK['videos'])})")
+    d = ipk_extract_data(IPK["videos"], os.path.join(tmp, "videos"))
+    bake_tree(d)
+    VID = os.path.join(HERE, "videos-app")
+    wcopy("usr/palm/applications/com.palm.app.videoplayer/app/controllers/app-assistant.js",
+          os.path.join(VID, "videoplayer-shim/app-assistant.js"), 0o644)
+    wcopy(f"{SEED}/apps/usr/palm/services/org.webosinternals.tweaks.prefs/"
+          "preferences/org.webosarchive.videos.json",
+          os.path.join(d, "usr/palm/applications/org.webosarchive.videos/tweaks/"
+                          "org.webosarchive.videos.json"), 0o644)
+    log("  videoplayer shim + Tweaks definition staged")
+
     log(f"tier: BT gamepad BAKED ({os.path.basename(IPK['bt'])})")
     d = ipk_extract_data(IPK["bt"], os.path.join(tmp, "bt"))
     btf = os.path.join(d, "usr/palm/applications/org.webosarchive.btgamepad/files")
