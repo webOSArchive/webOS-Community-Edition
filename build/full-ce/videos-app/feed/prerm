@@ -1,0 +1,51 @@
+#!/bin/sh
+# org.webosarchive.videos — undo everything postinst did; the stock player
+# comes back after the Luna restart Preware offers (PreRemove flag).
+LOG=/var/log/org.webosarchive.videos-install.log
+log() { echo "$(date 2>/dev/null) $*" >> $LOG 2>/dev/null; echo "videos: $*"; }
+
+PH=/media/cryptofs/apps/usr/palm/applications/com.palm.app.photos/source/AlbumGridView.js
+if [ -f "$PH.webosce-orig" ]; then
+    cp -p "$PH.webosce-orig" "$PH" && rm -f "$PH.webosce-orig" && log "Photos: stock album grid restored"
+fi
+
+VP=/usr/palm/applications/com.palm.app.videoplayer/app/controllers/app-assistant.js
+if [ -f "$VP.webosce-orig" ]; then
+    L=/tmp/.ce-rootfs-rw.lock
+    n=0; while ! mkdir $L 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n+1)); done
+    if mount -o remount,rw / 2>/dev/null; then
+        cp -p "$VP.webosce-orig" "$VP.new" && mv -f "$VP.new" "$VP" && rm -f "$VP.webosce-orig" \
+            && log "shim: stock com.palm.app.videoplayer restored"
+        mount -o remount,ro / 2>/dev/null || true
+    else
+        log "shim: could not remount / rw; shim left in place (it only forwards)"
+    fi
+    rmdir $L 2>/dev/null || true
+fi
+
+TW=/media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/preferences/org.webosarchive.videos.json
+if [ -f "$TW" ]; then
+    rm -f "$TW"
+    [ -d /media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/assistants ] \
+        && luna-send -n 1 palm://org.webosinternals.tweaks.prefs/scan '{}' </dev/null >/dev/null 2>&1
+    log "tweaks: definition removed"
+fi
+
+# hand each video type back to its system-default handler
+AM=palm://com.palm.applicationManager
+restore() {
+    R=$(luna-send -n 1 $AM/listAllHandlersForMime "{\"mime\":\"$1\"}" </dev/null 2>&1)
+    case "$R" in *activeHandler*) ;; *) return 0 ;; esac
+    A=$(echo "$R" | sed -n 's/.*"activeHandler": *{\([^}]*\)}.*/\1/p')
+    case "$A" in *org.webosarchive.videos*) ;; *) return 0 ;; esac
+    IDX=$(echo "$R" | tr '}' '\n' | grep 'system-default' | grep -o '"index": *[0-9]*' | grep -o '[0-9]*' | head -1)
+    [ -n "$IDX" ] && luna-send -n 1 $AM/swapResourceHandler "{\"mimeType\":\"$1\",\"index\":$IDX}" </dev/null >/dev/null 2>&1
+}
+for m in video/mp4 video/x-m4v video/3gpp video/3gpp2 video/quicktime video/webm video/x-matroska; do restore $m; done
+for e in mp4 m4v 3gp 3g2 mov webm mkv; do
+    M=$(luna-send -n 1 $AM/mimeTypeForExtension "{\"extension\":\"$e\"}" </dev/null 2>/dev/null \
+        | sed -n 's/.*"mimeType": *"\([^"]*\)".*/\1/p' | sed 's#\\/#/#g')
+    [ -n "$M" ] && restore "$M"
+done
+log "handlers: stock video handlers restored"
+exit 0

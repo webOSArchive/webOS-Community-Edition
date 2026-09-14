@@ -1,0 +1,8 @@
+Package: org.webosarchive.videos
+Version: @VERSION@
+Depends:
+Section: Multimedia
+Architecture: all
+Maintainer: webOS Archive
+Description: Videos (webOS CE player)
+Source: { "Type":"Application", "Feed":"WOSA Modernize", "Category":"Modernize", "LastUpdated":"@EPOCH@", "Title":"Videos (webOS CE player)", "FullDescription":"A replacement video player for the TouchPad that does not hang when scrubbing, does not crash the media pipeline, and can restart a video after it ends -- including HTTP streams from hosts that ignore Range requests.<br><br>Installs the standalone Videos player and routes every entry point to it: tapping a video in Photos &amp; Videos, video links in the Browser, and video attachments. Adds a Tweaks toggle (System / Videos: Pause video when minimized -- off by default, the video keeps playing in card view).<br><br>Stock files are backed up and restored on removal. Restart Luna after installing so Photos picks up the change.", "MinWebOSVersion":"3.0.0", "DeviceCompatibility":["TouchPad","Touchpad Go"], "PostInstallFlags":"RestartLuna", "PostUpdateFlags":"RestartLuna", "PostRemoveFlags":"RestartLuna", "Icon":"http://stacks.webosarchive.org/feeds/modernize/ipkgs/assets/icons/videos.png" }

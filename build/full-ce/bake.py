@@ -2962,6 +2962,10 @@ def main():
     # seed next to the LunaCE definitions (tier 19b-c).
     log(f"tier: Videos app BAKED ({os.path.basename(IPK['videos'])})")
     d = ipk_extract_data(IPK["videos"], os.path.join(tmp, "videos"))
+    # the ipk is the Preware feed package: its ce-install/ payload + postinst
+    # replay this tier on a running device; the image does it here instead
+    shutil.rmtree(os.path.join(d, "usr/palm/applications/org.webosarchive.videos/ce-install"),
+                  ignore_errors=True)
     bake_tree(d)
     VID = os.path.join(HERE, "videos-app")
     wcopy("usr/palm/applications/com.palm.app.videoplayer/app/controllers/app-assistant.js",
