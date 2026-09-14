@@ -1,6 +1,13 @@
 #!/bin/sh
 # com.palm.app.videos — undo everything postinst did; the stock player
 # comes back after the Luna restart Preware offers (PreRemove flag).
+#
+# Never block on a bus call here. ipkgservice installs this script as
+# .scripts/<id>/pmPreRemove.script and LunaSysMgr's appinstaller runs it
+# SYNCHRONOUSLY during remove; a luna-send to com.palm.applicationManager
+# (LunaSysMgr itself) then never returns and the whole UI freezes until a
+# hard reboot (2026-09-14, twice, via Preware). The video handlers need no
+# undo: the RestartLuna flag on removal rescans them without this app.
 LOG=/var/log/com.palm.app.videos-install.log
 log() { echo "$(date 2>/dev/null) $*" >> $LOG 2>/dev/null; echo "videos: $*"; }
 
@@ -33,26 +40,9 @@ fi
 TW=/media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/preferences/com.palm.app.videos.json
 if [ -f "$TW" ]; then
     rm -f "$TW"
+    # detached, fds closed: this script must not wait on the bus (see top)
     [ -d /media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/assistants ] \
-        && luna-send -n 1 palm://org.webosinternals.tweaks.prefs/scan '{}' </dev/null >/dev/null 2>&1
+        && (luna-send -n 1 palm://org.webosinternals.tweaks.prefs/scan '{}' </dev/null >/dev/null 2>&1 &)
     log "tweaks: definition removed"
 fi
-
-# hand each video type back to its system-default handler
-AM=palm://com.palm.applicationManager
-restore() {
-    R=$(luna-send -n 1 $AM/listAllHandlersForMime "{\"mime\":\"$1\"}" </dev/null 2>&1)
-    case "$R" in *activeHandler*) ;; *) return 0 ;; esac
-    A=$(echo "$R" | sed -n 's/.*"activeHandler": *{\([^}]*\)}.*/\1/p')
-    case "$A" in *com.palm.app.videos*) ;; *) return 0 ;; esac
-    IDX=$(echo "$R" | tr '}' '\n' | grep 'system-default' | grep -o '"index": *[0-9]*' | grep -o '[0-9]*' | head -1)
-    [ -n "$IDX" ] && luna-send -n 1 $AM/swapResourceHandler "{\"mimeType\":\"$1\",\"index\":$IDX}" </dev/null >/dev/null 2>&1
-}
-for m in video/mp4 video/x-m4v video/3gpp video/3gpp2 video/quicktime video/webm video/x-matroska; do restore $m; done
-for e in mp4 m4v 3gp 3g2 mov webm mkv; do
-    M=$(luna-send -n 1 $AM/mimeTypeForExtension "{\"extension\":\"$e\"}" </dev/null 2>/dev/null \
-        | sed -n 's/.*"mimeType": *"\([^"]*\)".*/\1/p' | sed 's#\\/#/#g')
-    [ -n "$M" ] && restore "$M"
-done
-log "handlers: stock video handlers restored"
 exit 0

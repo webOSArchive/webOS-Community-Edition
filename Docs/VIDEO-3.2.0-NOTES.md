@@ -64,9 +64,15 @@ build inputs (`curlhttpsrc/`, recreated by `scripts/media-tls13.sh setup`).
   would); `undeploy` runs the prerm and removes.
 - Every postinst stage is md5-guarded, idempotent, logs to
   `/var/log/<package>-install.log`, and never exits non-zero. The prerms
-  restore every backup (`*.webosce-orig`) and hand the video types back to
-  their system-default handlers. Videos' removal path was exercised on
-  hardware once (package rename); Media TLS's has not been.
+  restore every backup (`*.webosce-orig`); the video handlers are rescanned
+  by the Luna restart that removal asks for.
+- **A prerm must never block on a bus call.** LunaSysMgr's appinstaller runs
+  it synchronously as `.scripts/<id>/pmPreRemove.script`, so a `luna-send`
+  to `com.palm.applicationManager` deadlocks LunaSysMgr and freezes the UI
+  (Preware removal of Videos 3.2.0 froze twice, 2026-09-14; the old prerm
+  swapped handlers back). `undeploy` never caught it: it runs the prerm
+  from a novacom shell. Test removal **through Preware**. Media TLS's
+  removal path has not been exercised.
 
 ## 4. Folding into 3.2.0 — checklist
 
