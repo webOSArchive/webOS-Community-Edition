@@ -75,7 +75,14 @@ glibc 2.8 is needed). Packaged as `org.webosarchive.media-tls13`
   bucket is closed), the archive.org `http://` → `https://` chain, and a
   TLS-1.3-only test server (`scripts/rangeserver.py 8443 --tls CERT KEY`).
 - Test media must be faststart: the archive.org sample is 455 MB with `moov`
-  after `mdat`, which cannot start quickly on any source.
+  after `mdat`, which cannot start quickly on any source. (The element itself
+  handles moov-at-end: on a local clip the demuxer's Range jump to the index
+  reaches the server and playback starts in 4.5 s.)
+- **An app that gives up must release the pipeline.** The engine's `fail()`
+  left the `<video>` loaded; mediaserver kept prerolling, hit its own preroll
+  timeout, waited for an element error that never came, and its watchdog
+  killed media-pipeline (`Watchdog::HOG`, rdxd 2026-09-14 20:21:57). `fail()`
+  now tears the element down; a tap on play after an error reloads.
 
 This is a plan, not a change log. Stock sources are pulled to
 `build/work/stock-videoplayer/` (gitignored; re-pull with the command in §1.3).

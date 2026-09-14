@@ -84,6 +84,14 @@ VideoEngine.prototype = {
 
 	play: function () {
 		this.wantPlaying = true;
+		if (this.phase === "error" && this.url) {
+			// play after a failure = retry from the top (fail() released the pipeline)
+			this.log("retry after error: " + this.error);
+			this.error = null;
+			this.recoverCount = 0;
+			this.phase = "empty";
+			this.enqueue("load");
+		}
 		this.enqueue("play");
 	},
 
@@ -120,7 +128,8 @@ VideoEngine.prototype = {
 	},
 
 	currentTime: function () {
-		if (this.phase === "playing" && this.lastWall) {
+		// no interpolation while stalled: the clock must not run ahead of a frozen picture
+		if (this.phase === "playing" && this.lastWall && !this.isBuffering()) {
 			var t = this.lastTime + (this.now() - this.lastWall) / 1000;
 			return (this.duration > 0) ? Math.min(t, this.duration) : t;
 		}
@@ -136,6 +145,7 @@ VideoEngine.prototype = {
 			seekable: this.seekable,
 			buffered: this.buffered,
 			atEnd: this.atEnd,
+			buffering: this.isBuffering(),
 			wantPlaying: this.wantPlaying,
 			error: this.error,
 			isHttp: this.isHttp,
@@ -184,6 +194,8 @@ VideoEngine.prototype = {
 		this.seekableFinal = false;
 		this.seekable = false;
 		this.seekGuardUntil = 0;
+		this.waiting = false;
+		this.lastProgressWall = 0;
 		this.duration = NaN;
 		this.buffered = 0;
 		this.started = false;
@@ -406,7 +418,17 @@ VideoEngine.prototype = {
 
 	setTime: function (t, wall) {
 		if (!this.acceptTime(t)) { return; }
+		if (Math.abs(t - this.lastTime) > 0.05) { this.lastProgressWall = this.now(); this.waiting = false; }
 		this.lastTime = t; this.lastWall = wall;
+	},
+
+	// Buffering: the element said "waiting", or it claims to be playing but the
+	// position has not moved for STALL_MS (mediaserver reports currentTime ~5 Hz,
+	// so 1.5 s of silence is a real stall, not jitter).
+	STALL_MS: 1500,
+	isBuffering: function () {
+		if (this.phase !== "playing") { return false; }
+		return this.waiting || (this.lastProgressWall > 0 && this.now() - this.lastProgressWall > this.STALL_MS);
 	},
 
 	// ---- element events --------------------------------------------------
@@ -443,9 +465,15 @@ VideoEngine.prototype = {
 				this.pump();
 			}
 			break;
+		case "waiting":
+			this.waiting = true;
+			this.changed();
+			break;
 		case "playing":
 			this.phase = "playing";
 			this.atEnd = false;
+			this.waiting = false;
+			this.lastProgressWall = this.now();
 			if (this.lastWall === 0) { this.lastWall = this.now(); }   // start interpolating from the trusted time
 			this.setTime(el.currentTime, this.now());
 			this.markHealthySoon();
@@ -589,6 +617,13 @@ VideoEngine.prototype = {
 		this.recoverCount++;
 		this.stats.recoveries++;
 		this.log("RECOVER #" + this.recoverCount + " (" + why + ") at " + this.fmt(pos) + " wantPlaying=" + wasPlaying);
+		// an HTTP source that errors before ever producing a frame (handshake,
+		// 4xx, unsupported) will not be fixed by reloading -- fail now, not 40 s later
+		var neverPlayed = !this.started && this.stats.seeks === 0 && pos < 0.5;
+		if (this.isHttp && neverPlayed && /^error:[234]$/.test(why)) {
+			this.fail(why);
+			return;
+		}
 		if (this.recoverCount > this.MAX_RECOVERIES || !this.url) {
 			this.fail(why);
 			return;
@@ -617,6 +652,11 @@ VideoEngine.prototype = {
 	fail: function (why) {
 		this.clearOpTimer();
 		this.unmuteResume();
+		// Release the pipeline. Leaving the element loaded after giving up lets
+		// mediaserver keep prerolling; its preroll timeout then waits for an
+		// element error that never comes and its watchdog kills media-pipeline
+		// (rdxd 2026-09-14 20:21:57, Watchdog::HOG, after an app-side failure).
+		this.teardownElement();
 		this.op = null;
 		this.queue = [];
 		this.pendingSeek = null;

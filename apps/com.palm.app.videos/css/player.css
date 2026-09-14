@@ -14,6 +14,8 @@ html, body { background: #000; margin: 0; padding: 0; overflow: hidden; }
           background: #000 url(../images/command-menu-gradient-top.png) repeat-x; background-size: 320px 56px;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
 .header .status { float: right; font-size: 14px; font-weight: normal; color: #9cf; }
+/* Enyo's 32px spinner, centred vertically in the 56px header's left corner */
+.hdr-spinner { position: absolute; left: 14px; top: 12px; }
 
 /* control bar: same gradient, flipped to sit on the bottom edge */
 .controls { bottom: 0; height: 64px;

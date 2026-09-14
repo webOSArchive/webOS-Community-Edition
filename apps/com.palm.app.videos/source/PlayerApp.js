@@ -25,6 +25,8 @@ enyo.kind({
 			{name: "status", tag: "span", className: "status"},
 			{name: "title", tag: "span"}
 		]},
+		// drawn above the header, not in it, so it still shows when the bars auto-hide
+		{name: "spinner", kind: "Spinner", className: "hdr-spinner"},
 		{name: "controls", className: "bar controls", onclick: "controlsClick", components: [
 			{className: "row", components: [
 				{name: "playBtn", className: "mbtn left", onclick: "playClick", onmousedown: "btnDown", onmouseup: "btnUp", onmouseout: "btnUp",
@@ -103,15 +105,6 @@ enyo.kind({
 		}
 		if (!url) {
 			this.showNotice("No video to play");
-			return;
-		}
-		if (/^https:/i.test(url)) {
-			// gstsouphttpsrc -> libsoup 2.4.1 -> GnuTLS 2.x: no TLS 1.2, no SNI. Say so
-			// instead of letting the engine retry into the same handshake failure.
-			this.log("https target refused: " + url);
-			var name = title || url.replace(/[?#].*$/, "").substring(url.lastIndexOf("/") + 1);
-			this.$.title.setContent(enyo.string.escapeHtml(name));
-			this.showNotice("This is an HTTPS stream.\nThe webOS media stack can't play HTTPS yet; only http:// streams work.");
 			return;
 		}
 		this.open(url, title, p.initialPos || 0, !p.noAutoPlay);
@@ -197,13 +190,7 @@ enyo.kind({
 		var playing = s.wantPlaying && s.phase !== "ended" && s.phase !== "error";
 		this.$.playIcon.addRemoveClass("pause", playing);
 		this.$.playIcon.addRemoveClass("play", !playing);
-		var st = "";
-		if (s.phase === "loading") { st = "loading"; }
-		else if (s.phase === "seeking") { st = "seeking"; }
-		else if (s.phase === "recovering") { st = "recovering"; }
-		else if (s.phase === "error") { st = "error"; }
-		else if (s.busy) { st = "…"; }
-		this.$.status.setContent(st);
+		this.updateBusy(s);
 		this.$.scrub.addRemoveClass("disabled", !s.seekable);
 		if (s.phase === "error") {
 			this.showNotice(this.errorText(s));
@@ -217,9 +204,28 @@ enyo.kind({
 		this.refresh();
 	},
 
+	// status text + spinner; also run from the 250 ms tick, because a stall is
+	// the ABSENCE of events and never triggers engineChanged on its own
+	updateBusy: function (s) {
+		var st = "";
+		if (s.phase === "loading") { st = "loading"; }
+		else if (s.phase === "seeking") { st = "seeking"; }
+		else if (s.phase === "recovering") { st = "recovering"; }
+		else if (s.phase === "error") { st = "error"; }
+		else if (s.buffering) { st = "buffering"; }
+		else if (s.busy) { st = "…"; }
+		if (st !== this.lastStatus) { this.lastStatus = st; this.$.status.setContent(st); }
+		var spin = st === "loading" || st === "seeking" || st === "recovering" || st === "buffering";
+		if (spin !== this.spinning) {
+			this.spinning = spin;
+			if (spin) { this.$.spinner.show(); } else { this.$.spinner.hide(); }
+		}
+	},
+
 	refresh: function () {
 		if (!this.engine) { return; }
 		var s = this.engine.snapshot();
+		this.updateBusy(s);
 		var d = s.duration, t = s.currentTime;
 		if (!this.scrubbing) {
 			this.$.elapsed.setContent(this.fmt(t));
@@ -251,7 +257,7 @@ enyo.kind({
 		var e = String(s.error || "");
 		var never = !s.currentTime || s.currentTime < 0.5;    // nothing was ever shown
 		if (s.isHttp && /^error:[23]$|^deadline:load$/.test(e) && never) {
-			return "Couldn't open this stream.\nIf the link leads to an HTTPS server, the webOS media stack can't play it yet.";
+			return "Couldn't open this stream.\nIf the link leads to an HTTPS server, the stock webOS media stack can't play it: install the media TLS update.";
 		}
 		if (/^error:2$/.test(e)) { return "The connection to the server was lost."; }
 		if (/^error:3$/.test(e)) { return "This video can't be decoded on this device."; }
