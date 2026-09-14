@@ -47,7 +47,19 @@ SelfTest.prototype = {
 			if (self.stopped || round >= self.rounds) { cb(); return; }
 			round++;
 			var s = self.engine.snapshot();
-			if (!s.seekable) { self.check("scrub r" + round, false, "source not seekable"); cb(); return; }
+			if (!s.seekable) {
+				// unseekable source: the engine must refuse to seek AND keep playing
+				var t0u = self.engine.currentTime();
+				var seeksBefore = self.engine.stats.seeks;
+				self.engine.seek(10); self.engine.seek(20);
+				self.later(function () {
+					var t1u = self.engine.currentTime();
+					self.check("scrub r" + round + " unseekable: no pipeline seek", self.engine.stats.seeks === seeksBefore, "seeks=" + self.engine.stats.seeks);
+					self.check("scrub r" + round + " unseekable: still advancing", t1u > t0u + 2.0, "t0=" + t0u.toFixed(1) + " t1=" + t1u.toFixed(1) + " phase=" + self.engine.snapshot().phase);
+					next();
+				}, 4000);
+				return;
+			}
 			var d = s.duration, n = 0, storm = 0;
 			var burst = function () {
 				if (self.stopped) { return; }
@@ -64,16 +76,26 @@ SelfTest.prototype = {
 					self.waitFor(function () {
 						var x = self.engine.snapshot();
 						return !x.busy && x.phase === "playing";
-					}, 15000, "scrub r" + round + " settle", function (ok) {
+					}, 25000, "scrub r" + round + " settle", function (ok) {
 						if (!ok) { next(); return; }
 						var t0 = self.engine.currentTime();
-						var near = Math.abs(t0 - target) < 3.0;
-						self.check("scrub r" + round + " landed", near, "target=" + target.toFixed(1) + " got=" + t0.toFixed(1) + " seeks=" + self.engine.stats.seeks + " coalesced=" + self.engine.stats.seeksCoalesced + " maxSeekMs=" + self.engine.stats.maxSeekMs);
-						self.later(function () {
-							var t1 = self.engine.currentTime();
-							self.check("scrub r" + round + " advancing", t1 > t0 + 1.5, "t0=" + t0.toFixed(1) + " t1=" + t1.toFixed(1));
-							next();
-						}, 3000);
+						var x = self.engine.snapshot();
+						if (!x.seekable) {
+							// the engine downgraded the source mid-storm (HTTP host without Range):
+							// the contract is "recovered and playing", not "landed"
+							self.check("scrub r" + round + " downgraded to unseekable, recovered", x.phase === "playing", "recoveries=" + self.engine.stats.recoveries + " t=" + t0.toFixed(1));
+						} else {
+							var near = Math.abs(t0 - target) < 3.0;
+							self.check("scrub r" + round + " landed", near, "target=" + target.toFixed(1) + " got=" + t0.toFixed(1) + " seeks=" + self.engine.stats.seeks + " coalesced=" + self.engine.stats.seeksCoalesced + " maxSeekMs=" + self.engine.stats.maxSeekMs);
+						}
+						// HTTP may legitimately re-buffer after landing past the buffered range;
+						// give it up to 12 s to move, local 3 s
+						var t0wall = new Date().getTime();
+						self.waitFor(function () { return self.engine.currentTime() > t0 + 1.5; },
+							x.isHttp ? 12000 : 3000, "scrub r" + round + " advancing", function () {
+								self.log("SELFTEST      (resumed after " + (new Date().getTime() - t0wall) + "ms, t=" + self.engine.currentTime().toFixed(1) + ")");
+								next();
+							});
 					});
 				}
 			};

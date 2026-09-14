@@ -63,7 +63,12 @@ VideoEngine.prototype = {
 		play:  {local: 2500,  http: 8000},
 		pause: {local: 2000,  http: 2000}
 	},
-	MIN_SEEK_SPACING: 300,
+	MIN_SEEK_SPACING: 400,
+	// A seek issued before a freshly loaded pipeline has rendered a frame crashes
+	// media-pipeline in the video sink's RGB capture (_vhm_rotate <- rgb_capture,
+	// rdxd 2026-09-14 17:33:56, 70 ms after load). readyState says 4 long before
+	// that, so this is time-based: first seek no sooner than this after canplay.
+	POST_LOAD_SEEK_HOLD: 1200,
 	HEALTHY_AFTER_MS: 5000,
 	MAX_RECOVERIES: 3,
 
@@ -106,7 +111,7 @@ VideoEngine.prototype = {
 		if (this.pendingSeek !== null) { this.stats.seeksCoalesced++; }
 		this.pendingSeek = seconds;
 		// present the target immediately so the UI never shows the old position
-		this.lastTime = seconds; this.lastWall = this.now();
+		this.lastTime = seconds; this.lastWall = 0;
 		this.pump();
 	},
 
@@ -173,7 +178,9 @@ VideoEngine.prototype = {
 		this.container.appendChild(el);
 		this.el = el;
 		this.seekableDecided = false;
+		this.seekableFinal = false;
 		this.seekable = false;
+		this.seekGuardUntil = 0;
 		this.duration = NaN;
 		this.buffered = 0;
 		this.started = false;
@@ -214,7 +221,7 @@ VideoEngine.prototype = {
 	},
 
 	pump: function () {
-		if (this.op) { return; }
+		if (this.op || this.phase === "recovering") { return; }
 		var next = null;
 		// a pending seek outranks queued play/pause (the user just moved the knob)
 		if (this.pendingSeek !== null && this.phase !== "empty" && this.phase !== "loading" && this.phase !== "error") {
@@ -277,12 +284,19 @@ VideoEngine.prototype = {
 		var op = this.op;
 		if (!op) { return; }
 		this.log("DEADLINE on " + op.kind + " after " + (this.now() - op.t0) + "ms (phase=" + this.phase + ")");
-		if (op.kind === "seek" && this.isHttp) {
-			// Rule 9 fallback: the host lied about ranges. Stop seeking this source.
-			this.seekable = false;
-			this.pendingSeek = null;
-		}
 		this.recover("deadline:" + op.kind);
+	},
+
+	// Rule 9 fallback: WebKit reports a full seekable range even for hosts that
+	// ignore Range (Phase 1 measurement), so the only evidence is a seek that fails.
+	// One failed HTTP seek marks the URL unseekable for the rest of the session and
+	// the recovery reloads from 0 rather than re-seeking into the same failure.
+	markUnseekable: function (why) {
+		this.log("marking source unseekable: " + why);
+		this.seekable = false;
+		this.seekableFinal = true;
+		this.unseekableUrl = this.url;
+		this.pendingSeek = null;
 	},
 
 	// ---- ops -----------------------------------------------------------
@@ -368,6 +382,22 @@ VideoEngine.prototype = {
 		this.el.currentTime = seconds;
 	},
 
+	// mediaserver's currentTime property reaches WebKit over the bus a beat AFTER the
+	// 'seeked' event, so for a moment the element still reports the pre-seek time.
+	// Until a timeupdate agrees with the target, element times far from it are noise.
+	acceptTime: function (t) {
+		if (this.seekGuardUntil && this.now() < this.seekGuardUntil) {
+			if (Math.abs(t - this.seekGuardTarget) > 2.5) { return false; }
+			this.seekGuardUntil = 0;
+		}
+		return true;
+	},
+
+	setTime: function (t, wall) {
+		if (!this.acceptTime(t)) { return; }
+		this.lastTime = t; this.lastWall = wall;
+	},
+
 	// ---- element events --------------------------------------------------
 
 	onEvent: function (name, ev) {
@@ -379,21 +409,31 @@ VideoEngine.prototype = {
 		case "durationchange":
 		case "loadedmetadata":
 			this.duration = el.duration;
-			if (!this.seekableDecided && el.readyState >= 1) { this.decideSeekable(); }
+			this.log("  duration=" + el.duration + " " + this.describeSeekable());
+			// decide once a finite duration is known; a source that never reports one
+			// is decided (unseekable) at canplay. A later finite duration upgrades it.
+			if (!this.seekableDecided || (!this.seekable && isFinite(el.duration) && el.duration > 0 && !this.seekableFinal)) {
+				if (isFinite(el.duration) && el.duration > 0) { this.decideSeekable(); }
+			}
 			this.changed();
 			break;
 		case "canplay":
 			if (op && op.kind === "load") {
 				this.phase = "ready";
 				if (!this.seekableDecided) { this.decideSeekable(); }
+				this.lastSeekIssued = this.now() + this.POST_LOAD_SEEK_HOLD - this.MIN_SEEK_SPACING;
 				this.finish();
-				if (this.startPos > 0 && this.seekable) { this.pendingSeek = this.startPos; this.startPos = 0; this.pump(); }
+				// a seek the user requested during load/recovery outranks the resume position
+				if (this.pendingSeek === null && this.startPos > 0 && this.seekable) { this.pendingSeek = this.startPos; }
+				this.startPos = 0;
+				this.pump();
 			}
 			break;
 		case "playing":
 			this.phase = "playing";
 			this.atEnd = false;
-			this.lastTime = el.currentTime; this.lastWall = this.now();
+			if (this.lastWall === 0) { this.lastWall = this.now(); }   // start interpolating from the trusted time
+			this.setTime(el.currentTime, this.now());
 			this.markHealthySoon();
 			if (op && op.kind === "play") { this.finish(); } else { this.changed(); }
 			break;
@@ -403,23 +443,28 @@ VideoEngine.prototype = {
 				break;
 			}
 			if (this.phase !== "ended" && this.phase !== "seeking") { this.phase = "paused"; }
-			this.lastTime = el.currentTime; this.lastWall = 0;
+			this.setTime(el.currentTime, 0);
+			this.lastWall = 0;
 			if (op && op.kind === "pause") { this.finish(); } else { this.changed(); }
 			break;
 		case "seeked":
-			this.lastTime = el.currentTime; this.lastWall = 0;
 			if (op && op.kind === "seek") {
+				// trust the target, not the element (see acceptTime)
+				this.lastTime = op.target; this.lastWall = 0;
+				this.seekGuardTarget = op.target;
+				this.seekGuardUntil = this.now() + 3000;
 				this.phase = el.paused ? "paused" : "playing";
 				var resume = this.resumeAfterSeek && this.wantPlaying;
 				this.finish();
 				if (resume && this.pendingSeek === null) { this.enqueue("play"); }
 			} else {
+				this.setTime(el.currentTime, 0);
 				this.changed();
 			}
 			break;
 		case "timeupdate":
 			if (!el.paused && !el.seeking) {
-				this.lastTime = el.currentTime; this.lastWall = this.now();
+				this.setTime(el.currentTime, this.now());
 				if (this.phase !== "playing" && this.phase !== "ended" && this.phase !== "seeking" && op === null) { this.phase = "playing"; }
 			}
 			this.onTime(this.currentTime());
@@ -452,30 +497,41 @@ VideoEngine.prototype = {
 		}
 	},
 
+	describeSeekable: function () {
+		var el = this.el;
+		try {
+			var s = el.seekable, b = el.buffered, out = "seekable=";
+			out += (s && s.length) ? ("[" + s.start(0) + "-" + s.end(s.length - 1) + "]") : "empty";
+			out += " buffered=" + ((b && b.length) ? ("[" + b.start(0) + "-" + b.end(b.length - 1) + "]") : "empty");
+			return out + " rs=" + el.readyState + " ns=" + el.networkState;
+		} catch (e) { return "seekable=throws(" + e + ")"; }
+	},
+
 	// Rule 9.
 	decideSeekable: function () {
 		var el = this.el;
 		var d = el.duration;
 		var ok = isFinite(d) && d > 0;
-		var why = "duration=" + d;
-		if (ok) {
+		var why = "duration=" + d + " " + this.describeSeekable();
+		if (ok && this.unseekableUrl === this.url) { ok = false; why += " (failed a seek earlier)"; }
+		else if (ok) {
 			try {
 				var s = el.seekable;
 				if (s && s.length > 0) {
-					why += " seekable.end=" + s.end(s.length - 1);
 					ok = s.end(s.length - 1) > 0;
 				} else {
-					why += " seekable=empty";
 					// local files without a seekable range are still seekable in practice;
 					// HTTP ones are not (no Range support / chunked)
 					ok = !this.isHttp;
 				}
-			} catch (e) { why += " seekable=throws"; ok = !this.isHttp; }
+			} catch (e) { ok = !this.isHttp; }
 		}
 		this.seekableDecided = true;
+		// a decision made on a finite duration is final; one made on NaN/Infinity may upgrade
+		this.seekableFinal = (isFinite(d) && d > 0) || this.unseekableUrl === this.url;
 		this.seekable = ok;
-		this.duration = ok ? d : d;
-		this.log("seekable=" + ok + " (" + why + ")");
+		this.log("seekable=" + ok + (this.seekableFinal ? "" : " (provisional)") + " (" + why + ")");
+		this.changed();
 	},
 
 	// ---- recovery (rule 6) ------------------------------------------------
@@ -485,6 +541,11 @@ VideoEngine.prototype = {
 		var wasPlaying = this.wantPlaying;
 		var pos = this.currentTime();
 		if (!isFinite(pos) || pos < 0) { pos = 0; }
+		// an HTTP seek that fails outright, or a network error landing within a few
+		// seconds of a seek that "succeeded" (the no-Range host answers the seek and
+		// then feeds the decoder the wrong bytes), both mean: stop seeking this URL
+		if (this.isHttp && ((this.op && this.op.kind === "seek") ||
+			(this.stats.seeks > 0 && this.now() - this.lastSeekIssued < 10000))) { this.markUnseekable(why); }
 		this.op = null;
 		this.pendingSeek = null;
 		this.recoverCount++;
@@ -508,6 +569,7 @@ VideoEngine.prototype = {
 			if (!rebuild && self.el) {
 				try { self.el.removeAttribute("src"); self.el.load(); } catch (e) {}
 			}
+			self.phase = "empty";              // pump() refuses to run while recovering
 			self.queue.push({kind: "load"});
 			if (wasPlaying) { self.queue.push({kind: "play"}); }
 			self.pump();

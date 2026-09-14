@@ -171,6 +171,19 @@ recovery from further seeks or play. Same file on a Range-capable server
 (`rangeserver.py`, 206 + `Content-Range`): scrubbing works; the client issues
 one `Range: bytes=N-` request per seek and resets the previous connection.
 
+**The crash, caught in Phase 1 (2026-09-14 17:33:56, rdxd_log_2):**
+`media-pipeline.real` SIGSEGV in `libPmMediaGstVideoSinkLib.so`:
+`_vhm_rotate ← vhm_get_rgb ← rgb_capture ← palm_videosink_set_property`. The
+video sink's RGB frame capture (mediaserver's `videoFrameCapture` property —
+it snapshots a frame on seeks/pauses for the card image) ran on a pipeline that
+had no decoded frame yet: the app's seek to 83.5 s landed 70 ms after the
+pipeline's own seek-to-0 on a just-(re)loaded source. `readyState` was already
+4, so readiness cannot be read from the element — it is a timing rule
+(`POST_LOAD_SEEK_HOLD`). The pipeline process is per session, so `mediaserver`
+survives; the element gets an error / `x-palm-disconnect`, which the stock
+players turn into a black card or a modal, and which the engine's Rule 6
+recovered from. The saved report is `build/work/test-media/crashes/`.
+
 **Also found:** the mediaindexer never lands `.webm` in db8 (parsed by
 `fileparserd`, no `com.palm.media.video.file:1` row) — separate CE issue;
 Photos' launch params (`albumID`/`pictureID`) do not switch the current picture
