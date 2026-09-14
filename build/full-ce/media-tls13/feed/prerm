@@ -1,0 +1,23 @@
+#!/bin/sh
+# org.webosarchive.media-tls13 — put the stock souphttpsrc back.
+LOG=/var/log/org.webosarchive.media-tls13-install.log
+log() { echo "$(date 2>/dev/null) $*" >> $LOG 2>/dev/null; echo "media-tls13: $*"; }
+GD=/usr/lib/gstreamer-0.10
+NEW=$GD/libgstcurlhttpsrc.so
+STOCK=$GD/libgstsouphttpsrc.so
+
+L=/tmp/.ce-rootfs-rw.lock
+n=0; while ! mkdir $L 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n+1)); done
+if mount -o remount,rw / 2>/dev/null; then
+    [ -f "$STOCK.webosce-orig" ] && mv -f "$STOCK.webosce-orig" "$STOCK"
+    rm -f "$NEW"
+    log "stock souphttpsrc restored"
+    mount -o remount,ro / 2>/dev/null || true
+else
+    log "could not remount / rw; libcurl element left in place"
+fi
+rmdir $L 2>/dev/null || true
+for r in /var/home/*/.gstreamer-0.10/registry.*.bin /home/*/.gstreamer-0.10/registry.*.bin; do
+    [ -f "$r" ] && rm -f "$r"
+done
+exit 0

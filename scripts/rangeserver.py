@@ -51,5 +51,16 @@ class RangeHandler(SimpleHTTPRequestHandler):
             remaining -= len(chunk)
 
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
-    ThreadingHTTPServer(("0.0.0.0", port), RangeHandler).serve_forever()
+    # rangeserver.py [port] [--tls CERT KEY]  -- --tls serves TLS 1.3 ONLY, which
+    # the stock webOS media stack (GnuTLS 2.10) cannot negotiate
+    args = sys.argv[1:]
+    port = int(args[0]) if args and args[0].isdigit() else 8080
+    srv = ThreadingHTTPServer(("0.0.0.0", port), RangeHandler)
+    if "--tls" in args:
+        import ssl
+        i = args.index("--tls")
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.minimum_version = ssl.TLSVersion.TLSv1_3
+        ctx.load_cert_chain(args[i + 1], args[i + 2])
+        srv.socket = ctx.wrap_socket(srv.socket, server_side=True)
+    srv.serve_forever()

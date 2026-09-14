@@ -45,6 +45,38 @@ Things learned building it that the plan below did not predict:
   makes it active. Going through the Mojo shim instead left an extra Videos
   card behind the Browser; direct registration does not.
 
+### HTTPS: media-tls13 (option B, 2026-09-14)
+
+The stock media fetch is `souphttpsrc` → libsoup **2.4.1** → GnuTLS **2.10.4**:
+TLS 1.0-class, and libsoup 2.4.1 never calls `gnutls_server_name_set`, so
+there is no SNI — a drop-in GnuTLS would not have been enough. The CE TLS
+packages do not reach it (luna-tls13 even wraps `media-pipeline` to *scrub*
+the OpenSSL 1.1 preload out of it).
+
+`build/full-ce/media-tls13/curlhttpsrc/` is a GStreamer 0.10 source element
+on the CE libcurl 7.88.1 / OpenSSL 1.1 in `/usr/lib/ssl11` (RPATH, so the
+env scrub does not matter), cross-built with the Linaro 4.9 toolchain against
+the stock rootfs libraries (`make` checks nothing newer than the device's
+glibc 2.8 is needed). Packaged as `org.webosarchive.media-tls13`
+(`scripts/media-tls13.sh feed|deploy|undeploy|release`).
+
+- **media-pipeline creates `souphttpsrc` by name** (the literal is in the
+  binary), so ranking a new element higher does nothing. The element registers
+  *as* `souphttpsrc`, with souphttpsrc's properties, and the stock
+  `libgstsouphttpsrc.so` is moved aside (`.webosce-orig`). Every GStreamer
+  user on the device gets it.
+- **The registry cache must be dropped after the swap.** GLib 2.16 takes the
+  home directory from passwd, not `$HOME`, so the cache is always
+  `/var/home/root/.gstreamer-0.10/registry.arm.bin` (and `HOME=/tmp
+  gst-inspect` silently rewrites it). On rescan, `gst_element_register` found
+  the stale stock `souphttpsrc` feature, reused it, and the end-of-scan purge
+  of the removed stock plugin then deleted it — plugin present, 0 features.
+- Verified on hardware: TLS handshake to Google (answered 403 — the sample
+  bucket is closed), the archive.org `http://` → `https://` chain, and a
+  TLS-1.3-only test server (`scripts/rangeserver.py 8443 --tls CERT KEY`).
+- Test media must be faststart: the archive.org sample is 455 MB with `moov`
+  after `mdat`, which cannot start quickly on any source.
+
 This is a plan, not a change log. Stock sources are pulled to
 `build/work/stock-videoplayer/` (gitignored; re-pull with the command in §1.3).
 Server-side requirements for streaming hosts are a separate, self-contained

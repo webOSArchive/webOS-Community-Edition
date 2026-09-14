@@ -1,0 +1,8 @@
+Package: org.webosarchive.media-tls13
+Version: @VERSION@
+Depends:
+Section: System
+Architecture: armv7
+Maintainer: webOS Archive
+Description: Media TLS 1.3 (HTTPS streaming)
+Source: { "Type":"Application", "Feed":"WOSA Modernize", "Category":"Modernize", "LastUpdated":"@EPOCH@", "Title":"Media TLS 1.3 (HTTPS streaming)", "FullDescription":"Lets the TouchPad's audio and video players stream from modern HTTPS servers (TLS 1.2/1.3 with SNI) -- including http:// links that redirect to https://.<br><br>Replaces GStreamer's stock HTTP source (libsoup 2.4.1 + GnuTLS 2.10, which cannot talk to today's servers) with a libcurl-based element of the same name, using the OpenSSL 1.1 libcurl the webOS CE TLS updates install. Seeking over Range requests works as before. The stock plugin is kept and restored on removal.<br><br>Requires webOS CE 3.1.0 (or the browser-tls13 package).", "MinWebOSVersion":"3.0.0", "DeviceCompatibility":["TouchPad","Touchpad Go"], "Icon":"http://stacks.webosarchive.org/feeds/modernize/ipkgs/assets/icons/media-tls13.png" }

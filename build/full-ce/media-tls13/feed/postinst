@@ -1,0 +1,53 @@
+#!/bin/sh
+# org.webosarchive.media-tls13 — replace GStreamer's souphttpsrc (libsoup 2.4.1 +
+# GnuTLS 2.10: no TLS 1.2, no SNI) with a libcurl-based element of the SAME
+# name. media-pipeline creates "souphttpsrc" by name, so the stock plugin has to
+# leave the plugin directory; it is kept beside it as .webosce-orig.
+#
+# Needs the CE OpenSSL 1.1 libcurl in /usr/lib/ssl11 (browser-tls13 tier, baked
+# into CE 3.1.0). Every stage logs; the exit status is always 0.
+#
+# The GStreamer registry cache MUST be dropped after the swap: the rescan
+# otherwise finds the stale stock "souphttpsrc" feature still cached, reuses it
+# for the new plugin, then purges it with the removed stock plugin -- leaving
+# no souphttpsrc at all (seen on hardware 2026-09-14). GLib 2.16 takes the
+# cache location from the passwd home (/home/root -> /var/home/root), not $HOME.
+
+ROOT=${IPKG_OFFLINE_ROOT:-/media/cryptofs/apps}
+APP=$ROOT/usr/palm/applications/org.webosarchive.media-tls13
+LOG=/var/log/org.webosarchive.media-tls13-install.log
+log() { echo "$(date 2>/dev/null) $*" >> $LOG 2>/dev/null; echo "media-tls13: $*"; }
+GD=/usr/lib/gstreamer-0.10
+NEW=$GD/libgstcurlhttpsrc.so
+STOCK=$GD/libgstsouphttpsrc.so
+
+if [ ! -f /usr/lib/ssl11/libcurl.so.4 ]; then
+    log "no /usr/lib/ssl11/libcurl.so.4 (browser-tls13 not installed); nothing changed"
+    exit 0
+fi
+if [ ! -f "$APP/files/libgstcurlhttpsrc.so" ]; then
+    log "payload missing ($APP/files/libgstcurlhttpsrc.so); nothing changed"
+    exit 0
+fi
+
+if cmp -s "$APP/files/libgstcurlhttpsrc.so" "$NEW" && [ ! -f "$STOCK" ]; then
+    log "already installed"
+else
+    L=/tmp/.ce-rootfs-rw.lock
+    n=0; while ! mkdir $L 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n+1)); done
+    if mount -o remount,rw / 2>/dev/null; then
+        cp "$APP/files/libgstcurlhttpsrc.so" "$NEW.new" && chmod 644 "$NEW.new" && mv -f "$NEW.new" "$NEW" \
+            && { [ ! -f "$STOCK" ] || [ -f "$STOCK.webosce-orig" ] && rm -f "$STOCK" || mv -f "$STOCK" "$STOCK.webosce-orig"; } \
+            && log "souphttpsrc is now the libcurl element (stock plugin kept as $STOCK.webosce-orig)" \
+            || log "install failed"
+        mount -o remount,ro / 2>/dev/null || true
+    else
+        log "could not remount / rw; nothing changed"
+    fi
+    rmdir $L 2>/dev/null || true
+fi
+
+for r in /var/home/*/.gstreamer-0.10/registry.*.bin /home/*/.gstreamer-0.10/registry.*.bin; do
+    [ -f "$r" ] && rm -f "$r" && log "dropped registry cache $r"
+done
+exit 0
