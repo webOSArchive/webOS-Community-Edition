@@ -14,7 +14,10 @@ enyo.kind({
 	FLICK_BACK: 10,
 	components: [
 		{kind: "ApplicationEvents", onWindowDeactivated: "windowDeactivated", onWindowActivated: "windowActivated",
-			onUnload: "unload", onApplicationRelaunch: "relaunch"},
+			onUnload: "unload", onApplicationRelaunch: "relaunch", onOpenAppMenu: "openAppMenu"},
+		{name: "appMenu", kind: "AppMenu", components: [
+			{name: "pauseWhenCardedItem", kind: "MenuCheckItem", caption: "Pause when minimized", onclick: "togglePauseWhenCarded"}
+		]},
 		{name: "stage", className: "stage", onclick: "stageClick", onflick: "stageFlick"},
 		{name: "notice", className: "notice hidden"},
 		{name: "header", className: "bar header", components: [
@@ -23,15 +26,20 @@ enyo.kind({
 		]},
 		{name: "controls", className: "bar controls", onclick: "controlsClick", components: [
 			{className: "row", components: [
-				{name: "playBtn", kind: "CustomButton", className: "btn", caption: "▶", onclick: "playClick"},
-				{name: "elapsed", tag: "span", className: "time", content: "0:00"},
-				{name: "scrub", kind: "ProgressSlider", className: "scrub", minimum: 0, maximum: 1000,
+				{name: "playBtn", className: "mbtn left", onclick: "playClick", onmousedown: "btnDown", onmouseup: "btnUp", onmouseout: "btnUp",
+					components: [{name: "playIcon", className: "micon play"}]},
+				{name: "elapsed", className: "time elapsed", content: "0:00"},
+				{name: "scrub", kind: "ProgressSlider", className: "scrub", minimum: 0, maximum: 1000, lockBar: true,
 					animatePosition: false, onChanging: "scrubChanging", onChange: "scrubChange"},
-				{name: "remaining", tag: "span", className: "time", content: "-0:00"},
-				{name: "fitBtn", kind: "CustomButton", className: "btn small", caption: "fit", onclick: "fitClick"}
+				{name: "remaining", className: "time remaining", content: "-0:00"},
+				{name: "fitBtn", className: "mbtn right", onclick: "fitClick", onmousedown: "btnDown", onmouseup: "btnUp", onmouseout: "btnUp",
+					components: [{name: "fitIcon", className: "micon fill"}]}
 			]}
 		]}
 	],
+
+	btnDown: function (inSender) { inSender.addClass("down"); },
+	btnUp: function (inSender) { inSender.removeClass("down"); },
 
 	create: function () {
 		this.inherited(arguments);
@@ -42,6 +50,33 @@ enyo.kind({
 		this.fill = false;
 		this.blockingTimeout = false;
 		this.tick = enyo.bind(this, this.refresh);
+		this.prefs = this.loadPrefs();
+		this.$.pauseWhenCardedItem.setChecked(!!this.prefs.pauseWhenCarded);
+	},
+
+	// ---- prefs (per-device, localStorage) --------------------------------------
+
+	PREFS_KEY: "org.webosarchive.videos.prefs",
+	loadPrefs: function () {
+		var p = {pauseWhenCarded: false};
+		try {
+			var raw = window.localStorage.getItem(this.PREFS_KEY);
+			if (raw) { var o = enyo.json.parse(raw); for (var k in o) { if (o.hasOwnProperty(k)) { p[k] = o[k]; } } }
+		} catch (e) {}
+		return p;
+	},
+	savePrefs: function () {
+		try { window.localStorage.setItem(this.PREFS_KEY, enyo.json.stringify(this.prefs)); } catch (e) {}
+	},
+
+	openAppMenu: function () {
+		this.$.appMenu.open();
+	},
+
+	togglePauseWhenCarded: function () {
+		this.prefs.pauseWhenCarded = !this.prefs.pauseWhenCarded;
+		this.$.pauseWhenCardedItem.setChecked(this.prefs.pauseWhenCarded);
+		this.savePrefs();
 	},
 
 	rendered: function () {
@@ -59,14 +94,12 @@ enyo.kind({
 	},
 
 	layoutScrub: function () {
-		var w = window.innerWidth - (72 + 72 + 72 + 56 + 12 * 2 + 6 * 8 + 24);
-		if (w < 120) { w = 120; }
-		this.$.scrub.applyStyle("width", w + "px");
+		// CSS positions the scrubber with left/right; nothing to compute
 	},
 
 	resizeHandler: function () {
 		this.inherited(arguments);
-		this.layoutScrub();
+		this.$.scrub.resize && this.$.scrub.resize();
 	},
 
 	// ---- launch ----------------------------------------------------------
@@ -122,7 +155,8 @@ enyo.kind({
 
 	engineChanged: function (s) {
 		var playing = s.wantPlaying && s.phase !== "ended" && s.phase !== "error";
-		this.$.playBtn.setCaption(playing ? "‖" : "▶");
+		this.$.playIcon.addRemoveClass("pause", playing);
+		this.$.playIcon.addRemoveClass("play", !playing);
 		var st = "";
 		if (s.phase === "loading") { st = "loading"; }
 		else if (s.phase === "seeking") { st = "seeking"; }
@@ -151,11 +185,13 @@ enyo.kind({
 			if (isFinite(d) && d > 0) {
 				this.$.remaining.setContent("-" + this.fmt(Math.max(0, d - t)));
 				this.$.scrub.setPositionImmediate(Math.min(1000, t / d * 1000));
-				this.$.scrub.setBarPosition(Math.min(1000, s.buffered / d * 1000));
+				// a local file is "buffered" end to end as far as the element knows —
+				// showing that would promise instant seeks, so only HTTP gets the alt bar
+				this.$.scrub.setAltBarPosition(s.isHttp ? Math.min(1000, s.buffered / d * 1000) : 0);
 			} else {
 				this.$.remaining.setContent("--:--");
 				this.$.scrub.setPositionImmediate(0);
-				this.$.scrub.setBarPosition(0);
+				this.$.scrub.setAltBarPosition(0);
 			}
 		}
 	},
@@ -180,9 +216,11 @@ enyo.kind({
 		this.showControls();
 	},
 
+	// the button shows the mode you would switch TO (Mojo convention: getFitFillMenuItem)
 	fitClick: function () {
 		this.fill = !this.fill;
-		this.$.fitBtn.setCaption(this.fill ? "fill" : "fit");
+		this.$.fitIcon.addRemoveClass("fit", this.fill);
+		this.$.fitIcon.addRemoveClass("fill", !this.fill);
 		this.engine.setFitMode(this.fill);
 		this.showControls();
 	},
@@ -258,9 +296,11 @@ enyo.kind({
 		if (window.PalmSystem) { window.PalmSystem.setWindowProperties({blockScreenTimeout: block}); }
 	},
 
+	// Default: keep playing when carded (the user's call — the pause + overlay flash
+	// on return is worse than a video playing small in card view). App menu toggle.
 	windowDeactivated: function () {
-		this.log("window deactivated");
-		if (this.engine && !this.selfTest) { this.engine.pause(); }
+		this.log("window deactivated, pauseWhenCarded=" + this.prefs.pauseWhenCarded);
+		if (this.engine && !this.selfTest && this.prefs.pauseWhenCarded) { this.engine.pause(); }
 	},
 
 	windowActivated: function () {

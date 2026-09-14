@@ -159,7 +159,10 @@ VideoEngine.prototype = {
 		this.teardownElement();
 		var el = document.createElement("video");
 		el.setAttribute("x-palm-media-audio-class", "media");
-		el.setAttribute("x-palm-media-extended-overlay-playback", "true");
+		// Photos sets x-palm-media-extended-overlay-playback=true; the Mojo handler
+		// does not. Suspected cause of the black flash on every play/pause — off for
+		// now, opt back in with {overlay:true}.
+		if (this.opts.overlay) { el.setAttribute("x-palm-media-extended-overlay-playback", "true"); }
 		el.setAttribute("x-palm-media-extended-fitmode", this.opts.fill ? "VIDEO_FILL" : "VIDEO_FIT");
 		el.autoplay = false;
 		el.className = "ve-video";

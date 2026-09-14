@@ -4,25 +4,51 @@ html, body { background: #000; margin: 0; padding: 0; overflow: hidden; }
 .stage { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: #000; }
 .ve-video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 
-/* bars are overlays; hidden state slides them off */
-.bar { position: absolute; left: 0; right: 0; background: rgba(0,0,0,0.72); color: #fff;
+/* bars are overlays; hidden state fades them */
+.bar { position: absolute; left: 0; right: 0; color: #fff;
        -webkit-transition: opacity 0.25s ease-out; opacity: 1; }
 .bar.hidden { opacity: 0; pointer-events: none; }
-.header { top: 0; height: 52px; line-height: 52px; padding: 0 16px; font-size: 20px;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.header .status { float: right; font-size: 14px; color: #9cf; }
-.controls { bottom: 0; height: 96px; }
 
-.controls .row { position: absolute; left: 12px; right: 12px; top: 10px; height: 76px; }
-.btn { display: inline-block; width: 72px; height: 72px; line-height: 72px; text-align: center;
-       font-size: 30px; color: #fff; background: rgba(255,255,255,0.10); border-radius: 36px;
-       margin: 2px 6px; vertical-align: middle; }
-.btn.small { width: 56px; height: 56px; line-height: 56px; font-size: 18px; border-radius: 28px; margin-top: 10px; }
-.btn.down { background: rgba(255,255,255,0.35); }
-.time { display: inline-block; width: 72px; text-align: center; font-size: 17px; color: #ddd; vertical-align: middle; }
-.scrub { display: inline-block; vertical-align: middle; }
-.scrub .enyo-slider-button { width: 40px; height: 40px; margin-left: -20px; top: -14px; }
+/* header: Mojo command-menu gradient, stretched to tablet height */
+.header { top: 0; height: 56px; line-height: 56px; padding: 0 18px; font-size: 22px; font-weight: bold;
+          background: #000 url(../images/command-menu-gradient-top.png) repeat-x; background-size: 320px 56px;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.header .status { float: right; font-size: 14px; font-weight: normal; color: #9cf; }
+
+/* control bar: same gradient, flipped to sit on the bottom edge */
+.controls { bottom: 0; height: 64px;
+            background: #000 url(../images/command-menu-gradient.png) repeat-x; background-size: 320px 64px; }
+.controls .row { position: absolute; left: 14px; right: 14px; top: 7px; height: 50px; }
+
+/* round Mojo menu button (palm-menu-button.png is 5 states of 50px: normal, pressed, ...) */
+.mbtn { position: absolute; top: 0; width: 51px; height: 50px;
+        background: url(../images/palm-menu-button.png) 0 0 no-repeat; }
+.mbtn.down { background-position: 0 -50px; }
+.mbtn.disabled { opacity: 0.4; }
+.mbtn .micon { position: absolute; left: 9px; top: 9px; width: 32px; height: 32px;
+               background: url(../images/menu-icons.png) 0 0 no-repeat; }
+/* sprite: 32px cells — row 0 fit/fill/pause/edit, row 1 their pressed states, row 2 play/stop/trim/share, row 3 pressed */
+.micon.play  { background-position: 0 -64px; }   .down .micon.play  { background-position: 0 -96px; }
+.micon.pause { background-position: -64px 0; }   .down .micon.pause { background-position: -64px -32px; }
+.micon.fit   { background-position: 0 0; }       .down .micon.fit   { background-position: 0 -32px; }
+.micon.fill  { background-position: -32px 0; }   .down .micon.fill  { background-position: -32px -32px; }
+.mbtn.left  { left: 0; }
+.mbtn.right { right: 0; }
+
+.time { position: absolute; top: 0; width: 64px; line-height: 50px; text-align: center; font-size: 15px; color: #ccc; }
+.time.elapsed { left: 58px; }
+.time.remaining { right: 58px; }
+
+/* scrubber: the stock Enyo ProgressSlider, untouched — its 40px bubble already
+   centres on the 10px track via margin -14px -20px (earlier "floating" was an
+   extra top offset on top of that). Only the geometry of the row is ours. */
+.scrub { position: absolute; top: 0; left: 126px; right: 126px; height: 50px; padding: 0; }
+.scrub .enyo-progressslider-progress { margin: 20px 0; }
+/* lockBar: the blue fill is the PLAYED part (follows the bubble); the secondary
+   alt bar is the buffered range, only meaningful for HTTP sources */
+.scrub .enyo-progress-slider-alt-bar { opacity: 0.45; }
 .scrub.disabled .enyo-slider-button { visibility: hidden; }
+.scrub.disabled { opacity: 0.6; }
 
 .notice { position: absolute; left: 0; right: 0; top: 45%; text-align: center; color: #ccc; font-size: 22px; }
 .notice.hidden { display: none; }
