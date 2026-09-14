@@ -1,0 +1,17 @@
+[
+  {
+    "category": "system",
+    "owner": "org.webosarchive.videos",
+    "prefs": [
+      {
+        "group": "Videos",
+        "restart": "none",
+        "label": "Pause video when minimized",
+        "help": "Pause playback when the Videos card leaves the foreground. Off (the default) keeps the video playing in card view; the platform pauses it and Videos resumes it right away.",
+        "key": "pauseWhenCarded",
+        "type": "ToggleButton",
+        "value": false
+      }
+    ]
+  }
+]

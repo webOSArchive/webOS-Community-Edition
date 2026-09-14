@@ -14,10 +14,11 @@ enyo.kind({
 	FLICK_BACK: 10,
 	components: [
 		{kind: "ApplicationEvents", onWindowDeactivated: "windowDeactivated", onWindowActivated: "windowActivated",
-			onUnload: "unload", onApplicationRelaunch: "relaunch", onOpenAppMenu: "openAppMenu"},
-		{name: "appMenu", kind: "AppMenu", components: [
-			{name: "pauseWhenCardedItem", kind: "MenuCheckItem", caption: "Pause when minimized", onclick: "togglePauseWhenCarded"}
-		]},
+			onUnload: "unload", onApplicationRelaunch: "relaunch"},
+		// preferences live in the Tweaks framework (tweaks/org.webosarchive.videos.json);
+		// absent Tweaks the defaults below apply
+		{name: "tweaks", kind: "PalmService", service: "palm://org.webosinternals.tweaks.prefs/", method: "get",
+			onSuccess: "tweaksLoaded", onFailure: "tweaksUnavailable"},
 		{name: "stage", className: "stage", onclick: "stageClick", onflick: "stageFlick"},
 		{name: "notice", className: "notice hidden"},
 		{name: "header", className: "bar header", components: [
@@ -50,39 +51,27 @@ enyo.kind({
 		this.fill = false;
 		this.blockingTimeout = false;
 		this.tick = enyo.bind(this, this.refresh);
-		this.prefs = this.loadPrefs();
-		this.$.pauseWhenCardedItem.setChecked(!!this.prefs.pauseWhenCarded);
+		this.prefs = {pauseWhenCarded: false};
+		this.$.tweaks.call({owner: "org.webosarchive.videos", keys: ["pauseWhenCarded"]});
 	},
 
-	// ---- prefs (per-device, localStorage) --------------------------------------
+	// ---- prefs (Tweaks framework) ----------------------------------------------
 
-	PREFS_KEY: "org.webosarchive.videos.prefs",
-	loadPrefs: function () {
-		var p = {pauseWhenCarded: false};
-		try {
-			var raw = window.localStorage.getItem(this.PREFS_KEY);
-			if (raw) { var o = enyo.json.parse(raw); for (var k in o) { if (o.hasOwnProperty(k)) { p[k] = o[k]; } } }
-		} catch (e) {}
-		return p;
-	},
-	savePrefs: function () {
-		try { window.localStorage.setItem(this.PREFS_KEY, enyo.json.stringify(this.prefs)); } catch (e) {}
+	tweaksLoaded: function (inSender, r) {
+		if (r && r.returnValue && r.pauseWhenCarded !== undefined) { this.prefs.pauseWhenCarded = !!r.pauseWhenCarded; }
+		this.log("tweaks: pauseWhenCarded=" + this.prefs.pauseWhenCarded);
+		if (this.engine) { this.engine.opts.resumeExternalPause = !this.prefs.pauseWhenCarded; }
 	},
 
-	openAppMenu: function () {
-		this.$.appMenu.open();
-	},
-
-	togglePauseWhenCarded: function () {
-		this.prefs.pauseWhenCarded = !this.prefs.pauseWhenCarded;
-		this.$.pauseWhenCardedItem.setChecked(this.prefs.pauseWhenCarded);
-		this.savePrefs();
+	tweaksUnavailable: function (inSender, r) {
+		this.log("tweaks service unavailable, using defaults");
 	},
 
 	rendered: function () {
 		this.inherited(arguments);
 		this.engine = new VideoEngine(this.$.stage.hasNode(), {
 			log: this.log,
+			resumeExternalPause: !this.prefs.pauseWhenCarded,
 			onChange: enyo.bind(this, this.engineChanged),
 			onTime: enyo.bind(this, this.refresh)
 		});

@@ -448,7 +448,22 @@ VideoEngine.prototype = {
 			if (this.phase !== "ended" && this.phase !== "seeking") { this.phase = "paused"; }
 			this.setTime(el.currentTime, 0);
 			this.lastWall = 0;
-			if (op && op.kind === "pause") { this.finish(); } else { this.changed(); }
+			if (op && op.kind === "pause") { this.finish(); break; }
+			// an external pause (the platform pauses video when the card leaves the
+			// foreground) while the user still wants playback: resume once, unless it
+			// was just paused again — then the platform means it.
+			if (!op && this.wantPlaying && this.opts.resumeExternalPause) {
+				var now = this.now();
+				if (!this.lastExternalPause || now - this.lastExternalPause > 3000) {
+					this.lastExternalPause = now;
+					this.log("external pause; resuming");
+					this.enqueue("play");
+				} else {
+					this.log("external pause twice in 3 s; staying paused");
+					this.wantPlaying = false;
+				}
+			}
+			this.changed();
 			break;
 		case "seeked":
 			if (op && op.kind === "seek") {
