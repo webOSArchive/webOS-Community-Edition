@@ -133,6 +133,11 @@ enyo.kind({
 		this.url = url;
 		var name = title;
 		if (!name) { name = url.replace(/[?#].*$/, ""); name = name.substring(name.lastIndexOf("/") + 1); }
+		// URLs (and titles some apps derive from them) arrive percent-encoded:
+		// "My%20Video.mp4". Decode for display only; a malformed sequence keeps the raw text.
+		if (/%[0-9A-Fa-f]{2}/.test(name)) {
+			try { name = decodeURIComponent(name); } catch (e) {}
+		}
 		this.$.title.setContent(enyo.string.escapeHtml(name));
 		this.showNotice(null);
 		if (!(pos > 0)) { pos = this.loadPosition(url); }
