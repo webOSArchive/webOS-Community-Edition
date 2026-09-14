@@ -5,8 +5,13 @@ lives in `apps/org.webosarchive.videos/` (dev loop: `scripts/videos-app.sh`),
 passes every Phase 0 recipe by self-test, and is wired into `bake.py` (Videos
 tier, Photos handoff patch, `com.palm.app.videoplayer` shim, Tweaks toggle).
 Browser hand-off verified end to end (one card) via the runtime
-`ce-register-video-handler` job. Not yet: a baked flash, `ce-test-full.sh`
-section, the soak (Phase 3).**
+`ce-register-video-handler` job. Delivery is a **Preware feed ipk**
+(`scripts/videos-app.sh feed` / `deploy` / `undeploy`;
+`build/full-ce/videos-app/feed/`), since 3.1.0 is released — the bake
+wiring stays for a future 3.2.0. The stock id `com.palm.app.videoplayer`
+hosts the player itself (a forwarding shim left a blank pre-created card
+behind whenever a card app launched it by id). Not yet: a baked flash,
+`ce-test-full.sh` section, the soak (Phase 3).**
 
 Things learned building it that the plan below did not predict:
 - WebKit reports `seekable=[0-duration]` even for HTTP hosts that ignore
