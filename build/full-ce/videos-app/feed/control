@@ -1,4 +1,4 @@
-Package: org.webosarchive.videos
+Package: com.palm.app.videos
 Version: @VERSION@
 Depends:
 Section: Multimedia

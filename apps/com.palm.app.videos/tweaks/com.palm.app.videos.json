@@ -1,7 +1,7 @@
 [
   {
     "category": "system",
-    "owner": "org.webosarchive.videos",
+    "owner": "com.palm.app.videos",
     "prefs": [
       {
         "group": "Videos",

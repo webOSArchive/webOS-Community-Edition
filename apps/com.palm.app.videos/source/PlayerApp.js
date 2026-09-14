@@ -15,7 +15,7 @@ enyo.kind({
 	components: [
 		{kind: "ApplicationEvents", onWindowDeactivated: "windowDeactivated", onWindowActivated: "windowActivated",
 			onUnload: "unload", onApplicationRelaunch: "relaunch"},
-		// preferences live in the Tweaks framework (tweaks/org.webosarchive.videos.json);
+		// preferences live in the Tweaks framework (tweaks/com.palm.app.videos.json);
 		// absent Tweaks the defaults below apply
 		{name: "tweaks", kind: "PalmService", service: "palm://org.webosinternals.tweaks.prefs/", method: "get",
 			onSuccess: "tweaksLoaded", onFailure: "tweaksUnavailable"},
@@ -52,7 +52,7 @@ enyo.kind({
 		this.blockingTimeout = false;
 		this.tick = enyo.bind(this, this.refresh);
 		this.prefs = {pauseWhenCarded: false};
-		this.$.tweaks.call({owner: "org.webosarchive.videos", keys: ["pauseWhenCarded"]});
+		this.$.tweaks.call({owner: "com.palm.app.videos", keys: ["pauseWhenCarded"]});
 	},
 
 	// ---- prefs (Tweaks framework) ----------------------------------------------
@@ -146,7 +146,7 @@ enyo.kind({
 	// apps that kind (verified: "db: permission denied" for both get and merge), so
 	// the player remembers positions itself, per device, keyed by path/URL.
 
-	POS_KEY: "org.webosarchive.videos.positions",
+	POS_KEY: "com.palm.app.videos.positions",
 	MIN_RESUME_SECS: 10,        // same thresholds as the stock Mojo player
 	END_MARGIN_SECS: 10,
 

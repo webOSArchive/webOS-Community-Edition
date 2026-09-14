@@ -215,10 +215,10 @@ IPK = {
     "govnah":      ati_ipk(NEWAPPS, "org.webosinternals.govnah"),
     "usb":         ati_ipk(NEWAPPS, "com.webosarchive.usbsettings"),
     "bt":          ati_ipk(NEWAPPS, "org.webosarchive.btgamepad"),
-    # the CE video player (apps/org.webosarchive.videos, packaged by
+    # the CE video player (apps/com.palm.app.videos, packaged by
     # scripts/videos-app.sh release); Photos and the stock mimetype handler
     # hand off to it -- see Docs/VIDEO-PLAYER-REWRITE.md
-    "videos":      ati_ipk(NEWAPPS, "org.webosarchive.videos"),
+    "videos":      ati_ipk(NEWAPPS, "com.palm.app.videos"),
     # woce-backup: a working Backup/Restore that stores on the device.
     # PatchOrReplace, not NewApps -- it takes over the stock
     # com.palm.app.backup id (the stock app is a dead UI over Palm's
@@ -1978,7 +1978,7 @@ def main():
         run_patch(approot, os.path.join(PEX, "patches/PictureMode-filename.js.patch"))
         run_patch(approot, os.path.join(PEX, "patches/PictureMode-filename.css.patch"))
         # Tapping a video in the album grid launches the CE Videos app
-        # (org.webosarchive.videos) instead of the carousel's DbViewVideo. The
+        # (com.palm.app.videos) instead of the carousel's DbViewVideo. The
         # launch params carry path/title/lastPlayTime because db8 denies other
         # apps the media kinds. Generated against stock AlbumGridView.js, which
         # no other patch touches.
@@ -2964,14 +2964,14 @@ def main():
     d = ipk_extract_data(IPK["videos"], os.path.join(tmp, "videos"))
     # the ipk is the Preware feed package: its ce-install/ payload + postinst
     # replay this tier on a running device; the image does it here instead
-    shutil.rmtree(os.path.join(d, "usr/palm/applications/org.webosarchive.videos/ce-install"),
+    shutil.rmtree(os.path.join(d, "usr/palm/applications/com.palm.app.videos/ce-install"),
                   ignore_errors=True)
     bake_tree(d)
     VID = os.path.join(HERE, "videos-app")
     # the stock id hosts the same player: apps that launch com.palm.app.videoplayer
     # by id (MeTube, Messaging) make LunaSysMgr pre-create its card, so the card
     # must be the player, not a shim. Same file set the feed postinst installs.
-    vapp = os.path.join(d, "usr/palm/applications/org.webosarchive.videos")
+    vapp = os.path.join(d, "usr/palm/applications/com.palm.app.videos")
     VPD = "usr/palm/applications/com.palm.app.videoplayer"
     for sub in ("source", "css"):
         for fn in sorted(os.listdir(os.path.join(vapp, sub))):
@@ -2983,9 +2983,9 @@ def main():
         wcopy(f"{VPD}/images/{fn}", os.path.join(vapp, "images", fn), 0o644)
     wcopy(f"{VPD}/appinfo.json", os.path.join(VID, "videoplayer-app/appinfo.json"), 0o644)
     wcopy(f"{SEED}/apps/usr/palm/services/org.webosinternals.tweaks.prefs/"
-          "preferences/org.webosarchive.videos.json",
-          os.path.join(d, "usr/palm/applications/org.webosarchive.videos/tweaks/"
-                          "org.webosarchive.videos.json"), 0o644)
+          "preferences/com.palm.app.videos.json",
+          os.path.join(d, "usr/palm/applications/com.palm.app.videos/tweaks/"
+                          "com.palm.app.videos.json"), 0o644)
     log("  player under com.palm.app.videoplayer + Tweaks definition staged")
 
     log(f"tier: BT gamepad BAKED ({os.path.basename(IPK['bt'])})")
@@ -3877,7 +3877,7 @@ def main():
         f"    register {ext} \"$(mime_for_ext {ext})\"\n" for ext, mime in VIDEO_TYPES)
     w("etc/event.d/ce-register-video-handler",
       "# ce-register-video-handler — webOS CE: make the Videos app\n"
-      "# (org.webosarchive.videos) the active, streamable handler for video\n"
+      "# (com.palm.app.videos) the active, streamable handler for video\n"
       "# files and URLs, at RUNTIME (see ce-register-ipk-handler for why not a\n"
       "# static command-resource-handlers.json entry). The stock system-default\n"
       "# entries stay as alternates; com.palm.app.videoplayer itself is a shim.\n"
@@ -3891,7 +3891,7 @@ def main():
       "    LOG=/var/log/ce-register-video-handler.log\n"
       "    [ -f $FLAG ] && exit 0\n"
       "    AM=palm://com.palm.applicationManager\n"
-      "    APP=org.webosarchive.videos\n"
+      "    APP=com.palm.app.videos\n"
       "    n=0\n"
       "    while [ $n -lt 60 ]; do\n"
       "        pidof LunaSysMgr >/dev/null 2>&1 && break\n"

@@ -1,7 +1,7 @@
 #!/bin/sh
-# Dev loop for apps/org.webosarchive.videos (the CE video player rewrite).
+# Dev loop for apps/com.palm.app.videos (the CE video player rewrite).
 #
-#   scripts/videos-app.sh package            -> build/work/ipk/org.webosarchive.videos_<ver>_all.ipk
+#   scripts/videos-app.sh package            -> build/work/ipk/com.palm.app.videos_<ver>_all.ipk
 #   scripts/videos-app.sh install            -> package + palm-install on the connected device
 #   scripts/videos-app.sh launch <target> [extra-json]
 #                                            -> palm-launch with {"target":...} (+ merged extra params)
@@ -20,7 +20,7 @@
 # Pushed Enyo edits are cached by WebAppMgr: 'install' closes the app first, and if
 # a change still does not show up, restart Luna (see memory: enyo-app-cache-luna-restart).
 set -e
-APP=org.webosarchive.videos
+APP=com.palm.app.videos
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SRC="$ROOT/apps/$APP"
 OUT="$ROOT/build/work/ipk"
@@ -95,7 +95,7 @@ feed)
     W="$ROOT/build/work/feed"; rm -rf "$W"; mkdir -p "$W/app" "$W/ipk"
     cp -r "$SRC"/. "$W/app/"
     mkdir -p "$W/app/ce-install"
-    cp "$VA/patches/AlbumGridView-videos-handoff.js.patch" "$SRC/tweaks/org.webosarchive.videos.json" "$W/app/ce-install/"
+    cp "$VA/patches/AlbumGridView-videos-handoff.js.patch" "$SRC/tweaks/com.palm.app.videos.json" "$W/app/ce-install/"
     cp "$VA/videoplayer-app/appinfo.json" "$W/app/ce-install/videoplayer-appinfo.json"
     # md5 constants for the postinst guards. The stock Photos file and stock
     # app-assistant.js come from the device pull (build/work/stock-videoplayer);

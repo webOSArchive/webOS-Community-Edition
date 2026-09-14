@@ -1,5 +1,5 @@
 #!/bin/sh
-# org.webosarchive.videos — post-flash install of the CE video player on a
+# com.palm.app.videos — post-flash install of the CE video player on a
 # running device (3.0.5 or CE 3.1.0). Everything a baked image does for it
 # (bake.py "Videos" tier) is replayed here, in a form that can be undone:
 #   1. Photos album grid -> Videos app (patch on cryptofs, stock backed up)
@@ -12,16 +12,16 @@
 # that Photos needs to pick up the patched source.
 
 ROOT=${IPKG_OFFLINE_ROOT:-/media/cryptofs/apps}
-APP=$ROOT/usr/palm/applications/org.webosarchive.videos
+APP=$ROOT/usr/palm/applications/com.palm.app.videos
 PAY=$APP/ce-install
-LOG=/var/log/org.webosarchive.videos-install.log
+LOG=/var/log/com.palm.app.videos-install.log
 log() { echo "$(date 2>/dev/null) $*" >> $LOG 2>/dev/null; echo "videos: $*"; }
 md5() { md5sum < "$1" 2>/dev/null | cut -c1-32; }
 
 # ---- 1. Photos (cryptofs, writable) -----------------------------------------
 PH=/media/cryptofs/apps/usr/palm/applications/com.palm.app.photos/source/AlbumGridView.js
 if [ -f "$PH" ]; then
-    if grep -q 'org.webosarchive.videos' "$PH"; then
+    if grep -q 'com.palm.app.videos' "$PH"; then
         log "Photos: already patched"
     elif [ "$(md5 "$PH")" != "@PHOTOS_STOCK_MD5@" ]; then
         log "Photos: AlbumGridView.js is not the stock file ($(md5 "$PH")); left alone -- Photos keeps its own player"
@@ -87,7 +87,7 @@ fi
 # ---- 3. Tweaks definition -------------------------------------------------------
 TW=/media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/preferences
 mkdir -p "$TW" 2>/dev/null
-if cp "$PAY/org.webosarchive.videos.json" "$TW/org.webosarchive.videos.json" 2>/dev/null; then
+if cp "$PAY/com.palm.app.videos.json" "$TW/com.palm.app.videos.json" 2>/dev/null; then
     log "tweaks: definition installed"
     [ -d /media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/assistants ] \
         && luna-send -n 1 palm://org.webosinternals.tweaks.prefs/scan '{}' </dev/null >/dev/null 2>&1
@@ -95,7 +95,7 @@ fi
 
 # ---- 4. resource handlers (persist in /var/usr/palm/command-resource-handlers-active.json)
 AM=palm://com.palm.applicationManager
-VAPP=org.webosarchive.videos
+VAPP=com.palm.app.videos
 mime_for_ext() {
     luna-send -n 1 $AM/mimeTypeForExtension "{\"extension\":\"$1\"}" </dev/null 2>/dev/null \
         | sed -n 's/.*"mimeType": *"\([^"]*\)".*/\1/p' | sed 's#\\/#/#g'

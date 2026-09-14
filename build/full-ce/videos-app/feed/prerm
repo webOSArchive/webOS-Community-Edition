@@ -1,7 +1,7 @@
 #!/bin/sh
-# org.webosarchive.videos — undo everything postinst did; the stock player
+# com.palm.app.videos — undo everything postinst did; the stock player
 # comes back after the Luna restart Preware offers (PreRemove flag).
-LOG=/var/log/org.webosarchive.videos-install.log
+LOG=/var/log/com.palm.app.videos-install.log
 log() { echo "$(date 2>/dev/null) $*" >> $LOG 2>/dev/null; echo "videos: $*"; }
 
 PH=/media/cryptofs/apps/usr/palm/applications/com.palm.app.photos/source/AlbumGridView.js
@@ -30,7 +30,7 @@ if [ -f "$VPD/index.html.webosce-orig" ] || [ -f "$VPD/appinfo.json.webosce-orig
     rmdir $L 2>/dev/null || true
 fi
 
-TW=/media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/preferences/org.webosarchive.videos.json
+TW=/media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/preferences/com.palm.app.videos.json
 if [ -f "$TW" ]; then
     rm -f "$TW"
     [ -d /media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/assistants ] \
@@ -44,7 +44,7 @@ restore() {
     R=$(luna-send -n 1 $AM/listAllHandlersForMime "{\"mime\":\"$1\"}" </dev/null 2>&1)
     case "$R" in *activeHandler*) ;; *) return 0 ;; esac
     A=$(echo "$R" | sed -n 's/.*"activeHandler": *{\([^}]*\)}.*/\1/p')
-    case "$A" in *org.webosarchive.videos*) ;; *) return 0 ;; esac
+    case "$A" in *com.palm.app.videos*) ;; *) return 0 ;; esac
     IDX=$(echo "$R" | tr '}' '\n' | grep 'system-default' | grep -o '"index": *[0-9]*' | grep -o '[0-9]*' | head -1)
     [ -n "$IDX" ] && luna-send -n 1 $AM/swapResourceHandler "{\"mimeType\":\"$1\",\"index\":$IDX}" </dev/null >/dev/null 2>&1
 }

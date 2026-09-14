@@ -1,7 +1,7 @@
 # Video player rewrite — plan
 
 **Status (2026-09-14): Phases 0–2 done on the `video-player` branch. The app
-lives in `apps/org.webosarchive.videos/` (dev loop: `scripts/videos-app.sh`),
+lives in `apps/com.palm.app.videos/` (dev loop: `scripts/videos-app.sh`),
 passes every Phase 0 recipe by self-test, and is wired into `bake.py` (Videos
 tier, Photos handoff patch, `com.palm.app.videoplayer` shim, Tweaks toggle).
 Browser hand-off verified end to end (one card) via the runtime
@@ -249,7 +249,7 @@ if the card is already open — close and relaunch for tests.
 
 ### 3.1 Shape
 
-One new Enyo 1.0 app, **`org.webosarchive.videos`** (title "Videos"), that owns
+One new Enyo 1.0 app, **`com.palm.app.videos`** (title "Videos"), that owns
 video playback everywhere:
 
 - Launched by Photos & Videos for `mediaType === "video"` (small patch in
@@ -368,7 +368,7 @@ position on deactivate).
 
 ### 3.4 Packaging
 
-- `AddToImage/NewApps/org.webosarchive.videos_<ver>_all.ipk` — baked like
+- `AddToImage/NewApps/com.palm.app.videos_<ver>_all.ipk` — baked like
   usbsettings/btgamepad (`addtoimage-convention`). Enyo 1.0 from
   `/usr/palm/frameworks/enyo/1.0` (same as Photos; nothing new on the rootfs).
 - Photos handoff: `build/full-ce/photos-exhibition/patches/DbImageView-video-handoff.patch`,
