@@ -1,0 +1,278 @@
+/*
+ * PlayerApp — the card. Everything that touches <video> goes through VideoEngine.
+ *
+ * Launch params (superset of what Photos and the stock Mojo handler already send):
+ *   { target: "/path/or/http-url" | video: {path, title, _id} | _id: "<db8 id>",
+ *     title | videoTitle: "...", initialPos: seconds, selftest: "scrub|eos|http" }
+ */
+enyo.kind({
+	name: "PlayerApp",
+	kind: enyo.Control,
+	className: "player",
+	CONTROLS_HIDE_MS: 5000,
+	FLICK_FWD: 30,
+	FLICK_BACK: 10,
+	components: [
+		{kind: "ApplicationEvents", onWindowDeactivated: "windowDeactivated", onWindowActivated: "windowActivated",
+			onUnload: "unload", onApplicationRelaunch: "relaunch"},
+		{name: "stage", className: "stage", onclick: "stageClick", onflick: "stageFlick"},
+		{name: "notice", className: "notice hidden"},
+		{name: "header", className: "bar header", components: [
+			{name: "status", tag: "span", className: "status"},
+			{name: "title", tag: "span"}
+		]},
+		{name: "controls", className: "bar controls", onclick: "controlsClick", components: [
+			{className: "row", components: [
+				{name: "playBtn", kind: "CustomButton", className: "btn", caption: "▶", onclick: "playClick"},
+				{name: "elapsed", tag: "span", className: "time", content: "0:00"},
+				{name: "scrub", kind: "ProgressSlider", className: "scrub", minimum: 0, maximum: 1000,
+					animatePosition: false, onChanging: "scrubChanging", onChange: "scrubChange"},
+				{name: "remaining", tag: "span", className: "time", content: "-0:00"},
+				{name: "fitBtn", kind: "CustomButton", className: "btn small", caption: "fit", onclick: "fitClick"}
+			]}
+		]}
+	],
+
+	create: function () {
+		this.inherited(arguments);
+		this.log = enyo.bind(this, function (msg) { console.log("[vids] " + msg); });
+		this.controlsShown = true;
+		this.hideTimer = 0;
+		this.scrubbing = false;
+		this.fill = false;
+		this.blockingTimeout = false;
+		this.tick = enyo.bind(this, this.refresh);
+	},
+
+	rendered: function () {
+		this.inherited(arguments);
+		this.engine = new VideoEngine(this.$.stage.hasNode(), {
+			log: this.log,
+			onChange: enyo.bind(this, this.engineChanged),
+			onTime: enyo.bind(this, this.refresh)
+		});
+		this.tickTimer = setInterval(this.tick, 250);
+		this.layoutScrub();
+		enyo.setAllowedOrientation("free");
+		enyo.setFullScreen(true);
+		this.handleParams(enyo.windowParams || {});
+	},
+
+	layoutScrub: function () {
+		var w = window.innerWidth - (72 + 72 + 72 + 56 + 12 * 2 + 6 * 8 + 24);
+		if (w < 120) { w = 120; }
+		this.$.scrub.applyStyle("width", w + "px");
+	},
+
+	resizeHandler: function () {
+		this.inherited(arguments);
+		this.layoutScrub();
+	},
+
+	// ---- launch ----------------------------------------------------------
+
+	handleParams: function (p) {
+		this.log("launch params: " + enyo.json.stringify(p));
+		var url = p.target || (p.video && p.video.path) || p.url;
+		var title = p.title || p.videoTitle || (p.video && p.video.title);
+		if (p._id && !url) {
+			this.lookupById(p._id);
+			return;
+		}
+		if (!url) {
+			this.showNotice("No video to play");
+			return;
+		}
+		this.open(url, title, p.initialPos || 0, !p.noAutoPlay);
+		if (p.selftest) {
+			this.selfTest = new SelfTest(this.engine, this.log, p.selftest, p);
+			this.selfTest.start();
+		}
+	},
+
+	lookupById: function (id) {
+		var self = this;
+		new enyo.PalmService({service: "palm://com.palm.db/", method: "get",
+			onSuccess: function (s, r) {
+				var v = r && r.results && r.results[0];
+				if (v && v.path) { self.open(v.path, v.title, v.playbackPosition || v.lastPlayTime || 0, true); }
+				else { self.showNotice("Video not found"); }
+			},
+			onFailure: function () { self.showNotice("Video not found"); }
+		}).call({ids: [id]});
+	},
+
+	relaunch: function (inSender, inEvent) {
+		this.handleParams(enyo.windowParams || {});
+		return true;
+	},
+
+	open: function (url, title, pos, autoplay) {
+		this.url = url;
+		var name = title;
+		if (!name) { name = url.replace(/[?#].*$/, ""); name = name.substring(name.lastIndexOf("/") + 1); }
+		this.$.title.setContent(enyo.string.escapeHtml(name));
+		this.showNotice(null);
+		this.engine.load(url, pos);
+		if (autoplay) { this.engine.play(); }
+		this.showControls();
+	},
+
+	// ---- engine -> UI ------------------------------------------------------
+
+	engineChanged: function (s) {
+		var playing = s.wantPlaying && s.phase !== "ended" && s.phase !== "error";
+		this.$.playBtn.setCaption(playing ? "‖" : "▶");
+		var st = "";
+		if (s.phase === "loading") { st = "loading"; }
+		else if (s.phase === "seeking") { st = "seeking"; }
+		else if (s.phase === "recovering") { st = "recovering"; }
+		else if (s.phase === "error") { st = "error"; }
+		else if (s.busy) { st = "…"; }
+		this.$.status.setContent(st);
+		this.$.scrub.addRemoveClass("disabled", !s.seekable);
+		if (s.phase === "error") {
+			this.showNotice("Could not play this video (" + s.error + ")");
+		} else if (s.phase === "playing") {
+			this.showNotice(null);
+		}
+		this.setBlockTimeout(s.phase === "playing");
+		if (s.phase === "playing") { this.scheduleHide(); }
+		else { this.cancelHide(); if (!this.controlsShown) { this.showControls(); } }
+		this.refresh();
+	},
+
+	refresh: function () {
+		if (!this.engine) { return; }
+		var s = this.engine.snapshot();
+		var d = s.duration, t = s.currentTime;
+		if (!this.scrubbing) {
+			this.$.elapsed.setContent(this.fmt(t));
+			if (isFinite(d) && d > 0) {
+				this.$.remaining.setContent("-" + this.fmt(Math.max(0, d - t)));
+				this.$.scrub.setPositionImmediate(Math.min(1000, t / d * 1000));
+				this.$.scrub.setBarPosition(Math.min(1000, s.buffered / d * 1000));
+			} else {
+				this.$.remaining.setContent("--:--");
+				this.$.scrub.setPositionImmediate(0);
+				this.$.scrub.setBarPosition(0);
+			}
+		}
+	},
+
+	fmt: function (secs) {
+		if (!isFinite(secs) || secs < 0) { secs = 0; }
+		secs = Math.floor(secs);
+		var h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
+		var mm = (h ? (m < 10 ? "0" : "") : "") + m, ss = (s < 10 ? "0" : "") + s;
+		return (h ? h + ":" : "") + mm + ":" + ss;
+	},
+
+	showNotice: function (text) {
+		this.$.notice.setContent(text ? enyo.string.escapeHtml(text) : "");
+		this.$.notice.addRemoveClass("hidden", !text);
+	},
+
+	// ---- UI -> engine -------------------------------------------------------
+
+	playClick: function (inSender, inEvent) {
+		this.engine.togglePlay();
+		this.showControls();
+	},
+
+	fitClick: function () {
+		this.fill = !this.fill;
+		this.$.fitBtn.setCaption(this.fill ? "fill" : "fit");
+		this.engine.setFitMode(this.fill);
+		this.showControls();
+	},
+
+	// Rule 3: while dragging only the labels move. One seek on release.
+	scrubChanging: function (inSender, pos) {
+		this.scrubbing = true;
+		this.cancelHide();
+		var d = this.engine.snapshot().duration;
+		if (isFinite(d) && d > 0) {
+			var t = pos / 1000 * d;
+			this.$.elapsed.setContent(this.fmt(t));
+			this.$.remaining.setContent("-" + this.fmt(d - t));
+		}
+	},
+
+	scrubChange: function (inSender, pos) {
+		this.scrubbing = false;
+		var s = this.engine.snapshot();
+		if (isFinite(s.duration) && s.duration > 0 && s.seekable) {
+			this.engine.seek(pos / 1000 * s.duration);
+		}
+		this.showControls();
+	},
+
+	stageClick: function () {
+		if (this.controlsShown) { this.hideControls(); } else { this.showControls(); }
+	},
+
+	controlsClick: function (inSender, inEvent) {
+		this.showControls();
+	},
+
+	stageFlick: function (inSender, inEvent) {
+		var vx = inEvent.xVel || inEvent.xVelocity || 0, vy = inEvent.yVel || inEvent.yVelocity || 0;
+		if (Math.abs(vx) < Math.abs(vy)) { return; }
+		this.engine.skip(vx > 0 ? this.FLICK_FWD : -this.FLICK_BACK);
+		this.showControls();
+		return true;
+	},
+
+	// ---- controls visibility -------------------------------------------------
+
+	showControls: function () {
+		this.controlsShown = true;
+		this.$.header.removeClass("hidden");
+		this.$.controls.removeClass("hidden");
+		this.scheduleHide();
+	},
+
+	hideControls: function () {
+		if (this.scrubbing) { return; }
+		this.controlsShown = false;
+		this.$.header.addClass("hidden");
+		this.$.controls.addClass("hidden");
+	},
+
+	scheduleHide: function () {
+		this.cancelHide();
+		if (!this.engine || this.engine.snapshot().phase !== "playing") { return; }
+		this.hideTimer = setTimeout(enyo.bind(this, this.hideControls), this.CONTROLS_HIDE_MS);
+	},
+
+	cancelHide: function () {
+		if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = 0; }
+	},
+
+	// ---- window / power ----------------------------------------------------------
+
+	setBlockTimeout: function (block) {
+		if (block === this.blockingTimeout) { return; }
+		this.blockingTimeout = block;
+		if (window.PalmSystem) { window.PalmSystem.setWindowProperties({blockScreenTimeout: block}); }
+	},
+
+	windowDeactivated: function () {
+		this.log("window deactivated");
+		if (this.engine && !this.selfTest) { this.engine.pause(); }
+	},
+
+	windowActivated: function () {
+		this.log("window activated");
+		this.showControls();
+	},
+
+	unload: function () {
+		this.log("unload");
+		if (this.tickTimer) { clearInterval(this.tickTimer); this.tickTimer = 0; }
+		this.cancelHide();
+		if (this.selfTest) { this.selfTest.stop(); }
+		if (this.engine) { this.engine.destroy(); this.engine = null; }
+	}
+});

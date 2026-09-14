@@ -1,0 +1,28 @@
+html, body { background: #000; margin: 0; padding: 0; overflow: hidden; }
+
+.player { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: #000; }
+.stage { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: #000; }
+.ve-video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+
+/* bars are overlays; hidden state slides them off */
+.bar { position: absolute; left: 0; right: 0; background: rgba(0,0,0,0.72); color: #fff;
+       -webkit-transition: opacity 0.25s ease-out; opacity: 1; }
+.bar.hidden { opacity: 0; pointer-events: none; }
+.header { top: 0; height: 52px; line-height: 52px; padding: 0 16px; font-size: 20px;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.header .status { float: right; font-size: 14px; color: #9cf; }
+.controls { bottom: 0; height: 96px; }
+
+.controls .row { position: absolute; left: 12px; right: 12px; top: 10px; height: 76px; }
+.btn { display: inline-block; width: 72px; height: 72px; line-height: 72px; text-align: center;
+       font-size: 30px; color: #fff; background: rgba(255,255,255,0.10); border-radius: 36px;
+       margin: 2px 6px; vertical-align: middle; }
+.btn.small { width: 56px; height: 56px; line-height: 56px; font-size: 18px; border-radius: 28px; margin-top: 10px; }
+.btn.down { background: rgba(255,255,255,0.35); }
+.time { display: inline-block; width: 72px; text-align: center; font-size: 17px; color: #ddd; vertical-align: middle; }
+.scrub { display: inline-block; vertical-align: middle; }
+.scrub .enyo-slider-button { width: 40px; height: 40px; margin-left: -20px; top: -14px; }
+.scrub.disabled .enyo-slider-button { visibility: hidden; }
+
+.notice { position: absolute; left: 0; right: 0; top: 45%; text-align: center; color: #ccc; font-size: 22px; }
+.notice.hidden { display: none; }

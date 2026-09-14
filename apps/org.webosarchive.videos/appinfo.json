@@ -1,0 +1,13 @@
+{
+	"id": "org.webosarchive.videos",
+	"version": "0.1.0",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"title": "Videos",
+	"icon": "icon.png",
+	"splashicon": "icon-256x256.png",
+	"keywords": ["video", "player", "movie", "stream"],
+	"uiRevision": 2,
+	"theme": "palm-dark"
+}
