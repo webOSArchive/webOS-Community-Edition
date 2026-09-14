@@ -37,7 +37,8 @@ LINKDIR = $(OUT)/link
 LDFLAGS = -shared -Wl,-soname,libgstcurlhttpsrc.so -Wl,--no-undefined -Wl,-z,defs \
           -Wl,-rpath,/usr/lib/ssl11 -Wl,--hash-style=sysv \
           -L$(LINKDIR) -Wl,-rpath-link,$(LINKDIR)
-LIBS    = -lgstbase-0.10 -lgstreamer-0.10 -lgobject-2.0 -lgthread-2.0 -lglib-2.0 -lcurl -lpthread
+# no -lcurl: the CE libcurl is dlopen'ed privately (see load_private_curl)
+LIBS    = -lgstbase-0.10 -lgstreamer-0.10 -lgobject-2.0 -lgthread-2.0 -lglib-2.0 -ldl -lpthread
 
 TARGET  = $(OUT)/libgstcurlhttpsrc.so
 

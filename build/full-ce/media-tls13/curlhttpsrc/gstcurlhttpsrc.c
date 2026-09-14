@@ -31,6 +31,9 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <syslog.h>
+#include <dlfcn.h>
+#define CURL_DISABLE_TYPECHECK   /* calls go through function pointers, not the macros */
 #include <curl/curl.h>
 #include <gst/gst.h>
 #include <gst/base/gstpushsrc.h>
@@ -39,6 +42,9 @@
 #define VERSION "1.0.0"
 
 GST_DEBUG_CATEGORY_STATIC (curlhttpsrc_debug);
+/* media-pipeline runs with --gst-debug=1, so GST_DEBUG output is invisible on
+ * the device; transfer milestones go to syslog (/var/log/messages) instead. */
+#define TRACE(...) syslog (LOG_WARNING, "curlhttpsrc: " __VA_ARGS__)
 #define GST_CAT_DEFAULT curlhttpsrc_debug
 
 #define GST_TYPE_CURL_HTTP_SRC (gst_curl_http_src_get_type ())
@@ -154,6 +160,73 @@ static gboolean gst_curl_http_src_unlock (GstBaseSrc * bsrc);
 static gboolean gst_curl_http_src_unlock_stop (GstBaseSrc * bsrc);
 static gboolean gst_curl_http_src_set_location (GstCurlHttpSrc * src, const gchar * uri);
 static void gst_curl_http_src_stop_worker (GstCurlHttpSrc * src);
+
+/* ---- libcurl, loaded privately ------------------------------------------
+ *
+ * The plugin does NOT link libcurl. Other libraries in media-pipeline can
+ * already have the STOCK /usr/lib/libcurl.so.4 (7.21.7, OpenSSL 0.9.8) loaded,
+ * and a NEEDED "libcurl.so.4" would then bind to it, ignoring our RPATH -- seen
+ * on hardware: plugin_init reported libcurl/7.21.7 and TLS to a modern host
+ * failed with an SSLv3 alert. The reverse order is just as bad: other
+ * libraries' libcurl.so.4 would bind to ours. So the CE OpenSSL 1.1 and CE
+ * libcurl are dlopen'ed by full path with RTLD_LOCAL and called only through
+ * this table. */
+
+#define CE_SSL_DIR "/usr/lib/ssl11"
+
+static struct
+{
+  CURLcode (*global_init) (long flags);
+  char *(*version) (void);
+  CURL *(*easy_init) (void);
+  CURLcode (*easy_setopt) (CURL * curl, CURLoption option, ...);
+  CURLcode (*easy_perform) (CURL * curl);
+  CURLcode (*easy_getinfo) (CURL * curl, CURLINFO info, ...);
+  void (*easy_cleanup) (CURL * curl);
+  const char *(*easy_strerror) (CURLcode code);
+  struct curl_slist *(*slist_append) (struct curl_slist * list, const char *string);
+  void (*slist_free_all) (struct curl_slist * list);
+} CURLF;
+
+static gboolean
+load_private_curl (void)
+{
+  static const char *pre[] = { CE_SSL_DIR "/libcrypto.so.1.1", CE_SSL_DIR "/libssl.so.1.1", NULL };
+  void *h;
+  int i;
+
+  for (i = 0; pre[i]; i++) {
+    if (!dlopen (pre[i], RTLD_NOW | RTLD_LOCAL)) {
+      TRACE ("cannot load %s: %s", pre[i], dlerror ());
+      return FALSE;
+    }
+  }
+  /* RTLD_LOCAL by full path is enough: the stock libcurl and OpenSSL 0.9.8 only
+   * ever enter media-pipeline through RTLD_LOCAL plugins (pdksink -> libpdl),
+   * never the global scope, so curl's lookups fall through to its own
+   * OpenSSL 1.1 (whose symbols are versioned anyway). NOT RTLD_DEEPBIND: it
+   * makes curl bind glibc's malloc ahead of the preloaded libptmalloc3, two
+   * allocators share one heap, and media-pipeline crashes. */
+  h = dlopen (CE_SSL_DIR "/libcurl.so.4.8.0", RTLD_NOW | RTLD_LOCAL);
+  if (!h) {
+    TRACE ("cannot load CE libcurl: %s", dlerror ());
+    return FALSE;
+  }
+#define LOAD(field, sym) \
+  if (!(*(void **) (&CURLF.field) = dlsym (h, sym))) { TRACE ("libcurl lacks %s", sym); return FALSE; }
+  LOAD (global_init, "curl_global_init");
+  LOAD (version, "curl_version");
+  LOAD (easy_init, "curl_easy_init");
+  LOAD (easy_setopt, "curl_easy_setopt");
+  LOAD (easy_perform, "curl_easy_perform");
+  LOAD (easy_getinfo, "curl_easy_getinfo");
+  LOAD (easy_cleanup, "curl_easy_cleanup");
+  LOAD (easy_strerror, "curl_easy_strerror");
+  LOAD (slist_append, "curl_slist_append");
+  LOAD (slist_free_all, "curl_slist_free_all");
+#undef LOAD
+  return TRUE;
+}
 
 static void
 _do_init (GType type)
@@ -488,6 +561,7 @@ header_cb (char *buffer, size_t size, size_t nitems, void *userdata)
     if (sscanf (line, "HTTP/%*s %ld", &src->response_code) != 1)
       src->response_code = 0;
     GST_DEBUG_OBJECT (src, "status: %s", line);
+    TRACE ("status: %s", line);
     g_free (line);
     return len;
   }
@@ -676,7 +750,7 @@ add_header_field (GQuark field_id, const GValue * value, gpointer user_data)
   else if (G_VALUE_HOLDS_BOOLEAN (value))
     line = g_strdup_printf ("%s: %s", name, g_value_get_boolean (value) ? "true" : "false");
   if (line) {
-    *headers = curl_slist_append (*headers, line);
+    *headers = CURLF.slist_append (*headers, line);
     g_free (line);
   }
   return TRUE;
@@ -698,7 +772,7 @@ worker_func (gpointer data)
   g_mutex_unlock (src->lock);
   gst_curl_http_src_reset_transfer_info (src);
 
-  curl = curl_easy_init ();
+  curl = CURLF.easy_init ();
   if (!curl) {
     g_mutex_lock (src->lock);
     src->error_msg = g_strdup ("curl_easy_init failed");
@@ -708,41 +782,41 @@ worker_func (gpointer data)
     return NULL;
   }
 
-  curl_easy_setopt (curl, CURLOPT_URL, src->location);
-  curl_easy_setopt (curl, CURLOPT_USERAGENT, src->user_agent ? src->user_agent : DEFAULT_USER_AGENT);
-  curl_easy_setopt (curl, CURLOPT_FOLLOWLOCATION, src->automatic_redirect ? 1L : 0L);
-  curl_easy_setopt (curl, CURLOPT_MAXREDIRS, (long) MAX_REDIRECTS);
-  curl_easy_setopt (curl, CURLOPT_NOSIGNAL, 1L);
-  curl_easy_setopt (curl, CURLOPT_CONNECTTIMEOUT, (long) CONNECT_TIMEOUT_SECS);
-  curl_easy_setopt (curl, CURLOPT_BUFFERSIZE, (long) CURL_BUFFER_SIZE);
-  curl_easy_setopt (curl, CURLOPT_HTTP_VERSION, (long) CURL_HTTP_VERSION_1_1);
-  curl_easy_setopt (curl, CURLOPT_ACCEPT_ENCODING, "identity");   /* never compress media */
-  curl_easy_setopt (curl, CURLOPT_HEADERFUNCTION, header_cb);
-  curl_easy_setopt (curl, CURLOPT_HEADERDATA, src);
-  curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, write_cb);
-  curl_easy_setopt (curl, CURLOPT_WRITEDATA, src);
-  curl_easy_setopt (curl, CURLOPT_XFERINFOFUNCTION, progress_cb);
-  curl_easy_setopt (curl, CURLOPT_XFERINFODATA, src);
-  curl_easy_setopt (curl, CURLOPT_NOPROGRESS, 0L);
-  curl_easy_setopt (curl, CURLOPT_ERRORBUFFER, errbuf);
+  CURLF.easy_setopt (curl, CURLOPT_URL, src->location);
+  CURLF.easy_setopt (curl, CURLOPT_USERAGENT, src->user_agent ? src->user_agent : DEFAULT_USER_AGENT);
+  CURLF.easy_setopt (curl, CURLOPT_FOLLOWLOCATION, src->automatic_redirect ? 1L : 0L);
+  CURLF.easy_setopt (curl, CURLOPT_MAXREDIRS, (long) MAX_REDIRECTS);
+  CURLF.easy_setopt (curl, CURLOPT_NOSIGNAL, 1L);
+  CURLF.easy_setopt (curl, CURLOPT_CONNECTTIMEOUT, (long) CONNECT_TIMEOUT_SECS);
+  CURLF.easy_setopt (curl, CURLOPT_BUFFERSIZE, (long) CURL_BUFFER_SIZE);
+  CURLF.easy_setopt (curl, CURLOPT_HTTP_VERSION, (long) CURL_HTTP_VERSION_1_1);
+  CURLF.easy_setopt (curl, CURLOPT_ACCEPT_ENCODING, "identity");   /* never compress media */
+  CURLF.easy_setopt (curl, CURLOPT_HEADERFUNCTION, header_cb);
+  CURLF.easy_setopt (curl, CURLOPT_HEADERDATA, src);
+  CURLF.easy_setopt (curl, CURLOPT_WRITEFUNCTION, write_cb);
+  CURLF.easy_setopt (curl, CURLOPT_WRITEDATA, src);
+  CURLF.easy_setopt (curl, CURLOPT_XFERINFOFUNCTION, progress_cb);
+  CURLF.easy_setopt (curl, CURLOPT_XFERINFODATA, src);
+  CURLF.easy_setopt (curl, CURLOPT_NOPROGRESS, 0L);
+  CURLF.easy_setopt (curl, CURLOPT_ERRORBUFFER, errbuf);
   if (src->timeout > 0) {
-    curl_easy_setopt (curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
-    curl_easy_setopt (curl, CURLOPT_LOW_SPEED_TIME, (long) src->timeout);
+    CURLF.easy_setopt (curl, CURLOPT_LOW_SPEED_LIMIT, 1L);
+    CURLF.easy_setopt (curl, CURLOPT_LOW_SPEED_TIME, (long) src->timeout);
   }
   if (src->proxy && *src->proxy)
-    curl_easy_setopt (curl, CURLOPT_PROXY, src->proxy);     /* else libcurl honours http_proxy */
+    CURLF.easy_setopt (curl, CURLOPT_PROXY, src->proxy);     /* else libcurl honours http_proxy */
   if (src->ssl_strict) {
-    curl_easy_setopt (curl, CURLOPT_SSL_VERIFYPEER, 1L);
-    curl_easy_setopt (curl, CURLOPT_SSL_VERIFYHOST, 2L);
+    CURLF.easy_setopt (curl, CURLOPT_SSL_VERIFYPEER, 1L);
+    CURLF.easy_setopt (curl, CURLOPT_SSL_VERIFYHOST, 2L);
     if (src->ca_file && *src->ca_file)
-      curl_easy_setopt (curl, CURLOPT_CAINFO, src->ca_file);
+      CURLF.easy_setopt (curl, CURLOPT_CAINFO, src->ca_file);
   } else {
-    curl_easy_setopt (curl, CURLOPT_SSL_VERIFYPEER, 0L);
-    curl_easy_setopt (curl, CURLOPT_SSL_VERIFYHOST, 0L);
+    CURLF.easy_setopt (curl, CURLOPT_SSL_VERIFYPEER, 0L);
+    CURLF.easy_setopt (curl, CURLOPT_SSL_VERIFYHOST, 0L);
   }
   if (start > 0) {
     range = g_strdup_printf ("%" G_GUINT64_FORMAT "-", start);
-    curl_easy_setopt (curl, CURLOPT_RANGE, range);
+    CURLF.easy_setopt (curl, CURLOPT_RANGE, range);
   }
   if (src->cookies && src->cookies[0]) {
     /* souphttpsrc takes full Set-Cookie strings; libcurl wants "a=b; c=d" */
@@ -755,17 +829,33 @@ worker_func (gpointer data)
       g_string_append_len (s, *c, semi ? (gssize) (semi - *c) : (gssize) strlen (*c));
     }
     cookie = g_string_free (s, FALSE);
-    curl_easy_setopt (curl, CURLOPT_COOKIE, cookie);
+    CURLF.easy_setopt (curl, CURLOPT_COOKIE, cookie);
   }
   if (src->iradio_mode)
-    headers = curl_slist_append (headers, "icy-metadata: 1");
+    headers = CURLF.slist_append (headers, "icy-metadata: 1");
   if (src->extra_headers)
     gst_structure_foreach (src->extra_headers, add_header_field, &headers);
   if (headers)
-    curl_easy_setopt (curl, CURLOPT_HTTPHEADER, headers);
+    CURLF.easy_setopt (curl, CURLOPT_HTTPHEADER, headers);
 
   GST_DEBUG_OBJECT (src, "GET %s from %" G_GUINT64_FORMAT, src->location, start);
-  res = curl_easy_perform (curl);
+  TRACE ("GET from %" G_GUINT64_FORMAT, start);
+  res = CURLF.easy_perform (curl);
+  {
+    double dns = 0, conn = 0, tls = 0, first = 0, total = 0;
+    char *ip = NULL;
+    long port = 0;
+    CURLF.easy_getinfo (curl, CURLINFO_NAMELOOKUP_TIME, &dns);
+    CURLF.easy_getinfo (curl, CURLINFO_CONNECT_TIME, &conn);
+    CURLF.easy_getinfo (curl, CURLINFO_APPCONNECT_TIME, &tls);
+    CURLF.easy_getinfo (curl, CURLINFO_STARTTRANSFER_TIME, &first);
+    CURLF.easy_getinfo (curl, CURLINFO_TOTAL_TIME, &total);
+    CURLF.easy_getinfo (curl, CURLINFO_PRIMARY_IP, &ip);
+    CURLF.easy_getinfo (curl, CURLINFO_PRIMARY_PORT, &port);
+    TRACE ("GET from %" G_GUINT64_FORMAT " done: curl %d (%s%s%s) http %ld ip %s:%ld dns %.2f conn %.2f tls %.2f first %.2f total %.2f abort %d",
+        start, (int) res, CURLF.easy_strerror (res), errbuf[0] ? ": " : "", errbuf,
+        src->response_code, ip ? ip : "-", port, dns, conn, tls, first, total, src->abort);
+  }
 
   g_mutex_lock (src->lock);
   if (src->abort) {
@@ -783,16 +873,16 @@ worker_func (gpointer data)
     src->state = WORKER_ERROR;  /* headers_done refused (4xx/5xx) */
   } else {
     g_free (src->error_msg);
-    src->error_msg = g_strdup_printf ("%s (curl %d%s%s)", curl_easy_strerror (res), (int) res,
+    src->error_msg = g_strdup_printf ("%s (curl %d%s%s)", CURLF.easy_strerror (res), (int) res,
         errbuf[0] ? ": " : "", errbuf);
     src->state = WORKER_ERROR;
   }
   g_cond_broadcast (src->cond);
   g_mutex_unlock (src->lock);
 
-  curl_easy_cleanup (curl);
+  CURLF.easy_cleanup (curl);
   if (headers)
-    curl_slist_free_all (headers);
+    CURLF.slist_free_all (headers);
   g_free (range);
   g_free (cookie);
   return NULL;
@@ -850,6 +940,7 @@ gst_curl_http_src_start (GstBaseSrc * bsrc)
     GST_ELEMENT_ERROR (src, RESOURCE, OPEN_READ, (NULL), ("No URL set."));
     return FALSE;
   }
+  TRACE ("start %s", src->location);
   g_mutex_lock (src->lock);
   src->request_position = 0;
   src->read_position = 0;
@@ -865,7 +956,9 @@ static gboolean
 gst_curl_http_src_stop (GstBaseSrc * bsrc)
 {
   GstCurlHttpSrc *src = GST_CURL_HTTP_SRC (bsrc);
+  TRACE ("stop");
   gst_curl_http_src_stop_worker (src);
+  TRACE ("stopped");
   return TRUE;
 }
 
@@ -916,6 +1009,7 @@ gst_curl_http_src_do_seek (GstBaseSrc * bsrc, GstSegment * segment)
   GstCurlHttpSrc *src = GST_CURL_HTTP_SRC (bsrc);
 
   GST_DEBUG_OBJECT (src, "seek to %" G_GINT64_FORMAT, segment->start);
+  TRACE ("seek to %" G_GINT64_FORMAT " (seekable=%d)", segment->start, src->seekable);
   if (!src->seekable)
     return FALSE;
   if (src->have_size && (guint64) segment->start >= src->content_size)
@@ -947,6 +1041,7 @@ gst_curl_http_src_create (GstPushSrc * psrc, GstBuffer ** outbuf)
 
   g_mutex_lock (src->lock);
   if (src->state == WORKER_IDLE && !src->flushing) {
+    TRACE ("transfer start at %" G_GUINT64_FORMAT, src->request_position);
     if (!gst_curl_http_src_start_worker (src)) {
       g_mutex_unlock (src->lock);
       goto error;
@@ -1054,7 +1149,10 @@ gst_curl_http_src_uri_handler_init (gpointer g_iface, gpointer iface_data)
 static gboolean
 plugin_init (GstPlugin * plugin)
 {
-  curl_global_init (CURL_GLOBAL_ALL);
+  if (!load_private_curl ())
+    return FALSE;
+  CURLF.global_init (CURL_GLOBAL_ALL);
+  TRACE ("plugin_init, %s", CURLF.version ());
   /* registered under the stock element's name: media-pipeline makes it by name */
   return gst_element_register (plugin, "souphttpsrc", GST_RANK_PRIMARY, GST_TYPE_CURL_HTTP_SRC);
 }
