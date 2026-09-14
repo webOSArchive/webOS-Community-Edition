@@ -9,16 +9,23 @@ if [ -f "$PH.webosce-orig" ]; then
     cp -p "$PH.webosce-orig" "$PH" && rm -f "$PH.webosce-orig" && log "Photos: stock album grid restored"
 fi
 
-VP=/usr/palm/applications/com.palm.app.videoplayer/app/controllers/app-assistant.js
-if [ -f "$VP.webosce-orig" ]; then
+VPD=/usr/palm/applications/com.palm.app.videoplayer
+if [ -f "$VPD/index.html.webosce-orig" ] || [ -f "$VPD/appinfo.json.webosce-orig" ]; then
     L=/tmp/.ce-rootfs-rw.lock
     n=0; while ! mkdir $L 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n+1)); done
     if mount -o remount,rw / 2>/dev/null; then
-        cp -p "$VP.webosce-orig" "$VP.new" && mv -f "$VP.new" "$VP" && rm -f "$VP.webosce-orig" \
-            && log "shim: stock com.palm.app.videoplayer restored"
+        for f in index.html appinfo.json; do
+            [ -f "$VPD/$f.webosce-orig" ] && cp -p "$VPD/$f.webosce-orig" "$VPD/$f.new" && mv -f "$VPD/$f.new" "$VPD/$f" && rm -f "$VPD/$f.webosce-orig"
+        done
+        rm -rf "$VPD/source" "$VPD/css" "$VPD/depends.js"
+        for i in menu-icons.png command-menu-gradient.png command-menu-gradient-top.png palm-menu-button.png; do rm -f "$VPD/images/$i"; done
+        if [ -f "$VPD/app/controllers/app-assistant.js.webosce-orig" ]; then
+            mv -f "$VPD/app/controllers/app-assistant.js.webosce-orig" "$VPD/app/controllers/app-assistant.js"
+        fi
+        log "videoplayer: stock com.palm.app.videoplayer restored"
         mount -o remount,ro / 2>/dev/null || true
     else
-        log "shim: could not remount / rw; shim left in place (it only forwards)"
+        log "videoplayer: could not remount / rw; CE player left under the stock id"
     fi
     rmdir $L 2>/dev/null || true
 fi

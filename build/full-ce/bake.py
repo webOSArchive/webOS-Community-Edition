@@ -2953,10 +2953,10 @@ def main():
     # those and replay the postinst's stock-file patches.
     # 15d) Videos: the CE video player. The app itself bakes like USB Settings;
     # two hand-offs point the stock entry points at it:
-    #  - com.palm.app.videoplayer (the hidden Mojo mimetype handler Browser/
-    #    Email/Messaging launch for video files and URLs) keeps its id, appinfo
-    #    and icon -- Messaging and Device Info reference them -- but its
-    #    app-assistant.js becomes a forwarding shim;
+    #  - com.palm.app.videoplayer (the hidden stock player some apps launch by
+    #    id) keeps its id and icon -- Messaging and Device Info reference them --
+    #    and becomes a second install of the same Enyo player (index.html,
+    #    appinfo, source/, css/, four images beside the untouched Mojo files);
     #  - Photos' album grid launches it for videos (patch in edit_photos()).
     # Its Tweaks toggle ("Pause video when minimized") rides into the cryptofs
     # seed next to the LunaCE definitions (tier 19b-c).
@@ -2968,13 +2968,25 @@ def main():
                   ignore_errors=True)
     bake_tree(d)
     VID = os.path.join(HERE, "videos-app")
-    wcopy("usr/palm/applications/com.palm.app.videoplayer/app/controllers/app-assistant.js",
-          os.path.join(VID, "videoplayer-shim/app-assistant.js"), 0o644)
+    # the stock id hosts the same player: apps that launch com.palm.app.videoplayer
+    # by id (MeTube, Messaging) make LunaSysMgr pre-create its card, so the card
+    # must be the player, not a shim. Same file set the feed postinst installs.
+    vapp = os.path.join(d, "usr/palm/applications/org.webosarchive.videos")
+    VPD = "usr/palm/applications/com.palm.app.videoplayer"
+    for sub in ("source", "css"):
+        for fn in sorted(os.listdir(os.path.join(vapp, sub))):
+            wcopy(f"{VPD}/{sub}/{fn}", os.path.join(vapp, sub, fn), 0o644)
+    for fn in ("depends.js", "index.html"):
+        wcopy(f"{VPD}/{fn}", os.path.join(vapp, fn), 0o644)
+    for fn in ("menu-icons.png", "command-menu-gradient.png", "command-menu-gradient-top.png",
+               "palm-menu-button.png"):
+        wcopy(f"{VPD}/images/{fn}", os.path.join(vapp, "images", fn), 0o644)
+    wcopy(f"{VPD}/appinfo.json", os.path.join(VID, "videoplayer-app/appinfo.json"), 0o644)
     wcopy(f"{SEED}/apps/usr/palm/services/org.webosinternals.tweaks.prefs/"
           "preferences/org.webosarchive.videos.json",
           os.path.join(d, "usr/palm/applications/org.webosarchive.videos/tweaks/"
                           "org.webosarchive.videos.json"), 0o644)
-    log("  videoplayer shim + Tweaks definition staged")
+    log("  player under com.palm.app.videoplayer + Tweaks definition staged")
 
     log(f"tier: BT gamepad BAKED ({os.path.basename(IPK['bt'])})")
     d = ipk_extract_data(IPK["bt"], os.path.join(tmp, "bt"))

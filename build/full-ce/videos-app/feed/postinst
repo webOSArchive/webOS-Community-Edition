@@ -3,7 +3,7 @@
 # running device (3.0.5 or CE 3.1.0). Everything a baked image does for it
 # (bake.py "Videos" tier) is replayed here, in a form that can be undone:
 #   1. Photos album grid -> Videos app (patch on cryptofs, stock backed up)
-#   2. com.palm.app.videoplayer's app-assistant.js -> forwarding shim (rootfs)
+#   2. com.palm.app.videoplayer becomes the Enyo player itself (rootfs)
 #   3. Tweaks definition ("Pause video when minimized") + rescan
 #   4. Videos app registered as the active handler for video types
 # Every stage logs and continues; the exit status is always 0 (mmipkg/Preware
@@ -43,24 +43,42 @@ else
     log "Photos: not installed on cryptofs; skipped"
 fi
 
-# ---- 2. videoplayer shim (rootfs, read-only on CE at runtime) ------------------
-VP=/usr/palm/applications/com.palm.app.videoplayer/app/controllers/app-assistant.js
-if [ -f "$VP" ]; then
-    if [ "$(md5 "$VP")" = "@SHIM_MD5@" ]; then
-        log "shim: already installed"
-    elif [ "$(md5 "$VP")" != "@SHIM_STOCK_MD5@" ] && [ ! -f "$VP.webosce-orig" ]; then
-        log "shim: app-assistant.js is not the stock file ($(md5 "$VP")); left alone"
+# ---- 2. com.palm.app.videoplayer becomes the Enyo player (rootfs) ------------------
+# Apps that launch the stock id (MeTube, Messaging) make LunaSysMgr pre-create a
+# card for it; a forwarding shim left that card blank for ~2 s. Putting the player
+# itself under the id means that card IS the player. Only index.html and
+# appinfo.json are replaced (backed up); our source/css/depends.js and four
+# images are added beside the untouched Mojo files and removed on uninstall.
+VPD=/usr/palm/applications/com.palm.app.videoplayer
+if [ -d "$VPD" ]; then
+    if [ "$(md5 "$VPD/index.html")" = "$(md5 "$APP/index.html")" ] && [ "$(md5 "$VPD/source/VideoEngine.js")" = "$(md5 "$APP/source/VideoEngine.js")" ]; then
+        log "videoplayer: already the CE player"
+    elif [ "$(md5 "$VPD/index.html")" != "@VP_INDEX_STOCK_MD5@" ] && [ ! -f "$VPD/index.html.webosce-orig" ]; then
+        log "videoplayer: index.html is not the stock file ($(md5 "$VPD/index.html")); left alone"
+    elif [ "$(df -k / | tail -1 | awk '{print $(NF-2)}')" -lt 2048 ] 2>/dev/null; then   # busybox df wraps long device names
+        log "videoplayer: less than 2 MB free on /; left alone"
     else
         L=/tmp/.ce-rootfs-rw.lock
         n=0; while ! mkdir $L 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n+1)); done
         if mount -o remount,rw / 2>/dev/null; then
-            [ -f "$VP.webosce-orig" ] || cp -p "$VP" "$VP.webosce-orig"
-            cp "$PAY/app-assistant.js" "$VP.new" && chmod 644 "$VP.new" && mv -f "$VP.new" "$VP" \
-                && log "shim: com.palm.app.videoplayer now forwards to the Videos app" \
-                || log "shim: write failed"
+            for f in index.html appinfo.json; do
+                [ -f "$VPD/$f.webosce-orig" ] || cp -p "$VPD/$f" "$VPD/$f.webosce-orig"
+            done
+            # an earlier build of this package installed a forwarding shim here
+            if [ -f "$VPD/app/controllers/app-assistant.js.webosce-orig" ]; then
+                mv -f "$VPD/app/controllers/app-assistant.js.webosce-orig" "$VPD/app/controllers/app-assistant.js"
+            fi
+            rm -rf "$VPD/source" "$VPD/css"
+            cp -r "$APP/source" "$APP/css" "$VPD/" && cp "$APP/depends.js" "$VPD/depends.js" \
+                && for i in menu-icons.png command-menu-gradient.png command-menu-gradient-top.png palm-menu-button.png; do cp "$APP/images/$i" "$VPD/images/$i"; done \
+                && cp "$APP/index.html" "$VPD/index.html.new" && mv -f "$VPD/index.html.new" "$VPD/index.html" \
+                && cp "$PAY/videoplayer-appinfo.json" "$VPD/appinfo.json.new" && mv -f "$VPD/appinfo.json.new" "$VPD/appinfo.json" \
+                && chmod -R a+rX "$VPD/source" "$VPD/css" && chmod 644 "$VPD/depends.js" "$VPD/index.html" "$VPD/appinfo.json" \
+                && log "videoplayer: com.palm.app.videoplayer is now the CE player" \
+                || log "videoplayer: copy failed"
             mount -o remount,ro / 2>/dev/null || true
         else
-            log "shim: could not remount / rw; skipped (handlers below still route around it)"
+            log "videoplayer: could not remount / rw; skipped (launches by id keep the stock player)"
         fi
         rmdir $L 2>/dev/null || true
     fi

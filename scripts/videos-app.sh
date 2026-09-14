@@ -9,7 +9,12 @@
 #                                            -> launch in self-test mode and wait for the summary
 #   scripts/videos-app.sh log                -> the app's console lines from /var/log/messages
 #   scripts/videos-app.sh close              -> close every open card of the app
-#   scripts/videos-app.sh release            -> package and copy the ipk into AddToImage/NewApps
+#   scripts/videos-app.sh feed               -> the distributable ipk (app + postinst/prerm)
+#   scripts/videos-app.sh deploy [ipk]       -> install the feed ipk on the connected device the
+#                                               way Preware's service does (ipkg as root + postinst)
+#                                               and restart Luna. Also the upgrade path.
+#   scripts/videos-app.sh undeploy           -> prerm + ipkg remove + Luna restart (stock player back)
+#   scripts/videos-app.sh release            -> feed + copy the ipk into AddToImage/NewApps
 #                                               (bake.py picks the highest version there)
 #
 # Pushed Enyo edits are cached by WebAppMgr: 'install' closes the app first, and if
@@ -79,7 +84,7 @@ close)
     ;;
 feed)
     # The distributable ipk: the app plus a ce-install/ payload (Photos patch,
-    # videoplayer shim, Tweaks definition) and postinst/prerm that replay what the
+    # videoplayer appinfo, Tweaks definition) and postinst/prerm that replay what the
     # baked image does, undoably, on a running 3.0.5 / CE 3.1.0 device.
     # Control metadata is rewritten for Preware (palm-package's defaults would list
     # it untitled and Unsorted). bake.py extracts this same ipk and drops ce-install/.
@@ -90,16 +95,14 @@ feed)
     W="$ROOT/build/work/feed"; rm -rf "$W"; mkdir -p "$W/app" "$W/ipk"
     cp -r "$SRC"/. "$W/app/"
     mkdir -p "$W/app/ce-install"
-    cp "$VA/patches/AlbumGridView-videos-handoff.js.patch" "$VA/videoplayer-shim/app-assistant.js" \
-       "$SRC/tweaks/org.webosarchive.videos.json" "$W/app/ce-install/"
+    cp "$VA/patches/AlbumGridView-videos-handoff.js.patch" "$SRC/tweaks/org.webosarchive.videos.json" "$W/app/ce-install/"
+    cp "$VA/videoplayer-app/appinfo.json" "$W/app/ce-install/videoplayer-appinfo.json"
     # md5 constants for the postinst guards. The stock Photos file and stock
     # app-assistant.js come from the device pull (build/work/stock-videoplayer);
     # both are identical on stock 3.0.5 and CE 3.1.0 (no CE patch touches them).
     PHS=$(md5sum < "$STOCK/com.palm.app.photos/source/AlbumGridView.js" | cut -c1-32)
-    VPS=$(md5sum < "$STOCK/applications/com.palm.app.videoplayer/app/controllers/app-assistant.js" | cut -c1-32)
-    SHM=$(md5sum < "$VA/videoplayer-shim/app-assistant.js" | cut -c1-32)
+    VPI=$(md5sum < "$STOCK/applications/com.palm.app.videoplayer/index.html" | cut -c1-32)
     [ "$PHS" = "fc748840bb83c65bd0d2504226bfee55" ] || { echo "stock AlbumGridView.js md5 changed ($PHS) -- re-pull or update the guard" >&2; exit 1; }
-    [ "$VPS" = "b6adb60b46af97928f573a0bbfc13aff" ] || { echo "stock app-assistant.js md5 changed ($VPS)" >&2; exit 1; }
     # the patched result the device must reproduce byte for byte
     cp "$STOCK/com.palm.app.photos/source/AlbumGridView.js" "$W/agv.js"
     (cd "$W" && patch -s -p2 -i "$VA/patches/AlbumGridView-videos-handoff.js.patch" agv.js) || { echo "Photos patch no longer applies to the stock file" >&2; exit 1; }
@@ -108,12 +111,35 @@ feed)
     cd "$W/ipk" && ar x "$(basename "$IPK")" && rm -f "$(basename "$IPK")" \
         && mkdir ctl && tar xzf control.tar.gz -C ctl \
         && sed "s/@VERSION@/$VER/; s/@EPOCH@/$(date +%s)/" "$FEED/control" > ctl/control \
-        && sed "s/@PHOTOS_STOCK_MD5@/$PHS/; s/@PHOTOS_PATCHED_MD5@/$PHP/; s/@SHIM_STOCK_MD5@/$VPS/; s/@SHIM_MD5@/$SHM/" "$FEED/postinst" > ctl/postinst \
+        && sed "s/@PHOTOS_STOCK_MD5@/$PHS/; s/@PHOTOS_PATCHED_MD5@/$PHP/; s/@VP_INDEX_STOCK_MD5@/$VPI/" "$FEED/postinst" > ctl/postinst \
         && cp "$FEED/prerm" ctl/prerm && chmod 755 ctl/postinst ctl/prerm \
         && sh -n ctl/postinst && sh -n ctl/prerm \
         && (cd ctl && tar czf ../control.tar.gz ./control ./postinst ./prerm) \
         && ar rc "$IPK" debian-binary control.tar.gz data.tar.gz \
         && echo "feed ipk: $IPK" && ls -la "$IPK"
+    ;;
+deploy)
+    F="${2:-$IPK}"
+    [ -f "$F" ] || { echo "no ipk at $F -- run '$0 feed' first" >&2; exit 2; }
+    B=$(basename "$F")
+    novacom put "file:///media/internal/downloads/$B" < "$F"
+    dev <<EOF
+export IPKG_OFFLINE_ROOT=/media/cryptofs/apps
+ipkg -o /media/cryptofs/apps -force-overwrite -force-reinstall install /media/internal/downloads/$B 2>&1 | tail -1
+sh /media/cryptofs/apps/usr/lib/ipkg/info/$APP.postinst
+rm -f /media/internal/downloads/$B
+echo "restarting Luna..."; initctl stop LunaSysMgr >/dev/null 2>&1; sleep 2; initctl start LunaSysMgr >/dev/null 2>&1; sleep 25
+echo "LunaSysMgr: \$(pidof LunaSysMgr)"
+EOF
+    ;;
+undeploy)
+    dev <<EOF
+export IPKG_OFFLINE_ROOT=/media/cryptofs/apps
+[ -f /media/cryptofs/apps/usr/lib/ipkg/info/$APP.prerm ] && sh /media/cryptofs/apps/usr/lib/ipkg/info/$APP.prerm
+ipkg -o /media/cryptofs/apps remove $APP 2>&1 | tail -1
+echo "restarting Luna..."; initctl stop LunaSysMgr >/dev/null 2>&1; sleep 2; initctl start LunaSysMgr >/dev/null 2>&1; sleep 25
+echo "LunaSysMgr: \$(pidof LunaSysMgr)"
+EOF
     ;;
 release)
     "$0" feed
