@@ -4,8 +4,9 @@
 lives in `apps/org.webosarchive.videos/` (dev loop: `scripts/videos-app.sh`),
 passes every Phase 0 recipe by self-test, and is wired into `bake.py` (Videos
 tier, Photos handoff patch, `com.palm.app.videoplayer` shim, Tweaks toggle).
-Not yet: a baked flash, `ce-test-full.sh` section, mimetype handling from
-Browser/Email verified end to end, the soak (Phase 3).**
+Browser hand-off verified end to end (one card) via the runtime
+`ce-register-video-handler` job. Not yet: a baked flash, `ce-test-full.sh`
+section, the soak (Phase 3).**
 
 Things learned building it that the plan below did not predict:
 - WebKit reports `seekable=[0-duration]` even for HTTP hosts that ignore
@@ -31,6 +32,13 @@ Things learned building it that the plan below did not predict:
   its own resume positions in localStorage.
 - Enyo 1.0's `AppMenu` creates its items lazily — touching them in `create()`
   white-screens the app. The preference moved to Tweaks anyway.
+- Resource handlers resolve two ways: by Content-Type (`video/mp4`, the
+  Browser path) and by extension through Palm pseudo-mimes
+  (`mimeTypeForExtension mp4` → `video/mp4-generic`, the file:// and
+  attachment path). `addResourceHandler` only adds an *alternate* when a
+  system-default exists; `swapResourceHandler {mimeType, index}` (not `mime`)
+  makes it active. Going through the Mojo shim instead left an extra Videos
+  card behind the Browser; direct registration does not.
 
 This is a plan, not a change log. Stock sources are pulled to
 `build/work/stock-videoplayer/` (gitignored; re-pull with the command in §1.3).
