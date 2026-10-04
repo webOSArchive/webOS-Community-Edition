@@ -1,6 +1,6 @@
 {
 	"id": "com.palm.calculator",
-	"version": "1.0.0",
+	"version": "3.1.1",
 	"vendor": "HP",
 	"type": "web",
 	"main": "index.html",
