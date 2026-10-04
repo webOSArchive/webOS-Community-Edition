@@ -120,15 +120,18 @@ Listed so the plan is honest about the critical path:
 | Video handler job (new) | `/etc/event.d/ce-register-video-handler` + `/usr/palm/ce-seed/jobs/…sh` | see trap below |
 | Media TLS | **add** `/usr/lib/gstreamer-0.10/libgstcurlhttpsrc.so`, **remove** `libgstsouphttpsrc.so` | |
 | Calculator 3.2.0 | `/usr/palm/applications/com.palm.app.calculator/`, `/usr/palm/packages/com.palm.calculator/`; **remove** `/usr/palm/ipkgs/com.palm.app.calculator/` | |
+| Emoji fallback font (planned, `EMOJI-FONT.md`) | **add** `/usr/share/fonts/CE-Emoji.ttf` (+ OFL text), **patched** `/usr/lib/libWebKitLuna.so` (fifth fallback slot) | lib is held open by BrowserServer/WebAppMgr — fine in the ramdisk, a reason not to hotpatch |
 | Photos hand-off | the staged `/usr/palm/ipkgs/com.palm.app.photos/…ipk` is repacked | **no effect on an installed device**: Photos already lives in cryptofs |
 | Tweaks definition | under `/usr/palm/ce-seed/cryptofs/…` | the seed only runs once per flash |
 | Version | `/etc/palm-build-info`, `/etc/prefs/properties/{buildMark,buildDate}` | |
 | First-boot jobs | `ce-firstboot-tweaks`, `ce-default-wallpaper`, `ce-remove-preloads` (AT&T wallpaper fix, de-shadow list) | already flag-done on a 3.1.0 device, so this is just file content |
 | ipkg db | the `.list`/`.md5sums` rewrites | |
 
-**About 93 files and 4 removals.** Nothing replaced is held open by a long-lived
-process: media-pipeline is a process per session, and LunaSysMgr and the kernel
-are untouched.
+**About 93 files and 4 removals**, plus the emoji font and the patched
+`libWebKitLuna.so` once `EMOJI-FONT.md` lands. Before the emoji work, nothing
+replaced was held open by a long-lived process. The patched `libWebKitLuna.so`
+is held open by BrowserServer and WebAppMgr: one more reason Path A takes the
+armed flash.
 
 ### 2.2 What `ce-ota-finish` must do for 3.2.0
 

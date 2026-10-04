@@ -28,6 +28,8 @@ support a one-time **bootstrap OTA** that carries stock OEM 3.0.5 devices up to 
 | **[OTA-STRATEGY.md](OTA-STRATEGY.md)** | How devices reach and stay on CE: the **bootstrap OTA** (OEM 3.0.5 → CE 3.1, incl. the TLS chicken-and-egg and the chained two-session upgrade), **ongoing 3.1+ OTAs**, the server-side design, and payload signing. |
 | **[RELEASE-NOTES.md](../RELEASE-NOTES.md)** | What ships in the current release candidate, what changed, and the known issues. Start here if you are testing a build. |
 | **[KNOWN-ISSUES.md](../KNOWN-ISSUES.md)** | Every issue reproduced but not yet fixed, ordered by what should be solved first: what it costs a user, what is actually known, and what a fix would have to do. |
+| **[OTA-PLAN.md](OTA-PLAN.md)** | The two OTA payload plans: CE 3.1.0 → 3.2.0 (learn the armed flash) and stock 3.0.5 → CE. Payloads generated as rootfs diffs. |
+| **[EMOJI-FONT.md](EMOJI-FONT.md)** | CE 3.2.0: the 170 BMP emoji via a fifth WebKit fallback font (Noto Emoji subset + a `libWebKitLuna` code-cave patch). Why colour and astral emoji are impossible on this renderer. |
 | **[TEST-PLAN.md](TEST-PLAN.md)** | The verification run for the current build: what has been checked, what still needs a human, and how to capture evidence when something misbehaves. |
 | **[build/README.md](../build/README.md)** | The **Phase 0 repack harness** (built): unpack → overlay → md5-regen → `integcheck` dry-run → repack + gate-patch. Run `build/build-ce-doctor.sh`. |
 | **[4G-TOUCHPAD.md](4G-TOUCHPAD.md)** | What the Wi-Fi image assumes about a device with no cellular radio, and the one place CE behaves differently when one is present. |
