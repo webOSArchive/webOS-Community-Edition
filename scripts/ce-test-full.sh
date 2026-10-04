@@ -140,7 +140,8 @@ if luna-send -n 1 palm://org.webosinternals.ipkgservice/getStatus '{}' </dev/nul
 else
   F "6   ipkgservice did not answer"
 fi
-for pk in org.webosinternals.preware org.webosinternals.govnah com.palm.synergy.generic; do
+for pk in org.webosinternals.preware org.webosinternals.govnah com.palm.synergy.generic \
+          com.palm.app.videos com.palm.app.calculator org.webosarchive.media-tls13; do
   c=$(grep -c "^Package: $pk\$" $STATUS 2>/dev/null)
   [ "$c" = "1" ] && P "6   status stanza $pk (1)" || F "6   status stanza $pk = $c (want 1)"
 done
@@ -324,6 +325,11 @@ map_ipk=$(ls /usr/palm/ipkgs/com.palm.app.maps/com.palm.app.maps_*_all.ipk 2>/de
 [ "$n" = "1" ] && P "9   maps ipk staged ($(basename "$map_ipk"))" \
   || F "9   maps ipk staging wrong: $n staged"
 [ ! -f /usr/palm/ipkgs/com.palm.app.enyo-findapps_5.0.2900_all.ipk ] && P "9   stock 5.0.2900 ipk removed" || F "9   stock catalog ipk still staged"
+[ ! -e /usr/palm/ipkgs/com.palm.app.calculator ] && P "9   stock Calculator preload removed" || F "9   stock Calculator preload still staged"
+grep -q '"version": "3.2.0"' /usr/palm/applications/com.palm.app.calculator/appinfo.json 2>/dev/null \
+  && P "9   Calculator 3.2.0 baked" || F "9   Calculator 3.2.0 not baked"
+[ -f /usr/lib/gstreamer-0.10/libgstcurlhttpsrc.so ] && [ ! -e /usr/lib/gstreamer-0.10/libgstsouphttpsrc.so ] \
+  && P "9   souphttpsrc is the Media TLS element (stock plugin absent)" || F "9   Media TLS: plugin set wrong [$(ls /usr/lib/gstreamer-0.10 | grep -i http | tr '\n' ' ')]"
 c=$(grep -c "org.webosarchive.appcatalog" $STATUS 2>/dev/null)
 [ "$c" = "0" ] && P "9   no mis-named appcatalog stanza" || F "9   mis-named org.webosarchive.appcatalog stanza present"
 # corrupt filenames from >100-char tar paths

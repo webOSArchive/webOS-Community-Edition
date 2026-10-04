@@ -1,5 +1,6 @@
 # ce-default-wallpaper — webOS CE: make the CE wallpaper the out-of-box
-# default. Only replaces the factory 01.jpg; any user choice is left alone.
+# default. Only replaces the factory wallpaper (01.jpg on hp.tar, 02.jpg on
+# att.tar, read from customization.json); any user choice is left alone.
 # Triggers BOTH per boot and at first-use completion: the OOBE finishes
 # without a reboot (markFirstUseDone + LunaSysMgr respawn), so a job that
 # only ran on 'stopped finish' fired before first use and then never again

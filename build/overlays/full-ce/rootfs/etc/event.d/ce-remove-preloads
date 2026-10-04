@@ -1,5 +1,6 @@
 # ce-remove-preloads — webOS CE: HP preloads we don't ship.
-# Staged by sweatshop-hp-topaz into /usr/lib/luna/customization/apps and
+# Staged by the sweatshop customization ipk (hp AND att stage the same three)
+# into /usr/lib/luna/customization/apps and
 # installed to /media/cryptofs/apps on first boot by com.palm.service.customization.
 # Delete the staged ipks before that install runs; also clear any cryptofs copy
 # already placed by an earlier flash/boot (cryptofs survives Doctor flashes).

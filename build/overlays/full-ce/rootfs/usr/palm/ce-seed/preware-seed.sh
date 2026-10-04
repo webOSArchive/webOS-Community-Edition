@@ -249,6 +249,34 @@ if ! grep -q "^Package: com.palm.app.backup$" $APPS/usr/lib/ipkg/status 2>/dev/n
       echo ""
    } >> $APPS/usr/lib/ipkg/status
 fi
+if ! grep -q "^Package: com.palm.app.videos$" $APPS/usr/lib/ipkg/status 2>/dev/null ; then
+   mkdir -p $APPS/usr/lib/ipkg
+   {
+      echo ""
+      echo "Package: com.palm.app.videos"
+      echo "Version: 3.2.0"
+      echo "Depends: "
+      echo "Status: install ok installed"
+      echo "Architecture: all"
+      echo "Description: Videos (webOS CE player)"
+      echo "Installed-Time: $(date +%s)"
+      echo ""
+   } >> $APPS/usr/lib/ipkg/status
+fi
+if ! grep -q "^Package: com.palm.app.calculator$" $APPS/usr/lib/ipkg/status 2>/dev/null ; then
+   mkdir -p $APPS/usr/lib/ipkg
+   {
+      echo ""
+      echo "Package: com.palm.app.calculator"
+      echo "Version: 3.2.0"
+      echo "Depends: "
+      echo "Status: install ok installed"
+      echo "Architecture: all"
+      echo "Description: Calculator (webOS CE)"
+      echo "Installed-Time: $(date +%s)"
+      echo ""
+   } >> $APPS/usr/lib/ipkg/status
+fi
 if ! grep -q "^Package: org.webosinternals.browser-tls13$" $APPS/usr/lib/ipkg/status 2>/dev/null ; then
    mkdir -p $APPS/usr/lib/ipkg
    {
@@ -319,6 +347,20 @@ if ! grep -q "^Package: com.palm.rootcertsupdate$" $APPS/usr/lib/ipkg/status 2>/
       echo ""
    } >> $APPS/usr/lib/ipkg/status
 fi
+if ! grep -q "^Package: org.webosarchive.media-tls13$" $APPS/usr/lib/ipkg/status 2>/dev/null ; then
+   mkdir -p $APPS/usr/lib/ipkg
+   {
+      echo ""
+      echo "Package: org.webosarchive.media-tls13"
+      echo "Version: 1.0.0"
+      echo "Depends: "
+      echo "Status: install ok installed"
+      echo "Architecture: armv7"
+      echo "Description: Media TLS 1.3 (Pre-loaded)"
+      echo "Installed-Time: $(date +%s)"
+      echo ""
+   } >> $APPS/usr/lib/ipkg/status
+fi
 if ! grep -q "^Package: org.webosinternals.curl-tls13$" $APPS/usr/lib/ipkg/status 2>/dev/null ; then
    mkdir -p $APPS/usr/lib/ipkg
    {
@@ -363,9 +405,9 @@ if ! grep -q "^Package: org.webosinternals.patches.notifications-advanced-reset-
 fi
 
 _seeded=0
-for _p in org.webosinternals.govnah com.palm.synergy.generic com.palm.app.backup org.webosinternals.browser-tls13 org.webosinternals.downloadmgr-tls13 org.webosinternals.luna-tls13 org.webosinternals.mail-tls13 com.palm.rootcertsupdate org.webosinternals.curl-tls13 org.webosinternals.ntpdate-sync org.webosinternals.patches.notifications-advanced-reset-options ; do
+for _p in org.webosinternals.govnah com.palm.synergy.generic com.palm.app.backup com.palm.app.videos com.palm.app.calculator org.webosinternals.browser-tls13 org.webosinternals.downloadmgr-tls13 org.webosinternals.luna-tls13 org.webosinternals.mail-tls13 com.palm.rootcertsupdate org.webosarchive.media-tls13 org.webosinternals.curl-tls13 org.webosinternals.ntpdate-sync org.webosinternals.patches.notifications-advanced-reset-options ; do
    grep -q "^Package: $_p$" $APPS/usr/lib/ipkg/status 2>/dev/null && _seeded=$((_seeded+1))
 done
-echo "CE status stanzas present: $_seeded of 11"
+echo "CE status stanzas present: $_seeded of 14"
 
 exit 0

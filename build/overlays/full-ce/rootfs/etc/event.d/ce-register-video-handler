@@ -1,0 +1,13 @@
+# ce-register-video-handler — webOS CE: make the Videos app
+# (com.palm.app.videos) the active, streamable handler for video
+# files and URLs, at RUNTIME (see ce-register-ipk-handler for why not a
+# static command-resource-handlers.json entry). The stock system-default
+# entries stay as alternates; com.palm.app.videoplayer hosts the same player.
+
+start on first-use-finished
+
+console none
+
+script
+    exec sh -e /usr/palm/ce-seed/jobs/ce-register-video-handler.sh
+end script

@@ -4,14 +4,20 @@
 # with a large inline script (see externalise_job_scripts).
 # Run by that job as `sh -e`: a lone failing command aborts it.
     CUSTO=/usr/lib/luna/customization/customization.json
-    if [ -f "$CUSTO" ] && grep -q 'wallpapers/01.jpg' "$CUSTO"; then
+    # The factory wallpaper name is VARIANT-SPECIFIC: hp.tar's
+    # customization.json sets 01.jpg, att.tar's sets 02.jpg. Derive it
+    # from the file rather than hardcoding, or this silently no-ops on
+    # any payload but the one it was written against.
+    FACT=""
+    [ -f "$CUSTO" ] && FACT=$(sed -n 's|.*/media/internal/wallpapers/\([^"]*\)".*|\1|p' "$CUSTO" | head -1)
+    if [ -n "$FACT" ] && [ "$FACT" != "22.jpg" ]; then
         # ce-remove-preloads fires on this same event and also flips /
         # rw->ro; take the shared lock so neither remounts under the other.
         L=/tmp/.ce-rootfs-rw.lock
         n=0
         while ! mkdir $L 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n+1)); done
         mount -o remount,rw / 2>/dev/null || true
-        sed -i 's|/01\.jpg|/22.jpg|g; s|"01\.jpg"|"22.jpg"|g' "$CUSTO"
+        sed -i "s|/$FACT|/22.jpg|g; s|\"$FACT\"|\"22.jpg\"|g" "$CUSTO"
         mount -o remount,ro / 2>/dev/null || true
         rmdir $L 2>/dev/null || true
         grep -q '22.jpg' "$CUSTO" \
@@ -45,7 +51,7 @@
     fi
     left=0
     found=0
-    for app in com.palm.app.accounts com.palm.app.backup com.palm.app.cloud-auth com.palm.app.contacts com.palm.app.firstuse com.palm.app.messaging com.palm.app.phone com.webosarchive.usbsettings org.webosinternals.govnah; do
+    for app in com.palm.app.accounts com.palm.app.backup com.palm.app.calculator com.palm.app.cloud-auth com.palm.app.contacts com.palm.app.firstuse com.palm.app.messaging com.palm.app.phone com.palm.app.videoplayer com.palm.app.videos com.webosarchive.usbsettings org.webosinternals.govnah; do
         [ -d "$APPS/usr/palm/applications/$app" ] || continue
         found=$((found+1))
         rm -rf "$APPS/usr/palm/applications/$app"

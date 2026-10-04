@@ -1,6 +1,6 @@
 # ce-firstboot-tweaks — webOS CE: (a) point the default-wallpaper entries in
-# hp.tar's customization.json at a CE wallpaper before the customization
-# service runs them; (b) once per flash, drop stale /media/cryptofs copies of
+# the customization payload's customization.json at a CE wallpaper before the
+# customization service runs them; (b) once per flash, drop stale /media/cryptofs copies of
 # apps this image bakes into the rootfs (cryptofs survives Doctor flashes and
 # a stale copy shadows the baked app).
 #

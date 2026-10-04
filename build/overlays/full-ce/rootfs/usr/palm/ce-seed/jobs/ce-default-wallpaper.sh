@@ -27,10 +27,21 @@
         log "systemservice never answered -- retrying on the next trigger"
         exit 0
     fi
-    if ! echo "$R" | grep -q '"01.jpg"'; then
-        # not the factory default: either we already ran, or the user chose
-        # their own. Either way leave it alone and stop asking.
-        log "wallpaper is not the factory 01.jpg -- leaving it alone"
+    if echo "$R" | grep -q '"22.jpg"'; then
+        log "wallpaper is already 22.jpg -- nothing to do"
+        mkdir -p /var/luna/preferences && touch "$FLAG"
+        exit 0
+    fi
+    # Still at the FACTORY default? That name is variant-specific (hp.tar
+    # 01.jpg, att.tar 02.jpg), so read it from the customization payload
+    # instead of hardcoding one. ce-firstboot-tweaks may already have
+    # rewritten that file to ours, which the branch above has covered.
+    FACT=$(sed -n 's|.*/media/internal/wallpapers/\([^"]*\)".*|\1|p' /usr/lib/luna/customization/customization.json 2>/dev/null | head -1)
+    [ -n "$FACT" ] || FACT=01.jpg
+    if ! echo "$R" | grep -q "\"$FACT\""; then
+        # not the factory default: the user chose their own. Leave it
+        # alone and stop asking.
+        log "wallpaper is not the factory $FACT -- leaving it alone"
         mkdir -p /var/luna/preferences && touch "$FLAG"
         exit 0
     fi

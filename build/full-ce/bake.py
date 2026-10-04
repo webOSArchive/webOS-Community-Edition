@@ -62,6 +62,9 @@ Tiers (hard order — browser lays down /usr/lib/ssl11 that the rest need):
                           deliberately stay unlisted
  14. USB settings      -> BAKED app + service + /usr/bin daemons + upstart + roles
  15. BT gamepad        -> shim lib + udev rule + jail/bluetoothtab/upstart patches
+ 15d. Videos          -> BAKED player + com.palm.app.videoplayer host + Photos hand-off
+ 15e. Media TLS       -> libcurl souphttpsrc in /usr/lib/gstreamer-0.10, stock plugin removed
+ 15f. Calculator      -> BAKED rootfs app (stock staged preload removed)
  16. Media-Internal    -> /usr/lib/luna/customization/copy_binaries/media/internal
  17. remove HP preloads (kindle/facebook/youtube) via early upstart job
  18. version string    -> "webOS CE 3.1.0", plus a same-length "HP webOS " ->
@@ -219,6 +222,13 @@ IPK = {
     # scripts/videos-app.sh release); Photos and the stock mimetype handler
     # hand off to it -- see Docs/VIDEO-PLAYER-REWRITE.md
     "videos":      ati_ipk(NEWAPPS, "com.palm.app.videos"),
+    # GStreamer souphttpsrc replacement on the CE libcurl (HTTPS streaming);
+    # build/full-ce/media-tls13, packaged by scripts/media-tls13.sh release
+    "media_tls":   ati_ipk(NEWAPPS, "org.webosarchive.media-tls13"),
+    # the scientific Calculator (apps/com.palm.app.calculator, packaged by
+    # scripts/calculator-app.sh release). PatchOrReplace: it takes over the
+    # stock preload under the same package name and app id.
+    "calculator":  ati_ipk(POR, "com.palm.app.calculator"),
     # woce-backup: a working Backup/Restore that stores on the device.
     # PatchOrReplace, not NewApps -- it takes over the stock
     # com.palm.app.backup id (the stock app is a dead UI over Palm's
@@ -898,6 +908,7 @@ def main():
         "./usr/palm/frameworks/enyo/0.10/framework/lib/accounts/",
         "./usr/palm/frameworks/enyo/0.10/framework/lib/contactsui/",
         "./usr/palm/ipkgs/",
+        "./usr/lib/gstreamer-0.10/",
         "./etc/palm/db/",
         "./etc/palm/tempdb/",
         # synergy retire-list entries (each is a file or a whole directory;
@@ -2437,7 +2448,7 @@ def main():
         sys.exit("ERROR: Preware feed block still contains an early `exit 0` — "
                  "anything appended after it would be dead code")
 
-    # Our own addition: ipkg status stanzas for the three packages this image
+    # Our own addition: ipkg status stanzas for the packages this image
     # BAKES into the rootfs. ipkg has no record of them, and Preware's
     # isInstalled check is a pure name match against the status file, so
     # without these it offers them as fresh installs. Description doubles as
@@ -2449,6 +2460,8 @@ def main():
         "govnah": "Govnah",
         "synergy": "Synergy Revival shared runtime",
         "backup": "Backup and Restore (woce-backup)",
+        "videos": "Videos (webOS CE player)",
+        "calculator": "Calculator (webOS CE)",
     }
     # Packages whose EFFECTS this image bakes, rather than the package itself.
     # A 3.0.5 device installs these through Preware; their postinst copies a
@@ -2474,6 +2487,7 @@ def main():
         "luna":        ("org.webosinternals.luna-tls13",        "TLS 1.3 for LunaSysMgr (Pre-loaded)"),
         "mail":        ("org.webosinternals.mail-tls13",        "TLS 1.3 for mail (Pre-loaded)"),
         "rootcerts":   ("com.palm.rootcertsupdate",             "Updated root certificates (Pre-loaded)"),
+        "media_tls":   ("org.webosarchive.media-tls13",         "Media TLS 1.3 (Pre-loaded)"),
     }
     for pkey, (pname, pdesc) in PATCH_SEED.items():
         STATUS_SEED_DESC[pkey] = pdesc
@@ -2491,7 +2505,7 @@ def main():
     # underscore quirk, so splitting on "_" would seed a stanza for a package
     # called "com.palm".
     seed_specs = []
-    for skey in ("govnah", "synergy", "backup"):
+    for skey in ("govnah", "synergy", "backup", "videos", "calculator"):
         sipk = IPK[skey]
         seed_specs.append((os.path.basename(sipk).split("_")[0], sipk,
                            STATUS_SEED_DESC[skey]))
@@ -2987,6 +3001,39 @@ def main():
           os.path.join(d, "usr/palm/applications/com.palm.app.videos/tweaks/"
                           "com.palm.app.videos.json"), 0o644)
     log("  player under com.palm.app.videoplayer + Tweaks definition staged")
+
+    # 15e) Media TLS: the package's postinst swaps GStreamer's HTTP source on a
+    # running device; the image bakes the result. media-pipeline creates
+    # "souphttpsrc" BY NAME, so the stock libsoup/GnuTLS plugin must leave the
+    # plugin directory -- two plugins offering the name would make the winner
+    # registry-order dependent. A flash starts with no registry cache under
+    # /var/home, so nothing stale needs dropping. The element links the
+    # OpenSSL 1.1 libcurl the browser-tls13 tier put in /usr/lib/ssl11.
+    log(f"tier: Media TLS BAKED ({os.path.basename(IPK['media_tls'])})")
+    d = ipk_extract_data(IPK["media_tls"], os.path.join(tmp, "media_tls"))
+    GST = "usr/lib/gstreamer-0.10"
+    if not os.path.lexists(os.path.join(OUT_ROOT, "usr/lib/ssl11/libcurl.so.4")):
+        sys.exit("ERROR: Media TLS needs usr/lib/ssl11/libcurl.so.4 (browser-tls13 tier)")
+    wcopy(f"{GST}/libgstcurlhttpsrc.so",
+          os.path.join(d, "usr/palm/applications/org.webosarchive.media-tls13/files/"
+                          "libgstcurlhttpsrc.so"), 0o644)
+    if f"./{GST}/libgstsouphttpsrc.so" not in stock_names:
+        sys.exit(f"ERROR: no stock {GST}/libgstsouphttpsrc.so to replace")
+    removes.append(f"/{GST}/libgstsouphttpsrc.so")
+    log(f"  souphttpsrc = libcurl element; stock {GST}/libgstsouphttpsrc.so removed")
+
+    # 15f) Calculator: the stock app is a cryptofs PRELOAD (staged ipk under
+    # /usr/palm/ipkgs). Bake the CE build as a ROOTFS app -- where an OTA of the
+    # same ipk lands too -- and remove the stock staged ipk so first boot does
+    # not install the old 1.0.0 into cryptofs beside it (the maps/catalog
+    # pattern).
+    log(f"tier: Calculator BAKED ({os.path.basename(IPK['calculator'])})")
+    d = ipk_extract_data(IPK["calculator"], os.path.join(tmp, "calculator"))
+    calc_baked = bake_tree(d)
+    if "usr/palm/applications/com.palm.app.calculator/appinfo.json" not in calc_baked:
+        sys.exit(f"ERROR: {os.path.basename(IPK['calculator'])}: payload has no "
+                 "usr/palm/applications/com.palm.app.calculator/appinfo.json")
+    remove_staged_ipk("com.palm.app.calculator")
 
     log(f"tier: BT gamepad BAKED ({os.path.basename(IPK['bt'])})")
     d = ipk_extract_data(IPK["bt"], os.path.join(tmp, "bt"))
