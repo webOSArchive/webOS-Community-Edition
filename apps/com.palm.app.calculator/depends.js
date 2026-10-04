@@ -7,6 +7,8 @@ enyo.depends(
 	"source/Small.js",              // Small, but all the basic buttons.
 	"source/Tiny.js",               // Trivial four-function layout.
 	"source/TinyAlt.js",               // Trivial four-function alternatelayout.
+	"source/Scientific.js",         // Math for the scientific keys.
+	"source/Wide.js",               // Landscape layout with scientific keys.
 	"source/Calculator.js",		// The top level calculating machinery (and button layout for now).
 	"css/Calculator.css"
 );

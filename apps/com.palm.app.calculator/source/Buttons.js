@@ -43,12 +43,35 @@ enyo.kind({
         operation: "unaryOp"    // Defined by our app.
 });
 
-// Some specific, reusable buttons
+// Some specific, reusable buttons. label() renders the op for the expression line.
 enyo.kind({name: "Calc.bsp", kind: "Calc.Button", 
             className: "calc-backspace-key", // Why doesn't calc-operator-key get picked up automatically from Calc.Button?
                                 operation: "bsp"
             });
 enyo.kind({name: "Calc.g", kind: "Calc.Button", caption: $L({key: "changeSignKey", value: "\u00B1"}), operation: "changeSign"});
-enyo.kind({name: "Calc.q", kind: "Calc.UnaryOp", caption: $L({key: "squareRootKey", value: "\u221A"}), op: function (v) { return Math.sqrt(v); } });
-enyo.kind({name: "Calc.%", kind: "Calc.UnaryOp", caption: $L("%"),  op: "pendingDependentPercent"});
+enyo.kind({name: "Calc.q", kind: "Calc.UnaryOp", caption: $L({key: "squareRootKey", value: "\u221A"}), op: function (v) { return Math.sqrt(v); }, label: function (t) { return "\u221A" + Calc.Sci.paren(t); } });
+enyo.kind({name: "Calc.%", kind: "Calc.UnaryOp", caption: $L("%"),  op: "pendingDependentPercent", label: function (t) { return t + "%"; }});
 enyo.kind({name: "Calc.c", kind: "Calc.Button", caption: $L({key: "clearKey", value: "C"}), operation: "ce", className: "calc-operator-key calc-command-key"});
+
+// Scientific keys (landscape layout). The key's fn names an entry in Calc.Sci.FUNCS;
+// fn2/caption2, if given, are what the key does and says while 2nd is on.
+enyo.kind({
+        name: "Calc.Fn",
+        kind: "Calc.Button",
+        className: "calc-function-key",
+        allowHtml: true,
+        operation: "fn",
+        create: function() {
+                if (arguments.length && !arguments[0].name) {
+                        arguments[0].name = arguments[0].fn;
+                }
+                this.inherited(arguments);
+                this.caption1 = this.caption;
+        },
+        setSecond: function(on) {
+                if (this.caption2) {this.setCaption(on ? this.caption2 : this.caption1);}
+        },
+        currentFn: function(second) {
+                return (second && this.fn2) || this.fn;
+        }
+});

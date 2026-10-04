@@ -5,13 +5,18 @@ enyo.kind({
         name: "Calc.App",// A desktop calculator.
         published: {        // Operating registers, independent of display:
                 result: 0,              // Current display, as a number rather than a string.
-                pending: null,  // Curent display.content is saved in pending when an operator is entered.
-                op: "",         // The operator that will be applied when we total things up. 
-                pending2: null, // For algebraic precedence. FIXME? Consider using a stack for multiple precedences.
-                op2: "",        
                 memory: null,    // For m+, m-, mc, mr operators.
                 entryCleared: false
         },
+        // The pending calculation: one level per open parenthesis. Each level is an
+        // operator-precedence stack, vals[0] ops[0] vals[1] ops[1] ..., reduced as
+        // operators arrive. A val is {v: number, t: label for the expression line}.
+        levels: null,
+        lastWasOp: false,       // The last key was a binary operator, so another one replaces it.
+        entryLabel: null,       // How to show the current entry if it isn't just the number, e.g. "sin(30)".
+        lastExpression: "",     // What was just totalled, shown above the result.
+        second: false,          // The 2nd key is on.
+        activeOp: null,         // The highlighted operator button.
         clearDisplayOnEntry: false,
         memoryRecalled: false,
         precision: 15,          // Max precision that is meaningful. Don't allow input or display to imply more.
@@ -20,9 +25,11 @@ enyo.kind({
         parsableEnglishDisplayString: "0",
         
         kind: "enyo.Pane",
+        transitionKind: "enyo.transitions.Simple",  // Rotation swaps layouts instantly.
         components: [
                      {name: "small", kind: "Calc.Small"},
-                     {name: "big", kind: "Calc.Simple"},
+                     {name: "wide", kind: "Calc.Wide"},
+                     {kind: "ApplicationEvents", onApplicationRelaunch: "relaunched"},
                      {kind: "AppMenu",
                       // 1. Why is this necessary? Bug? 2. Should be in style sheet (if needed at all), but that's in production now.
                       style: "width: 210px; height: 160px",  //height needs 200 w/toggle. 210 is the min-width specified in the inherited styling
@@ -34,18 +41,48 @@ enyo.kind({
                                   ]}
                      ],
         statics: {
-                MEMORY_VALUE: new enyo.g11n.Template($L("M: #{value}"))
+                MEMORY_VALUE: new enyo.g11n.Template($L("M: #{value}")),
+                // Binary operators. prec: higher binds tighter. right: right-associative (2^3^2 = 2^9).
+                OPS: {
+                        "+": {prec: 1, sym: "+", f: function (a, b) { return a + b; }},
+                        "-": {prec: 1, sym: "\u2013", f: function (a, b) { return a - b; }},
+                        "*": {prec: 2, sym: "\u00D7", f: function (a, b) { return a * b; }},
+                        "/": {prec: 2, sym: "\u00F7", f: function (a, b) { return a / b; }},
+                        "pow": {prec: 3, right: true, sym: "^", f: Math.pow},
+                        "root": {prec: 3, right: true, sym: " \u02B8\u221A ", f: function (a, b) { return Calc.Sci.root(a, b); },
+                                 label: function (a, b) { return b + "\u221A" + Calc.Sci.paren(a); }},
+                        "logy": {prec: 3, sym: " log\u1D67 ", f: function (a, b) { return Math.log(a) / Math.log(b); },
+                                 label: function (a, b) { return "log" + Calc.Sci.paren(b) + Calc.Sci.paren(a); }}
+                }
         },
-        toggleSize: function() {
-            var v = this.getView() === this.$.big ? this.$.small : this.$.big;
-            this.setResult(this.getCurrentEntry());  // Cache result before the change, so we don't lose displayed value.
+        // Portrait gets the stock layout; landscape gets the scientific one.
+        chooseView: function() {
+            var wide = window.innerWidth > window.innerHeight && window.innerWidth >= 900;
+            var v = wide ? this.$.wide : this.$.small;
+            if (v === this.getView()) {return false;}
             this.selectView(v);
             this.viewSelected(this, v);
+            return true;
         },
         viewSelected: function (inSender, inView) {
+            if (this.activeOp) {this.activeOp.setState("active", false); this.activeOp = null;}
             this.buttons = inView.$;
             this.displayLength = inView.displayLength;
+            this.secondChanged();
+            this.angleChanged();
             enyo.asyncMethod(this, "adjustHeightsAndUpdateDisplays");
+        },
+        relaunched: function() {
+            // Test hook, so the keypad can be driven without a finger:
+            //   luna-send -n 1 palm://com.palm.applicationManager/launch
+            //     '{"id":"com.palm.calculator","params":{"keys":["2","pow","1","0","="]}}'
+            // "orientation" ("up", "left", "free", ...) pins the window, to try both layouts.
+            var p = enyo.windowParams || {};
+            if (p.orientation) {enyo.setAllowedOrientation(p.orientation);}
+            var keys = p.keys || [];
+            for (var i = 0; i < keys.length; i++) {
+                if (this.buttons[keys[i]]) {this.clickHandler(this.buttons[keys[i]]);}
+            }
         },
         copyFromDisplay: function() {
             var txt = this.buttons.display.getContent();
@@ -87,10 +124,11 @@ enyo.kind({
 
         create: function() {
                 this.inherited(arguments);
-                this.viewSelected(this, this.getView());
-                this.ac();  // Comment out this line to make any dummy display values visible on launch.
+                try { Calc.Sci.degrees = window.localStorage.getItem("calc.angle") !== "rad"; } catch (e) {}
                 var fmts = new enyo.g11n.Fmts();
                 this._decimal = fmts.dateTimeFormatHash.numberDecimal;
+                if (!this.chooseView()) {this.viewSelected(this, this.getView());}
+                this.ac();  // Comment out this line to make any dummy display values visible on launch.
                 this.memoryClear();
         },
         trim: function(n, size) { // Prepares a number for textual display, limiting displayLength and internationalizing.
@@ -163,26 +201,40 @@ enyo.kind({
                 this.parsableEnglishDisplayString = ""+this.result;
                 disp.setContent(this.trim(this.result));
         },
-        pendingChanged: function(old) {
-                var disp = this.buttons.pendingDisplay;
-                disp && disp.setContent(this.pending!==null ? this.trim(this.pending) : '');
-        },
-        pending2Changed: function(old) {
-                var disp = this.buttons.pendingDisplay2;
-                disp && disp.setContent(this.pending2!==null ? this.trim(this.pending2) : '');
-        },
-        setOpDisplay: function(disp, op) {
+        // The pending stack changed: keep the operator highlight, the C key and
+        // the expression line consistent with it.
+        pendingChanged: function() {
+            var name = this.topOp();
+            var b = name ? this.findOpButton(name) : null;
+            if (b !== this.activeOp) {
+                if (this.activeOp) {this.activeOp.setState("active", false);}
+                if (b) {b.setState("active", true);}
+                this.activeOp = b;
+            }
+            this.entryClearedChanged();
+            var disp = this.buttons.exprText;
             if (!disp) {return;}
-            if (!op) {return disp.setContent("");}
-            disp.setContent(op.smallCaption || op.getCaption());
+            var text = this.hasPending() ? this.expressionText() + (this.lastWasOp ? "" : this.entryLabel || "") : this.lastExpression;
+            disp.setContent(text || "\u00A0");
         },
-        opChanged: function(oldOp) {
-            if (oldOp !== "") {oldOp.setState("active", false);}
-            if (this.op !== "") {this.op.setState("active", true);}
-            this.setOpDisplay(this.buttons.operatorDisplay, this.op);
+        findOpButton: function(name) {
+            if (this.buttons[name] && this.buttons[name].operation === "binaryOp") {return this.buttons[name];}
+            for (var bi in this.buttons) {  // e.g., log_y lives on the ln key.
+                if (this.buttons.hasOwnProperty(bi) && this.buttons[bi].fn2 === name) {return this.buttons[bi];}
+            }
+            return this.buttons[name] || null;
         },
-        op2Changed: function() {
-            this.setOpDisplay(this.buttons.operatorDisplay2, this.op2);
+        expressionText: function() {
+            var ops = Calc.App.OPS, parts = [];
+            for (var i = 0; i < this.levels.length; i++) {
+                var level = this.levels[i], s = i ? "(" : "";
+                for (var j = 0; j < level.vals.length; j++) {
+                    s += level.vals[j].t;
+                    if (j < level.ops.length) {s += ops[level.ops[j]].sym;}
+                }
+                parts.push(s);
+            }
+            return parts.join("");
         },
         memoryChanged: function() {
                 var disp = this.buttons.memoryDisplay;
@@ -194,15 +246,26 @@ enyo.kind({
                 disp.setContent(mem);
         },
        entryClearedChanged: function() {
-            this.buttons.c.setState("active", this.entryCleared && (this.pending!==null));
+            this.buttons.c.setState("active", this.entryCleared && this.hasPending());
+        },
+        secondChanged: function() {
+            for (var bi in this.buttons) {
+                if (this.buttons.hasOwnProperty(bi) && this.buttons[bi].setSecond) {this.buttons[bi].setSecond(this.second);}
+            }
+            if (this.buttons.second) {this.buttons.second.setState("active", this.second);}
+        },
+        angleChanged: function() {
+            var deg = Calc.Sci.degrees;
+            if (this.buttons.angleDisplay) {this.buttons.angleDisplay.setContent(deg ? $L("Deg") : $L("Rad"));}
+            if (this.buttons.angle) {this.buttons.angle.setCaption(deg ? $L("Rad") : $L("Deg"));}
         },
         adjustHeightsAndUpdateDisplays: function() {
             this.adjustHeights();
-            this.setResult(this.getCurrentEntry());
-            this.setPending(this.getPending());
-            this.setOp(this.getOp());
-            this.setPending2(this.getPending2());
-            this.setOp2(this.getOp2());     
+            // Redisplay the entry without disturbing it (e.g., a half-typed number survives rotation).
+            var disp = this.buttons.display;
+            if (this.clearDisplayOnEntry || this.memoryRecalled) {disp.setContent(this.trim(this.result));}
+            else {disp.setContent(this.parsableEnglishDisplayString.replace(".", this._decimal));}
+            this.pendingChanged();
             this.setMemory(this.getMemory());
         },
         adjustHeights: function() {
@@ -223,7 +286,7 @@ enyo.kind({
                 container.style.fontSize = Math.floor(s * 0.9) + "px";
                 if (aux) {aux.hasNode().style.fontSize = Math.floor(s * 0.5) + "px";}
                 
-                displaynode.style.fontSize = Math.floor(s * 0.9) + "px";
+                displaynode.style.fontSize = Math.floor(s * 0.9 * (v.displayScale || 1)) + "px";
                 displaynode.style.lineHeight = displaynode.clientHeight + "px"; // Why doesn't a static relative style (e.g., 1 or 100%) work?
 
                 if (v.name === "small") {return;} // Hack. This layout is independent of width. There could be other such layouts.
@@ -234,7 +297,7 @@ enyo.kind({
         },
         // The next two cause us to adjust heights on resize and when first rendered.
         resizeHandler: function() {
-                this.adjustHeightsAndUpdateDisplays();
+                if (!this.chooseView()) {this.adjustHeightsAndUpdateDisplays();}
         },
         rendered: function() {
                 this.inherited(arguments);
@@ -243,8 +306,14 @@ enyo.kind({
         clickHandler: function(inSender, inEvent) { // Trampoline to invoke the operation defined by the inSender (button), in our context
             var op = this[inSender.operation];
             if (!op) {return;} // e.g., a click that is not on a button.
-            op.call(this, inSender, inEvent);   // ... as if the button were defined here instead of some layout kind.
+            // ... as if the button were defined here instead of some layout kind.
+            // An operation that answers false changed nothing; a binary operator answers true.
+            var r = op.call(this, inSender, inEvent);
+            if (r !== false && !this.neutralOps[inSender.operation]) {this.lastWasOp = r === true;}
+            this.pendingChanged();
         },
+        // Keys that don't count as an entry, so an operator before them can still be replaced.
+        neutralOps: {memoryClear: true, memoryAdd: true, memorySubt: true, toggleSecond: true, toggleAngle: true},
 
 
         // Editing events.
@@ -258,6 +327,7 @@ enyo.kind({
                 if (c==="" || c==="-" || this.clearDisplayOnEntry) {c = "0";}
                 this.clearDisplayOnEntry = false;
                 this.memoryRecalled = false;
+                this.entryLabel = null;
                 this.parsableEnglishDisplayString = c;
                 d.setContent(c.replace(".", this._decimal));
         },
@@ -266,17 +336,46 @@ enyo.kind({
                 // Two ce's in a row do ac.
                 if (this.getEntryCleared()) {this.ac(); return;}
                 this.setEntryCleared(true);
+                this.entryLabel = null;
                 this.setResult(0); // which changes display and parsableEnglishDisplayString
         },
         ac: function() {
                 // reset everything, i.e., All Clear
+                this.levels = [{vals: [], ops: []}];
+                this.lastWasOp = false;
+                this.entryLabel = null;
+                this.lastExpression = "";
                 this.setResult(0);   // which changes display
-                this.setPending(null);
-                this.setOp("");
-                this.setPending2(null);
-                this.setOp2("");
                 this.clearDisplayOnEntry = false;
                 this.setEntryCleared(false);
+                this.pendingChanged();
+        },
+        hasPending: function() {
+                return !!this.levels && (this.levels.length > 1 || this.levels[0].vals.length > 0);
+        },
+        topLevel: function() {
+                return this.levels[this.levels.length - 1];
+        },
+        topOp: function() {
+                if (!this.levels) {return null;}
+                var ops = this.topLevel().ops;
+                return ops.length ? ops[ops.length - 1] : null;
+        },
+        currentLabel: function() {
+                // The current entry as the expression line should show it. Call before getCurrentEntry().
+                return this.entryLabel || this.buttons.display.getContent();
+        },
+        reduceOnce: function(level) {
+                var b = level.vals.pop(), a = level.vals.pop(), op = Calc.App.OPS[level.ops.pop()];
+                var t = op.label ? op.label(a.t, b.t) : a.t + op.sym + b.t;
+                level.vals.push({v: op.f(a.v, b.v), t: t});
+        },
+        reduceLevel: function(level) {
+                // Push the current entry and collapse the level to one value.
+                var t = this.currentLabel();
+                level.vals.push({v: this.getCurrentEntry(), t: t});
+                while (level.ops.length) {this.reduceOnce(level);}
+                return level.vals.pop();
         },
         
         getCurrentEntry: function() {
@@ -305,6 +404,8 @@ enyo.kind({
                 var adding = inSender.getCaption();
                 var allowedDigits = this.precision;
                 this.memoryRecalled = false;
+                this.entryLabel = null;
+                if (!this.hasPending()) {this.lastExpression = "";}
                 if (adding === this._decimal) {
                         // do everything in scientific format, then convert back to locale-specific formatting again later
                         adding = ".";
@@ -340,60 +441,118 @@ enyo.kind({
         },
         unaryOp: function(inSender) {
                 // Replace the result with the result of applying sender's operator to display.
+                this.applyUnary(inSender.op, inSender.label);
+        },
+        applyUnary: function(f, label) {
+                var t = this.currentLabel();
                 var c = this.getCurrentEntry();
                 // There are two ways for the op to be specified in the components configuration:
                 // either as a function literal, or as a string. In the later case, function is defined in app.
-                c = typeof inSender.op === 'function' ? inSender.op(c) : this[inSender.op](c);
+                c = typeof f === 'function' ? f(c) : this[f](c);
                 this.setResult(c);
+                this.entryLabel = label ? label(t) : null;
+        },
+        fn: function(inSender) {
+                // A scientific key: dispatch on what it does (see Calc.Sci.FUNCS).
+                var name = inSender.currentFn(this.second);
+                var def = Calc.Sci.FUNCS[name];
+                switch (def.kind) {
+                case "unary":
+                        return this.applyUnary(def.f, def.label);
+                case "binary":
+                        return this.pushOperator(name);
+                case "constant":
+                        this.getCurrentEntry();  // Housekeeping: a new entry starts after this.
+                        this.setEntryCleared(false);
+                        this.setResult(def.value());
+                        this.entryLabel = def.label || null;
+                        return;
+                }
+        },
+        toggleSecond: function() {
+                this.second = !this.second;
+                this.secondChanged();
+        },
+        toggleAngle: function() {
+                Calc.Sci.degrees = !Calc.Sci.degrees;
+                try { window.localStorage.setItem("calc.angle", Calc.Sci.degrees ? "deg" : "rad"); } catch (e) {}
+                this.angleChanged();
+        },
+        openParen: function() {
+                // A number (or a closed group) right before "(" multiplies it, as written on paper: 2(3+4).
+                var implicit = this.entryLabel || (!this.clearDisplayOnEntry && this.parsableEnglishDisplayString !== "0");
+                if (implicit && !this.lastWasOp) {this.pushOperator("*");}
+                else if (!this.hasPending()) {this.lastExpression = "";}
+                this.levels.push({vals: [], ops: []});
+                this.entryLabel = null;
+                this.setEntryCleared(false);
+                this.setResult(0);
+                this.clearDisplayOnEntry = true;
+        },
+        closeParen: function() {
+                if (this.levels.length < 2) {return false;}
+                var e = this.reduceLevel(this.levels.pop());
+                this.setResult(e.v);
+                this.clearDisplayOnEntry = true;  // The group's value is the entry now.
+                this.entryLabel = "(" + e.t + ")";
         },
         binaryOp: function(inSender) {
-                var opOld = this.getOp();
-                var opNew = inSender;
-                // Set op and capture display in pending -- leaving display alone as stale data.
-                //  This allows the usage: entry, op, = (meaning entry op entry =)
-                // If there's already pending data, total it.
-
+                return this.pushOperator(inSender.getName());
+        },
+        pushOperator: function(name) {
                 // It is not clear if user expect entry, op1, op2, =  to be:
                 //    entry op2 entry
                 // or
                 //    entry op1 entry op2 entry
-                // Here we implement the first behavior. The second can be achieved by removing
-                //    && !this.clearDisplayOnEntry
-                // and adjusting the 'replaces operator with new' test spec.
-                if (this.getPending() !== null && !this.clearDisplayOnEntry) {
-                    // If we were just left to right, we would always totalOp() here.
-                    var isNewHigh = (opNew.getName()==="*") || (opNew.getName()==="/");
-                    if (isNewHigh && ((opOld.getName()==="+") || (opOld.getName()==="-"))) {
-                        this.setOp2(opOld);
-                        this.setPending2(this.getPending());
-                    } else {
-                        this.totalOp(null, null, isNewHigh);
-                    }
+                // Here we implement the first behavior: a second operator in a row replaces the first.
+                var level = this.topLevel(), v, t;
+                if (this.lastWasOp) {
+                        level.ops.pop();
+                        var prev = level.vals.pop();
+                        v = prev.v; t = prev.t;
+                } else {
+                        t = this.currentLabel();
+                        v = this.getCurrentEntry();
                 }
-                this.setOp(opNew);
-                this.setPending(this.getCurrentEntry());
-                this.setResult(this.getPending());
+                // Algebraic precedence: settle everything on the stack that binds at least as tightly.
+                var ops = Calc.App.OPS, def = ops[name];
+                level.vals.push({v: v, t: t});
+                while (level.ops.length) {
+                        var top = ops[level.ops[level.ops.length - 1]];
+                        if (top.prec > def.prec || (top.prec === def.prec && !def.right)) {this.reduceOnce(level);}
+                        else {break;}
+                }
+                level.ops.push(name);
+                // Show the subtotal (or the operand), left as stale data until a new digit is entered.
+                // This allows the usage: entry, op, = (meaning entry op entry =)
+                this.setResult(level.vals[level.vals.length - 1].v);
+                this.clearDisplayOnEntry = true;
+                this.entryLabel = null;
+                this.setEntryCleared(false);
+                return true;
         },
-        totalOp: function(ignoredSender, ignoredEvent, isSubTotal) {
-                // result = pending op display.content, and update display/op/pending
-                var op = this.getOp();
-                var p = this.getPending();
-                var c = this.getCurrentEntry();
-                if (!op) {p=c;}
-                else {
-                        // N.B.: entry only allows c to contain digits and decimal.
-                        p = eval(p + " " + op.getName() + " " + c); // spaces necessary, eg., -1 - -1
+        totalOp: function() {
+                // Close any open parentheses and settle the whole stack.
+                if (!this.hasPending()) {
+                        // Nothing pending: = just settles the entry (and shows e.g. "sin(30)" above it).
+                        this.lastExpression = this.entryLabel || "";
+                        this.setResult(this.getCurrentEntry());
+                        this.entryLabel = null;
+                        return;
                 }
-                // And then take care of any stacked up addition or substraction.
-                op = this.getOp2();
-                if (!isSubTotal && op) {
-                    p = eval(this.getPending2() + " " + op.getName() + " " + p);
-                    this.setOp2("");
-                    this.setPending2(null);
+                var e;
+                while (this.levels.length) {
+                        e = this.reduceLevel(this.levels.pop());
+                        if (this.levels.length) {
+                                this.setResult(e.v);
+                                this.clearDisplayOnEntry = true;
+                                this.entryLabel = "(" + e.t + ")";
+                        }
                 }
-                this.setResult(p);
-                this.setOp("");
-                this.setPending(null);
+                this.levels = [{vals: [], ops: []}];
+                this.lastExpression = e.t;
+                this.entryLabel = null;
+                this.setResult(e.v);
         },
         
         // Other operations. These cannot be in the components configuration literals
@@ -403,6 +562,7 @@ enyo.kind({
                 var dString = d.getContent();
                 var c = this.getCurrentEntry();
                 c = 0 - c;
+                this.entryLabel = null;
                 this.setResult(c);  // Right value, but possibly wrong precision.
                 this.clearDisplayOnEntry = false; 
                 // Now fix precision display. (Does not effect registers.)
@@ -442,17 +602,18 @@ enyo.kind({
                 if (m===null) {return;}   // Or we could do m += 0, but that's probably not the right DWIM
                 this.clearDisplayOnEntry = true;       
                 this.setResult(m);
+                this.entryLabel = null;
                 this.memoryRecalled = true;  // Prevents string roundoff
         },
 
         // Small unary ops. Not a button operation, but a function invoked by unaryOp.
         pendingDependentPercent: function (v) { 
-            var op = this.getOp();
-            switch (op && op.getName()) {
+            switch (this.topOp()) {
             case "+": // Either + or -
             case "-":  
                 // Do the pending op, but not as a total -- keep the pending data around without clearing it.
-                return this.getPending() * (v / 100);
+                var vals = this.topLevel().vals;
+                return vals[vals.length - 1].v * (v / 100);
             default:
                 return v / 100;
             }

@@ -1,6 +1,6 @@
 ﻿/* To be determined by the Human Interface designers. */
 
-.calc-key, .calc-operator-key, .calc-command-key {
+.calc-key, .calc-operator-key, .calc-command-key, .calc-function-key {
 	text-align: center;
 	font-weight: bold;
 	text-shadow: 0 0 5px rgba(0, 0, 0, .4);
@@ -10,7 +10,7 @@
 	padding: 0 0 2px 0;
 }
 
-.calc-key.enyo-button-down, .calc-operator-key.enyo-button-down, .calc-command-key.enyo-button-down {
+.calc-key.enyo-button-down, .calc-operator-key.enyo-button-down, .calc-command-key.enyo-button-down, .calc-function-key.enyo-button-down {
 	padding: 2px 0 0 0;
 }
 
@@ -100,4 +100,72 @@
 	background-position: 16px -59px;
 	-webkit-border-image: url(../images/backspace.png) top center no-repeat;
 	margin-right: -22px;
+}
+
+/* Landscape (scientific) layout: Calc.Wide. */
+
+.calc-wide-body {
+	width: 938px;
+	height: 690px;
+	border-width: 40px;
+	-webkit-border-image: url(../images/calc-bg-wide.png) 40 40 40 40;
+}
+
+.calc-wide-gap {
+	width: 18px;
+}
+
+.calc-function-key {
+	text-align: center;
+	vertical-align: center;
+	font-family: "Prelude Medium";
+	font-size: 70%;
+	white-space: nowrap;
+	-webkit-border-image: url(../images/key-function.png) 15 15 15 15 stretch stretch;
+}
+
+.calc-function-key.enyo-button-down {
+	-webkit-border-image: url(../images/key-function-down.png) 15 15 15 15 stretch stretch;
+}
+
+.calc-function-key.enyo-button-active {
+	color: LightSteelBlue;
+}
+
+/* 2nd stays latched down while it's on. */
+.calc-second-key.enyo-button-active {
+	-webkit-border-image: url(../images/key-function-down.png) 15 15 15 15 stretch stretch;
+}
+
+.calc-function-key sup, .calc-function-key sub {
+	font-size: 60%;
+	line-height: 0;
+}
+
+.calc-wide-bsp {
+	width: 80px;
+}
+
+.calc-wide-aux {
+	color: #9fb4b8;
+	text-shadow: none;
+	line-height: 1.6em;
+	padding-top: 4px;
+}
+
+.calc-indicator {
+	text-align: left;
+	margin-right: 0.8em;
+}
+
+/* Long expressions lose their beginning, not their end. */
+.calc-expr {
+	overflow: hidden;
+	white-space: nowrap;
+	direction: rtl;
+}
+
+.calc-expr-text {
+	direction: ltr;
+	unicode-bidi: embed;
 }
