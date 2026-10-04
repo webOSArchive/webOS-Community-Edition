@@ -1,0 +1,12 @@
+{
+	"icon": "../../icon.png",
+	"id": "com.palm.calculator",
+	"main": "../../index.html",
+	"removable": false,
+	"splashicon": "../../icon-256x256.png",
+	"title": "Calculatrice",
+	"type": "web",
+	"uiRevision": "2",
+	"vendor": "HP",
+	"version": "1.0.0"
+}

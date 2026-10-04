@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+	<title>Jasmine Test Runner</title>
+	
+	<!-- If, e.g., svn co https://subversion.palm.com/main/nova/palm/jasmine ../../ -->
+	<link rel="stylesheet" type="text/css" href="../../jasmine/jasmine.css">
+	<script type="text/javascript" src="../../jasmine/jasmine.js"></script>
+	<script type="text/javascript" src="../../jasmine/jasmine-html.js"></script>
+
+	<!-- Just like the app's index.html does -->
+	<script type="text/javascript" src="/usr/palm/frameworks/enyo/0.10/framework/enyo.js"></script>
+	
+	<!-- INCLUDE ALL SPEC FILES HERE -->	
+	<script type="text/javascript" src="spec/unit/source/CalculatorSpec.js"></script>
+</head>
+
+<body>
+	<script type="text/javascript">
+		jasmine.getEnv().addReporter(new jasmine.TrivialReporter());
+		jasmine.getEnv().execute();
+	</script>
+</body>
+</html>
