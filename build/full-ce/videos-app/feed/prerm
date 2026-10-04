@@ -1,0 +1,48 @@
+#!/bin/sh
+# com.palm.app.videos — undo everything postinst did; the stock player
+# comes back after the Luna restart Preware offers (PreRemove flag).
+#
+# Never block on a bus call here. ipkgservice installs this script as
+# .scripts/<id>/pmPreRemove.script and LunaSysMgr's appinstaller runs it
+# SYNCHRONOUSLY during remove; a luna-send to com.palm.applicationManager
+# (LunaSysMgr itself) then never returns and the whole UI freezes until a
+# hard reboot (2026-09-14, twice, via Preware). The video handlers need no
+# undo: the RestartLuna flag on removal rescans them without this app.
+LOG=/var/log/com.palm.app.videos-install.log
+log() { echo "$(date 2>/dev/null) $*" >> $LOG 2>/dev/null; echo "videos: $*"; }
+
+PH=/media/cryptofs/apps/usr/palm/applications/com.palm.app.photos/source/AlbumGridView.js
+if [ -f "$PH.webosce-orig" ]; then
+    cp -p "$PH.webosce-orig" "$PH" && rm -f "$PH.webosce-orig" && log "Photos: stock album grid restored"
+fi
+
+VPD=/usr/palm/applications/com.palm.app.videoplayer
+if [ -f "$VPD/index.html.webosce-orig" ] || [ -f "$VPD/appinfo.json.webosce-orig" ]; then
+    L=/tmp/.ce-rootfs-rw.lock
+    n=0; while ! mkdir $L 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n+1)); done
+    if mount -o remount,rw / 2>/dev/null; then
+        for f in index.html appinfo.json; do
+            [ -f "$VPD/$f.webosce-orig" ] && cp -p "$VPD/$f.webosce-orig" "$VPD/$f.new" && mv -f "$VPD/$f.new" "$VPD/$f" && rm -f "$VPD/$f.webosce-orig"
+        done
+        rm -rf "$VPD/source" "$VPD/css" "$VPD/depends.js"
+        for i in menu-icons.png command-menu-gradient.png command-menu-gradient-top.png palm-menu-button.png; do rm -f "$VPD/images/$i"; done
+        if [ -f "$VPD/app/controllers/app-assistant.js.webosce-orig" ]; then
+            mv -f "$VPD/app/controllers/app-assistant.js.webosce-orig" "$VPD/app/controllers/app-assistant.js"
+        fi
+        log "videoplayer: stock com.palm.app.videoplayer restored"
+        mount -o remount,ro / 2>/dev/null || true
+    else
+        log "videoplayer: could not remount / rw; CE player left under the stock id"
+    fi
+    rmdir $L 2>/dev/null || true
+fi
+
+TW=/media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/preferences/com.palm.app.videos.json
+if [ -f "$TW" ]; then
+    rm -f "$TW"
+    # detached, fds closed: this script must not wait on the bus (see top)
+    [ -d /media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/assistants ] \
+        && (luna-send -n 1 palm://org.webosinternals.tweaks.prefs/scan '{}' </dev/null >/dev/null 2>&1 &)
+    log "tweaks: definition removed"
+fi
+exit 0

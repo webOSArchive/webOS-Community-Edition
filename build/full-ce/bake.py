@@ -215,6 +215,10 @@ IPK = {
     "govnah":      ati_ipk(NEWAPPS, "org.webosinternals.govnah"),
     "usb":         ati_ipk(NEWAPPS, "com.webosarchive.usbsettings"),
     "bt":          ati_ipk(NEWAPPS, "org.webosarchive.btgamepad"),
+    # the CE video player (apps/com.palm.app.videos, packaged by
+    # scripts/videos-app.sh release); Photos and the stock mimetype handler
+    # hand off to it -- see Docs/VIDEO-PLAYER-REWRITE.md
+    "videos":      ati_ipk(NEWAPPS, "com.palm.app.videos"),
     # woce-backup: a working Backup/Restore that stores on the device.
     # PatchOrReplace, not NewApps -- it takes over the stock
     # com.palm.app.backup id (the stock app is a dead UI over Palm's
@@ -1973,6 +1977,12 @@ def main():
         # synergy PictureMode patch above -- it is generated against that result.
         run_patch(approot, os.path.join(PEX, "patches/PictureMode-filename.js.patch"))
         run_patch(approot, os.path.join(PEX, "patches/PictureMode-filename.css.patch"))
+        # Tapping a video in the album grid launches the CE Videos app
+        # (com.palm.app.videos) instead of the carousel's DbViewVideo. The
+        # launch params carry path/title/lastPlayTime because db8 denies other
+        # apps the media kinds. Generated against stock AlbumGridView.js, which
+        # no other patch touches.
+        run_patch(approot, os.path.join(HERE, "videos-app/patches/AlbumGridView-videos-handoff.js.patch"))
         shutil.copy(os.path.join(PEX, "assets/icn-slidetiming.png"),
                     os.path.join(approot, "images/"))
         for png in sorted(glob.glob(os.path.join(PHI, "assets/syn-*.png"))):
@@ -2941,6 +2951,43 @@ def main():
 
     # 16) BT gamepad : payload is just the shim + udev rule (no app UI) — bake
     # those and replay the postinst's stock-file patches.
+    # 15d) Videos: the CE video player. The app itself bakes like USB Settings;
+    # two hand-offs point the stock entry points at it:
+    #  - com.palm.app.videoplayer (the hidden stock player some apps launch by
+    #    id) keeps its id and icon -- Messaging and Device Info reference them --
+    #    and becomes a second install of the same Enyo player (index.html,
+    #    appinfo, source/, css/, four images beside the untouched Mojo files);
+    #  - Photos' album grid launches it for videos (patch in edit_photos()).
+    # Its Tweaks toggle ("Pause video when minimized") rides into the cryptofs
+    # seed next to the LunaCE definitions (tier 19b-c).
+    log(f"tier: Videos app BAKED ({os.path.basename(IPK['videos'])})")
+    d = ipk_extract_data(IPK["videos"], os.path.join(tmp, "videos"))
+    # the ipk is the Preware feed package: its ce-install/ payload + postinst
+    # replay this tier on a running device; the image does it here instead
+    shutil.rmtree(os.path.join(d, "usr/palm/applications/com.palm.app.videos/ce-install"),
+                  ignore_errors=True)
+    bake_tree(d)
+    VID = os.path.join(HERE, "videos-app")
+    # the stock id hosts the same player: apps that launch com.palm.app.videoplayer
+    # by id (MeTube, Messaging) make LunaSysMgr pre-create its card, so the card
+    # must be the player, not a shim. Same file set the feed postinst installs.
+    vapp = os.path.join(d, "usr/palm/applications/com.palm.app.videos")
+    VPD = "usr/palm/applications/com.palm.app.videoplayer"
+    for sub in ("source", "css"):
+        for fn in sorted(os.listdir(os.path.join(vapp, sub))):
+            wcopy(f"{VPD}/{sub}/{fn}", os.path.join(vapp, sub, fn), 0o644)
+    for fn in ("depends.js", "index.html"):
+        wcopy(f"{VPD}/{fn}", os.path.join(vapp, fn), 0o644)
+    for fn in ("menu-icons.png", "command-menu-gradient.png", "command-menu-gradient-top.png",
+               "palm-menu-button.png"):
+        wcopy(f"{VPD}/images/{fn}", os.path.join(vapp, "images", fn), 0o644)
+    wcopy(f"{VPD}/appinfo.json", os.path.join(VID, "videoplayer-app/appinfo.json"), 0o644)
+    wcopy(f"{SEED}/apps/usr/palm/services/org.webosinternals.tweaks.prefs/"
+          "preferences/com.palm.app.videos.json",
+          os.path.join(d, "usr/palm/applications/com.palm.app.videos/tweaks/"
+                          "com.palm.app.videos.json"), 0o644)
+    log("  player under com.palm.app.videoplayer + Tweaks definition staged")
+
     log(f"tier: BT gamepad BAKED ({os.path.basename(IPK['bt'])})")
     d = ipk_extract_data(IPK["bt"], os.path.join(tmp, "bt"))
     btf = os.path.join(d, "usr/palm/applications/org.webosarchive.btgamepad/files")
@@ -3808,6 +3855,82 @@ def main():
       "    rm -f /media/internal/downloads/.ce-probe.ipk 2>/dev/null\n"
       "end script\n", 0o644)
     log("  ce-register-ipk-handler job installed (runtime addResourceHandler)")
+
+    # (b-2) Video mimetypes -> the CE Videos app, the same way. The stock
+    # system-default entries point at com.palm.app.videoplayer (streamable);
+    # handing off through that id left an extra card behind the Browser (seen
+    # on hardware 2026-09-14), so the app is registered directly as the
+    # active handler: Browser + one Videos card. addResourceHandler only
+    # ADDS an alternate here (a system-default already exists), so each type is
+    # then made active with swapResourceHandler (param is mimeType, not mime).
+    # Two lookups exist: by the server's Content-Type (Browser: video/mp4) and
+    # by extension, which resolves through Palm pseudo-mimes such as
+    # video/mp4-generic (file:// opens, attachments). Both are registered: the
+    # canonical mime and whatever mimeTypeForExtension reports at runtime.
+    # Verify-then-flag on a probe .mp4 file URI, like the ipk job.
+    VIDEO_TYPES = (("mp4", "video/mp4"), ("m4v", "video/x-m4v"), ("3gp", "video/3gpp"),
+                   ("3g2", "video/3gpp2"), ("mov", "video/quicktime"),
+                   ("webm", "video/webm"), ("mkv", "video/x-matroska"))
+    vreg = "".join(
+        f"    register {ext} {mime}\n"
+        f"    register {ext} \"$(mime_for_ext {ext})\"\n" for ext, mime in VIDEO_TYPES)
+    w("etc/event.d/ce-register-video-handler",
+      "# ce-register-video-handler — webOS CE: make the Videos app\n"
+      "# (com.palm.app.videos) the active, streamable handler for video\n"
+      "# files and URLs, at RUNTIME (see ce-register-ipk-handler for why not a\n"
+      "# static command-resource-handlers.json entry). The stock system-default\n"
+      "# entries stay as alternates; com.palm.app.videoplayer hosts the same player.\n"
+      "\n"
+      "start on first-use-finished\n"
+      "\n"
+      "console none\n"
+      "\n"
+      "script\n"
+      "    FLAG=/var/luna/preferences/ce-video-handler-registered\n"
+      "    LOG=/var/log/ce-register-video-handler.log\n"
+      "    [ -f $FLAG ] && exit 0\n"
+      "    AM=palm://com.palm.applicationManager\n"
+      "    APP=com.palm.app.videos\n"
+      "    n=0\n"
+      "    while [ $n -lt 60 ]; do\n"
+      "        pidof LunaSysMgr >/dev/null 2>&1 && break\n"
+      "        sleep 2; n=$((n+1))\n"
+      "    done\n"
+      "    sleep 12\n"
+      "    mime_for_ext() {\n"
+      "        luna-send -n 1 $AM/mimeTypeForExtension \"{\\\"extension\\\":\\\"$1\\\"}\" </dev/null 2>/dev/null \\\n"
+      "            | sed -n 's/.*\"mimeType\": *\"\\([^\"]*\\)\".*/\\1/p' | sed 's#\\\\/#/#g'\n"
+      "    }\n"
+      "    register() {\n"
+      "        [ -n \"$2\" ] || return 0\n"
+      "        luna-send -n 1 $AM/addResourceHandler \\\n"
+      "            \"{\\\"extension\\\":\\\"$1\\\",\\\"mimeType\\\":\\\"$2\\\",\\\"appId\\\":\\\"$APP\\\"}\" \\\n"
+      "            </dev/null >/dev/null 2>&1\n"
+      "        R=$(luna-send -n 1 $AM/listAllHandlersForMime \"{\\\"mime\\\":\\\"$2\\\"}\" </dev/null 2>&1)\n"
+      "        # only the activeHandler block counts -- the alternates follow it\n"
+      "        A=$(echo \"$R\" | sed -n 's/.*\"activeHandler\": *{\\([^}]*\\)}.*/\\1/p')\n"
+      "        case \"$A\" in *$APP*) return 0 ;; esac\n"
+      "        IDX=$(echo \"$R\" | tr '}' '\\n' | grep \"$APP\" | grep -o '\"index\": *[0-9]*' | grep -o '[0-9]*' | head -1)\n"
+      "        [ -n \"$IDX\" ] && luna-send -n 1 $AM/swapResourceHandler \\\n"
+      "            \"{\\\"mimeType\\\":\\\"$2\\\",\\\"index\\\":$IDX}\" </dev/null >/dev/null 2>&1\n"
+      "    }\n"
+      + vreg +
+      "    sleep 2\n"
+      "    mkdir -p /media/internal/downloads 2>/dev/null\n"
+      "    touch /media/internal/downloads/.ce-probe.mp4 2>/dev/null\n"
+      "    R=$(luna-send -n 1 $AM/getResourceInfo \\\n"
+      "        '{\"uri\":\"file:///media/internal/downloads/.ce-probe.mp4\"}' </dev/null 2>&1)\n"
+      "    case \"$R\" in\n"
+      "        *$APP*canStream*true*|*canStream*true*$APP*)\n"
+      "            touch $FLAG\n"
+      "            echo \"$(date 2>/dev/null) registered: $R\" >> $LOG 2>/dev/null ;;\n"
+      "        *)\n"
+      "            echo \"$(date 2>/dev/null) NOT registered, will retry next boot: $R\" \\\n"
+      "                 >> $LOG 2>/dev/null ;;\n"
+      "    esac\n"
+      "    rm -f /media/internal/downloads/.ce-probe.mp4 2>/dev/null\n"
+      "end script\n", 0o644)
+    log("  ce-register-video-handler job installed (runtime add+swapResourceHandler)")
 
     # (c) LunaCE tweak definitions: Tweaks-framework preference files that
     # surface LunaCE's extra features (mini cards, gestures, wave launcher,

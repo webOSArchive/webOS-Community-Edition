@@ -1,0 +1,11 @@
+{
+	"id": "org.webosarchive.media-tls13",
+	"version": "1.0.0",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"title": "Media TLS 1.3",
+	"icon": "icon.png",
+	"visible": false,
+	"uiRevision": 2
+}

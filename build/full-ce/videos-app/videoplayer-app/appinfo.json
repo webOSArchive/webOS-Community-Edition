@@ -1,0 +1,13 @@
+{
+	"title": "Videos",
+	"version": "1.0.0",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"visible": "false",
+	"splashicon": "icon-256x256.png",
+	"icon": "icon.png",
+	"id": "com.palm.app.videoplayer",
+	"theme": "palm-dark",
+	"uiRevision": 2
+}
