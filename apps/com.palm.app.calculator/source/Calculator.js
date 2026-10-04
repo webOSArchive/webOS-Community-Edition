@@ -49,10 +49,10 @@ enyo.kind({
                         "*": {prec: 2, sym: "\u00D7", f: function (a, b) { return a * b; }},
                         "/": {prec: 2, sym: "\u00F7", f: function (a, b) { return a / b; }},
                         "pow": {prec: 3, right: true, sym: "^", f: Math.pow},
-                        "root": {prec: 3, right: true, sym: " \u02B8\u221A ", f: function (a, b) { return Calc.Sci.root(a, b); },
-                                 label: function (a, b) { return b + "\u221A" + Calc.Sci.paren(a); }},
-                        "logy": {prec: 3, sym: " log\u1D67 ", f: function (a, b) { return Math.log(a) / Math.log(b); },
-                                 label: function (a, b) { return "log" + Calc.Sci.paren(b) + Calc.Sci.paren(a); }}
+                        "root": {prec: 3, right: true, sym: " <sup>y</sup>\u221A ", f: function (a, b) { return Calc.Sci.root(a, b); },
+                                 label: function (a, b) { return "<sup>" + b + "</sup>\u221A" + Calc.Sci.paren(a); }},
+                        "logy": {prec: 3, sym: " log<sub>y</sub> ", f: function (a, b) { return Math.log(a) / Math.log(b); },
+                                 label: function (a, b) { return "log<sub>" + b + "</sub>" + Calc.Sci.paren(a); }}
                 }
         },
         // Portrait gets the stock layout; landscape gets the scientific one.

@@ -137,7 +137,7 @@
 	-webkit-border-image: url(../images/key-function-down.png) 15 15 15 15 stretch stretch;
 }
 
-.calc-function-key sup, .calc-function-key sub {
+.calc-function-key sup, .calc-function-key sub, .calc-expr-text sup, .calc-expr-text sub {
 	font-size: 60%;
 	line-height: 0;
 }
@@ -166,6 +166,7 @@
 }
 
 .calc-expr-text {
+	display: inline-block;
 	direction: ltr;
 	unicode-bidi: embed;
 }

@@ -16,7 +16,7 @@ enyo.kind({
                                         {name: "angleDisplay", className: "calc-indicator"},
                                         {name: "memoryDisplay", className: "calc-indicator"},
                                         {name: "exprDisplay", flex: 1, className: "calc-expr", components: [
-                                                {name: "exprText", className: "calc-expr-text"}
+                                                {name: "exprText", className: "calc-expr-text", allowHtml: true}
                                         ]}
                                 ]},
                                 {name: "display", content: $L("0"), flex: 1}

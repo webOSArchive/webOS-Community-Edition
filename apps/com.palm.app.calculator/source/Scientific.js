@@ -83,7 +83,8 @@ Calc.Sci = {
 
 // The scientific keys. "unary" replaces the entry, "binary" is an infix
 // operator (see Calc.App.OPS), "constant" replaces the entry with a value.
-// label() renders the operation for the expression line above the readout.
+// label() renders the operation for the expression line above the readout, as HTML:
+// the device fonts have no superscript minus or subscripts, so use <sup>/<sub>.
 Calc.Sci.FUNCS = (function () {
 	var S = Calc.Sci, p = S.paren;
 	var fn = function (f, label) { return {kind: "unary", f: f, label: label}; };
@@ -92,26 +93,26 @@ Calc.Sci.FUNCS = (function () {
 		x2: fn(function (x) { return x * x; }, function (t) { return p(t) + "\u00B2"; }),
 		x3: fn(function (x) { return x * x * x; }, function (t) { return p(t) + "\u00B3"; }),
 		inv: fn(function (x) { return 1 / x; }, function (t) { return "1/" + p(t); }),
-		cbrt: fn(function (x) { return S.root(x, 3); }, function (t) { return "\u221B" + p(t); }),
+		cbrt: fn(function (x) { return S.root(x, 3); }, function (t) { return "<sup>3</sup>\u221A" + p(t); }),
 		exp: fn(Math.exp, function (t) { return "e^" + p(t); }),
 		pow10: fn(function (x) { return Math.pow(10, x); }, function (t) { return "10^" + p(t); }),
 		pow2: fn(function (x) { return Math.pow(2, x); }, function (t) { return "2^" + p(t); }),
 		ln: fn(Math.log, named("ln")),
 		log10: fn(function (x) { return Math.log(x) / Math.LN10; }, named("log")),
-		log2: fn(function (x) { return Math.log(x) / Math.LN2; }, named("log\u2082")),
+		log2: fn(function (x) { return Math.log(x) / Math.LN2; }, named("log<sub>2</sub>")),
 		fact: fn(S.factorial, function (t) { return p(t) + "!"; }),
 		sin: fn(S.trig(Math.sin), named("sin")),
 		cos: fn(S.trig(Math.cos), named("cos")),
 		tan: fn(S.trig(Math.tan), named("tan")),
-		asin: fn(S.inverseTrig(Math.asin), named("sin\u207B\u00B9")),
-		acos: fn(S.inverseTrig(Math.acos), named("cos\u207B\u00B9")),
-		atan: fn(S.inverseTrig(Math.atan), named("tan\u207B\u00B9")),
+		asin: fn(S.inverseTrig(Math.asin), named("sin<sup>-1</sup>")),
+		acos: fn(S.inverseTrig(Math.acos), named("cos<sup>-1</sup>")),
+		atan: fn(S.inverseTrig(Math.atan), named("tan<sup>-1</sup>")),
 		sinh: fn(S.sinh, named("sinh")),
 		cosh: fn(S.cosh, named("cosh")),
 		tanh: fn(S.tanh, named("tanh")),
-		asinh: fn(S.asinh, named("sinh\u207B\u00B9")),
-		acosh: fn(S.acosh, named("cosh\u207B\u00B9")),
-		atanh: fn(S.atanh, named("tanh\u207B\u00B9")),
+		asinh: fn(S.asinh, named("sinh<sup>-1</sup>")),
+		acosh: fn(S.acosh, named("cosh<sup>-1</sup>")),
+		atanh: fn(S.atanh, named("tanh<sup>-1</sup>")),
 		pi: {kind: "constant", value: function () { return Math.PI; }, label: "\u03C0"},
 		e: {kind: "constant", value: function () { return Math.E; }, label: "e"},
 		rand: {kind: "constant", value: function () { return Math.random(); }},

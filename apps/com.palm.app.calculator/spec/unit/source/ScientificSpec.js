@@ -118,6 +118,8 @@ describe('Scientific calculator', function () {
         keys(')='); expect(expr()).toBe('12+3×(4²)'); expect().toShow('60');
         keys('5'); expect(expr()).toBe(' '); // a new entry clears it
         app.ac(); keys('30'); press('sin'); keys('='); expect(expr()).toBe('sin(30)');
+        app.ac(); press('second'); keys('1'); press('sin'); keys('='); expect(expr()).toBe('sin<sup>-1</sup>(1)');
+        app.ac(); keys('81'); press('root'); keys('4='); expect(expr()).toBe('<sup>4</sup>\u221A81');
   });
 
   it('keeps stock behaviors through the stack', function () {
