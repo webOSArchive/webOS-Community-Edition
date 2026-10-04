@@ -21,7 +21,7 @@ echo "===== webOS CE automated pass — expecting BUILDMARK=$EXPECT — $(date) 
 # ---------------------------------------------------------------- identity
 BI=$(cat /etc/palm-build-info 2>/dev/null)
 echo "$BI" | grep -q "BUILDMARK=$EXPECT" && P "id  BUILDMARK=$EXPECT" || F "id  BUILDMARK -- $BI"
-echo "$BI" | grep -q "PRODUCT_VERSION_STRING=webOS CE 3.1.0" && P "id  version string webOS CE 3.1.0" || F "id  version string"
+echo "$BI" | grep -q "PRODUCT_VERSION_STRING=webOS CE 3.2.0" && P "id  version string webOS CE 3.2.0" || F "id  version string"
 I  "id  $(grep BUILDTIME /etc/palm-build-info 2>/dev/null)"
 I  "id  uptime:$(uptime | sed 's/.*up/ up/')"
 

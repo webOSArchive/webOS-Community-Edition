@@ -10,7 +10,7 @@
 # Env overrides:
 #   CE_VARIANT  hp | att            (default: hp — the Wi-Fi TouchPad)
 #   JAR    OEM Doctor JAR         (default: the variant's JAR in the project root)
-#   OUT    output CE Doctor JAR   (default: ../out/webosdoctorp310hstnh-ce-<BUILDMARK>.jar
+#   OUT    output CE Doctor JAR   (default: ../out/webosdoctorp320hstnh-ce-<BUILDMARK>.jar
 #                                 for a full-ce overlay, else ...-ce.jar)
 #   WORK   work directory         (default: ./work)
 #   REEXTRACT=1  force re-extract of the OEM JAR into WORK
@@ -22,8 +22,8 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # no separate pipeline — only its own JAR, work dir and overlay tree.
 CE_VARIANT="${CE_VARIANT:-hp}"
 case "$CE_VARIANT" in
-    hp)  V_JAR="webosdoctorp305hstnhwifi.jar"; V_WORK="work";     V_NAME="webosdoctorp310hstnh-ce" ;;
-    att) V_JAR="webosdoctorp305hstnhatt.jar";  V_WORK="work-att"; V_NAME="webosdoctorp310hstnhatt-ce" ;;
+    hp)  V_JAR="webosdoctorp305hstnhwifi.jar"; V_WORK="work";     V_NAME="webosdoctorp320hstnh-ce" ;;
+    att) V_JAR="webosdoctorp305hstnhatt.jar";  V_WORK="work-att"; V_NAME="webosdoctorp320hstnhatt-ce" ;;
     *)   echo "ERROR: unknown CE_VARIANT=$CE_VARIANT (known: hp, att)" >&2; exit 1 ;;
 esac
 
@@ -35,7 +35,8 @@ OVERLAY="${1:-}"
 # in out/ says which bake it is and a rebuild never overwrites an earlier mark
 # (the -<mark>-rc.jar release files used to be renamed by hand).
 #
-# The name is CE's own, not the OEM's: webosdoctorp310hstnh-ce-<mark>.jar.
+# The name is CE's own, not the OEM's: webosdoctorp320hstnh-ce-<mark>.jar
+# (p310 for the 3.1.0 release, 600070/600071).
 # "p305" was HP's product code for the 3.0.5 Doctor we repack -- this build is
 # 3.1.0, and shipping it under the OEM's version misdescribes what a tester
 # downloads. Changed 2026-08-29, from 600064 on; 600063 and earlier keep the
