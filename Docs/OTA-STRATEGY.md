@@ -1,5 +1,8 @@
 > **SUPERSEDED IN PART — read this with `OTA-3.1.0.md` beside it.**
 >
+> **Its §2 bootstrap plan is superseded by `OTA-PLAN.md` (2026-10-04)**: payloads
+> generated as rootfs diffs, one plain-HTTP signed session instead of two.
+>
 > This is the original CE-side design doc. It is still the best statement of the
 > *shape* of the problem — the on-device machinery inventory (§0), the dual
 > delivery rule (§1), the bootstrap transport analysis (§2), and the constraints
