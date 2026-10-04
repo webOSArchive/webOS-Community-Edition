@@ -301,10 +301,6 @@ needs TLS, and that can fall back to plain HTTP with minimal fields.
 
 ## 5. Found while researching (worth acting on regardless)
 
-- **The private signing key is on this machine:**
-  `webos-update-exploration/keys/ce-ota-signing.key` (mode 600, gitignored). The
-  docs say the private half lives only on the signing host. Either this machine
-  is that host, which should be written down, or the key should move.
 - `otaready-app/org.webosarchive.otaready_1.2.0_all.ipk` predates the
   read-only-root restore fix in its own source, and its version wasn't bumped. Its
   `prerm` still remounts rw without restoring ro.
