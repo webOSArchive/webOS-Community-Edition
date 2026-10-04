@@ -121,6 +121,7 @@ Listed so the plan is honest about the critical path:
 | Media TLS | **add** `/usr/lib/gstreamer-0.10/libgstcurlhttpsrc.so`, **remove** `libgstsouphttpsrc.so` | |
 | Calculator 3.2.0 | `/usr/palm/applications/com.palm.app.calculator/`, `/usr/palm/packages/com.palm.calculator/`; **remove** `/usr/palm/ipkgs/com.palm.app.calculator/` | |
 | Emoji fallback font (planned, `EMOJI-FONT.md`) | **add** `/usr/share/fonts/CE-Emoji.ttf` (+ OFL text), **patched** `/usr/lib/libWebKitLuna.so` (fifth fallback slot) | lib is held open by BrowserServer/WebAppMgr — fine in the ramdisk, a reason not to hotpatch |
+| Colour emoji images (planned, `EMOJI-FONT.md` §7) | **add** `/usr/palm/frameworks/ce-emoji/` (shared `emoji.js` + EmojiOne PNGs, ~10.5 MB); **changed** Messaging (images move out of its app dir), Email, Contacts | Email is a cryptofs app: its patch goes in `ce-ota-finish`, not the rootfs diff |
 | Photos hand-off | the staged `/usr/palm/ipkgs/com.palm.app.photos/…ipk` is repacked | **no effect on an installed device**: Photos already lives in cryptofs |
 | Tweaks definition | under `/usr/palm/ce-seed/cryptofs/…` | the seed only runs once per flash |
 | Version | `/etc/palm-build-info`, `/etc/prefs/properties/{buildMark,buildDate}` | |

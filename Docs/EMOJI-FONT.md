@@ -1,6 +1,8 @@
 # Emoji in webOS CE: a fifth fallback font
 
-**Target: CE 3.2.0.** This is the plan, and the recipe for building it. Nothing
+**Target: CE 3.2.0.** Two parts: a monochrome fallback font for the 170 BMP
+emoji in every web view (§1–§6), and colour emoji as images in the apps where
+people read each other's text (§7). This is the plan, and the recipe for building it. Nothing
 here is baked yet. One part is proven on hardware: an emoji font in a WebKit
 fallback slot renders every emoji the renderer can address. See §2.
 
@@ -222,3 +224,64 @@ in this patch.
 - **RELEASE-NOTES**: "170 symbol emoji (☀ ☕ ✅ ❤ …) now display, and the stray
   box after emoji sent from modern phones is gone. Colour emoji and most face and
   people emoji (U+1F000 and up) remain unsupported outside Messaging."
+
+## 7. Colour emoji: images in the apps where people read each other's text
+
+The font (§3–§4) gives monochrome glyphs for the 170 BMP emoji everywhere.
+Colour is impossible through any font on this renderer (§1), so 3.2.0 adds it
+the one way that works here: **replace emoji with images, in the apps that show
+other people's text.** CE's Messaging already does this. 3.2.0 generalises it.
+
+**The split for 3.2.0:**
+
+| Where | What the user sees | Mechanism |
+|---|---|---|
+| Every web view: Browser, all apps, any text | 170 BMP emoji in monochrome; FE0F boxes gone | §4 fallback font |
+| Messaging (already shipping) | full colour set, including astral, skin tones, flags and ZWJ | existing `emojify()` + EmojiOne PNGs |
+| Email (message view), Contacts (notes, names), app notification text | full colour set | the same `emojify()` + the same images, shared (below) |
+| Browser web pages | monochrome BMP only; astral stays boxes | out of reach: other people's HTML, no extension hook |
+| System UI (Qt: banners, keyboard) | to be found in §5's test | not part of the image approach |
+
+**Work items:**
+
+1. **Share, don't copy, the image set.** Messaging carries the EmojiOne PNGs
+   inside its own app dir (`images/emoji/`, 2,667 files, 10.5 MB). Move them,
+   with `emojify()` and its helpers (`_emojiRe`, `_emojiKey`, `_fromCodePoint`,
+   `decodeNumericEntities`, the `onerror` fallback to the original character),
+   into one shared framework location, e.g. `/usr/palm/frameworks/ce-emoji/`
+   with `emoji.js` and `images/`. Point Messaging at it. Root has 119 MB free;
+   one copy of 10.5 MB is fine, a copy per app is not.
+   - Messaging's change is a CE edit to the community core-apps ipk that the
+     bake replays (`AddToImage/PatchOrReplace/com.palm.app.messaging_*`).
+2. **Call it from each target app's render path**, only on text rendered with
+   `allowHtml`, and only *after* escaping. `emojify()` emits `<img>` tags, so
+   running it on unescaped user text would be an injection hole.
+   - Email: the message body view and the subject in the list.
+   - Contacts: display name and notes.
+   - Each app is a patch in the bake's existing app-patch style, md5-guarded
+     like `edit_photos()`.
+3. **Check each app's data path for the Node mangling.** The device's Node
+   v0.4.12 turns every astral code point into U+FFFD in both directions (tested
+   2026-10-04).
+   - Text that passes through a Node service (mail transports, sync
+     connectors) arrives already destroyed, and no image swap can recover it.
+   - Messaging survives only because its transport stores emoji as `&#…;`
+     entities. For each target app, trace one 😀 from the network to the
+     screen, and entity-encode at the service boundary where it breaks.
+   - **This, not the rendering, is the real size of the Email work item.**
+4. **Size and line height.** The images must sit on the text baseline at
+   `1em`, as Messaging's do, so lines don't jump. Reuse Messaging's CSS.
+
+**Out of scope for 3.2.0:**
+- A framework-wide hook in Enyo/Mojo text rendering. It would cover every app
+  at once, but it touches escaping and performance in every app. Revisit once
+  the per-app version has shipped.
+- Colour in the Browser.
+- Emoji input: the keyboard has no emoji keys. That is LunaCE work.
+
+**Tests:**
+- One message, one email and one contact note containing ☀️ ❤️ 😀 👍🏽 🇨🇦
+  👨‍👩‍👧, sent from a modern phone or account.
+- Each must show colour images in its app.
+- The same text in any other web view must show the monochrome BMP glyphs, and
+  boxes only for astral code points.
