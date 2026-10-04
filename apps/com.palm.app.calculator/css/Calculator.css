@@ -142,6 +142,11 @@
 	line-height: 0;
 }
 
+.calc-wide-readout {
+	position: relative;
+	top: -3px;
+}
+
 .calc-wide-bsp {
 	width: 80px;
 }

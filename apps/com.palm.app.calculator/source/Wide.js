@@ -19,7 +19,7 @@ enyo.kind({
                                                 {name: "exprText", className: "calc-expr-text", allowHtml: true}
                                         ]}
                                 ]},
-                                {name: "display", content: $L("0"), flex: 1}
+                                {name: "display", content: $L("0"), flex: 1, className: "calc-wide-readout"}
                         ]},
                         {kind: "HFlexBox", className: "calc-wide-bsp", align: "center", pack: "center", components: [
                                 {name: "b", kind: "Calc.bsp"}
