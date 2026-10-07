@@ -45,39 +45,99 @@ AppPrefs.Pref = Utils.defineConstants({
 	contactsPhoneRegion: "contactsPhoneRegion"
 });
 
+// webOS CE: the AppPrefs objects waiting on another one in this process that is
+// creating its kind's prefs record right now, by kind. Contacts makes two AppPrefs as it
+// starts (ContactsApp and contactsui's PersonList), and on a first launch both finds came
+// back empty before either put landed, so two records were written. Now the first to find
+// none creates the record; the others wait for that put and then read what it made.
+AppPrefs._creating = {};
+
 AppPrefs.prototype._doQuery = function () {
-	this._future = DB.find({ from: this._kind, limit: 2 });
+	// webOS CE: limit was 2; read enough to heal more than one duplicate at once.
+	this._future = DB.find({ from: this._kind, limit: 10 });
 	this._future.then(this, this._handleResult);
 };
 
 AppPrefs.prototype._handleResult = function (future) {
-	var length = future.result.results.length,
+	var results = future.result.results,
+		length = results.length,
+		kind = this._kind,
+		waiters,
 		shallowCopy;
 	
 	if (length > 1) {
-		console.error("AppPrefs: Expected singleton object for " + this._kind + ", but received >1 result.");
-		// Fall through into len === 1 case... just use the 1st prefs object.
+		console.error("AppPrefs: Expected singleton object for " + kind + ", but received >1 result.");
+		results = [this._healDuplicates(results)];	// webOS CE: keep one, delete the rest.
 	} else if (length === 0) {
-		console.log("AppPrefs: No prefs found, creating " + this._kind);
+		if (AppPrefs._creating[kind]) {
+			// webOS CE: another AppPrefs in this process is creating it; read it once that's done.
+			AppPrefs._creating[kind].push(this);
+			return;
+		}
+		console.log("AppPrefs: No prefs found, creating " + kind);
 		
 		// No prefs object exists, put one in the db, and read it back so we get a deep clone.
+		waiters = AppPrefs._creating[kind] = [];
 		shallowCopy = _.clone(this._defaults);
-		shallowCopy._kind = this._kind;
-		DB.put([shallowCopy]);
-		
-		this._doQuery();
+		shallowCopy._kind = kind;
+		// webOS CE: read back once the put is done (stock re-queried at once). A then()
+		// without an error function also runs when the put fails, so nobody waits forever.
+		DB.put([shallowCopy]).then(this, function () {
+			delete AppPrefs._creating[kind];
+			waiters.forEach(function (w) {
+				w._doQuery();
+			});
+			this._doQuery();
+		});
 		
 		return;
 	}
 	
 	// else save the prefs object, and set our ready flag.
-	this._prefs = future.result.results[0];
+	this._prefs = results[0];
 	this.ready = true;
 	
 	if (this._onReady) {
 		this._onReady();
 		this._onReady = undefined;
 	}
+};
+
+/*
+	webOS CE: repair a kind that already has duplicate prefs records (every Contacts first
+	launch before CE 3.2.0 left two). Keep the record whose default account is set, else the
+	newest; carry over any pref that another record changed from its default; delete the
+	others. The choice is deterministic, so the app and com.palm.service.contacts healing at
+	the same time keep the same record.
+*/
+AppPrefs.prototype._healDuplicates = function (results) {
+	var defaults = this._defaults,
+		sorted = results.slice().sort(function (a, b) {
+			return ((b.defaultAccountId ? 1 : 0) - (a.defaultAccountId ? 1 : 0)) || ((b._rev || 0) - (a._rev || 0));
+		}),
+		keep = sorted[0],
+		others = sorted.slice(1),
+		merge = { _id: keep._id },
+		changed = false;
+	
+	others.forEach(function (other) {
+		Object.keys(defaults).forEach(function (key) {
+			var mine = keep[key];
+			if ((mine === undefined || mine === defaults[key]) && other[key] !== undefined && other[key] !== defaults[key]) {
+				keep[key] = merge[key] = other[key];
+				changed = true;
+			}
+		});
+	});
+	
+	if (changed) {
+		DB.merge([merge]);
+	}
+	DB.del(others.map(function (other) {
+		return other._id;
+	}));
+	console.warn("AppPrefs: kept " + keep._id + " and deleted " + others.length + " duplicate " + this._kind + " record(s)");
+	return keep;
 };
 
 /*

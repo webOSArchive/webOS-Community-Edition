@@ -2301,8 +2301,9 @@ def main():
 
     # 11d) CE's system files from system/: the account templates (profile
     # account named "webOS Account", Facebook without its dead CALENDAR and
-    # CONTACTS providers, LinkedIn hidden) and the accounts library's "Get
-    # started with your webOS account:" string. system/ holds them as finished
+    # CONTACTS providers, LinkedIn hidden), the accounts library's "Get
+    # started with your webOS account:" string, and the contacts framework's
+    # AppPrefs fix (one prefs record, not two; duplicates healed). system/ holds them as finished
     # files at their device paths -- the copies other projects (Lunacy) take --
     # so the image takes them from there too; account_templates.py is what made
     # them, and its docstring has the reasons. system/README.md maps the files.
@@ -2357,6 +2358,41 @@ def main():
     if len(lib_done) != 6 or not all(f.startswith("resources/") for f in lib_done):
         sys.exit(f"ERROR: accounts library: expected system/ to differ from the "
                  f"community library in 6 string tables, got {lib_done}")
+
+    # The stock contacts framework (no community build replaces it): its
+    # AppPrefs lives in FOUR copies -- the source file, concatenated.js (what
+    # MojoLoader evaluates when no builtin exists), the minified 114contacts.js
+    # that com.palm.service.contacts loads under node, and the prebuilt Mojo
+    # builtin mojo/builtins/palmcontactsVersion1_0.js, which is what LunaSysMgr
+    # actually gives apps (patching only the first three changed nothing on
+    # the device). Only those four may differ from stock.
+    rel = "usr/palm/frameworks/contacts"
+    stock_fw = {n[len(f"./{rel}/"):]: e for n, e in
+                read_rootfs(ROOTFS_TGZ, prefixes=[f"./{rel}/"]).items()
+                if e["type"] == "file"}
+    ours = {f for f in system_files(rel)
+            if not os.path.islink(os.path.join(SYSTEM, rel, f))}
+    if ours != set(stock_fw):
+        sys.exit(f"ERROR: system/{rel} does not match the stock framework's files: "
+                 f"only in system/ {sorted(ours - set(stock_fw))}, "
+                 f"only in stock {sorted(set(stock_fw) - ours)}")
+    fw_done = []
+    for f in sorted(ours):
+        mine = open(os.path.join(SYSTEM, rel, f), "rb").read()
+        if mine != stock_fw[f]["data"]:
+            w(f"{rel}/{f}", mine, 0o755 if os.access(os.path.join(SYSTEM, rel, f), os.X_OK) else 0o644)
+            fw_done.append(f)
+    if fw_done != ["submission/114/concatenated.js", "submission/114/javascript/AppPrefs.js",
+                   "submission/114contacts.js"]:
+        sys.exit(f"ERROR: contacts framework: expected system/ to differ from stock "
+                 f"in AppPrefs' three copies only, got {fw_done}")
+    rel = "usr/palm/frameworks/mojo/builtins/palmcontactsVersion1_0.js"
+    if os.listdir(os.path.join(SYSTEM, "usr/palm/frameworks/mojo/builtins")) != ["palmcontactsVersion1_0.js"]:
+        sys.exit("ERROR: system/usr/palm/frameworks/mojo/builtins should hold only palmcontactsVersion1_0.js")
+    mine = open(os.path.join(SYSTEM, rel), "rb").read()
+    if mine == read_rootfs(ROOTFS_TGZ, exact=[f"./{rel}"])[f"./{rel}"]["data"]:
+        sys.exit(f"ERROR: system/{rel} is identical to stock; the AppPrefs fix is missing")
+    w(rel, mine, 0o644)
 
     # 12) rootcertsupdate : FULL build-time replay of the trust-store update.
     # postinst (3.x path): install scripts to /etc/ssl/scripts, then deploycerts:
