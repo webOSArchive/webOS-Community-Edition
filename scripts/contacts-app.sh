@@ -1,15 +1,16 @@
 #!/bin/sh
 # Packaging for apps/com.palm.app.contacts (on-device contacts, no HP account).
 #
-#   scripts/contacts-app.sh feed   -> build/work/ipk/com.palm.app.contacts_<ver>_all.ipk
+#   scripts/contacts-app.sh feed      -> build/work/ipk/com.palm.app.contacts_<ver>_all.ipk
+#   scripts/contacts-app.sh release   -> feed + copy the ipk into AddToImage/PatchOrReplace
 #
 # The app is the community 3.0.6701 Contacts plus CE's changes (see git history). The
 # account-template and accounts-library changes it goes with are files outside the app,
 # kept under system/ (system/README.md).
 #
-# No "release" into AddToImage/PatchOrReplace: the image takes Contacts from the
-# community overwrite ipk of the same package name there, and bake.py picks the highest
-# version of a name, so a second com.palm.app.contacts ipk would replace that one.
+# bake.py bakes the ipk in PatchOrReplace as a rootfs app (tier 15g). It replaces the
+# community 3.0.6701 overwrite ipk that used to sit there; that one is the baseline commit
+# of apps/com.palm.app.contacts.
 set -e
 PKG=com.palm.app.contacts
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -36,7 +37,12 @@ feed)
     ar rc "$IPK" debian-binary control.tar.gz data.tar.gz
     echo "feed ipk: $IPK" && ls -la "$IPK"
     ;;
+release)
+    "$0" feed
+    rm -f "$ROOT/AddToImage/PatchOrReplace/${PKG}"_*.ipk
+    cp -v "$IPK" "$ROOT/AddToImage/PatchOrReplace/"
+    ;;
 *)
-    sed -n '2,4p' "$0"; exit 2
+    sed -n '2,5p' "$0"; exit 2
     ;;
 esac

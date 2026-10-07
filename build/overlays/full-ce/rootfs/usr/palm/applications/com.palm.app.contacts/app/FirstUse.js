@@ -26,7 +26,7 @@ enyo.kind({
     className: "enyo-bg",
 
     components: [
-        {name        : "firstLaunch", kind: "firstLaunchView", onAccountsFirstLaunchDone: "openMainAppView", capability: 'CONTACTS',
+        {name        : "firstLaunch", kind: "contactsFirstLaunchAccounts", onAccountsFirstLaunchDone: "openMainAppView", capability: 'CONTACTS',
             iconSmall: "images/header-icon-contacts-48x48.png",
             iconLarge: "images/first-launch-contacts.png"}
     ],
@@ -37,9 +37,15 @@ enyo.kind({
 
     ready: function ready() {
         if (true) {
+            // webOS CE: the profile account's contacts are plain on-device contacts
+            // (nothing syncs them since HP's servers closed), so offer them as ready to
+            // use rather than as an HP account to "get started with". localFileStorage
+            // is the accounts library's built-in "use what's on the device" layout;
+            // contactsFirstLaunchAccounts fixes up its row below.
             var msgs = {
-                    pageTitle: $L("Your contacts accounts"),
-                    welcome  : $L("To get started, set up a Contacts account")
+                    pageTitle       : $L("Your contacts"),
+                    welcome         : $L("To get started, add a contacts account"),
+                    localFileStorage: $L("Your contacts are ready to use. Contacts you add are kept on this device:")
                 },
                 exclude;
             this.$.firstLaunch.startFirstLaunch(exclude, msgs);
@@ -54,4 +60,20 @@ enyo.kind({
         window.startTheApp();
     }
 
+});
+
+// webOS CE: the accounts library labels the localFileStorage row with the profile
+// account's alias and icon -- the signed-in member's name (or nothing) next to a pair
+// of sync arrows. Show what the row stands for instead. Same fix as the Calendar's.
+enyo.kind({
+    name: "contactsFirstLaunchAccounts",
+    kind: "firstLaunchView",
+
+    onAccountsAvailable: function onAccountsAvailable() {
+        this.inherited(arguments);
+        if (this.profileAccount) {
+            this.$.localStorageImage.setSrc("images/header-icon-contacts.png");
+            this.$.localStorageName.setContent($L("On This Device"));
+        }
+    }
 });

@@ -1,0 +1,47 @@
+{
+	"capabilityProviders": [
+		{
+			"capability": "PHOTO.UPLOAD",
+			"id": "com.palm.service.photos",
+			"implementation": "palm://com.palm.service.photos",
+			"onCredentialsChanged": "palm://com.palm.service.photos/onCredentialsChanged",
+			"onDelete": "palm://com.palm.service.photos/onDelete",
+			"onEnabled": "palm://com.palm.service.photos/onEnabled"
+		}
+	],
+	"disallowed_locales": [
+		"en_cn",
+		"zh_cn",
+		"zh_hk"
+	],
+	"icon": {
+		"loc_32x32": "images/facebook-32x32.png",
+		"loc_48x48": "images/facebook-48x48.png"
+	},
+	"loc_name": "Facebook",
+	"loc_usernameLabel": "E-MAIL ADDRESS",
+	"readPermissions": [
+		"com.palm.app.facebook",
+		"com.palm.app.facebook.beta",
+		"com.palm.app.enyo-facebook",
+		"com.palm.service.calendar.facebook",
+		"com.palm.service.contacts",
+		"com.palm.service.contacts.facebook",
+		"com.palm.service.contacts.linker",
+		"com.palm.service.photos",
+		"com.palm.service.photos.facebook",
+		"com.palm.app.photos",
+		"com.palm.app.calendar",
+		"com.palm.app.contacts"
+	],
+	"templateId": "com.palm.facebook",
+	"validator": "palm://com.palm.service.contacts.facebook/checkCredentials",
+	"writePermissions": [
+		"com.palm.app.facebook",
+		"com.palm.app.facebook.beta",
+		"com.palm.app.enyo-facebook",
+		"com.palm.app.photos",
+		"com.palm.app.calendar",
+		"com.palm.app.contacts"
+	]
+}

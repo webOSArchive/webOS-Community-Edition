@@ -28,7 +28,7 @@ Tiers (hard order — browser lays down /usr/lib/ssl11 that the rest need):
   6. LunaCE            -> prebuilt LunaSysMgr binary + launcher3 tab images
   7. App Catalog       -> BAKED to /usr/palm/applications (stock staged ipk removed)
   8. Maps 4.0.1        -> BAKED to /usr/palm/applications (stock staged ipk removed)
-  9. core-apps suite   -> the community *-overwrite ipks (accounts, contacts,
+  9. core-apps suite   -> the community *-overwrite ipks (accounts,
                           messaging, phone, chatthreader, service.accounts,
                           contacts.linker, contacts.plugin.messaging,
                           enyo-accounts, enyo-contactsui, messaging.library,
@@ -239,6 +239,10 @@ IPK = {
     # dead HP account. Its app tree replaces the one inside the stock staged
     # preload ipk (see edit_calendar) -- the ipk itself is not installed.
     "calendar":    ati_ipk(POR, "com.palm.app.calendar"),
+    # the CE Contacts 3.2.0 (apps/com.palm.app.contacts, packaged by
+    # scripts/contacts-app.sh release): the community 3.0.6701 Contacts plus
+    # CE's on-device first launch. Baked as a rootfs app, like the Calculator.
+    "contacts":    ati_ipk(POR, "com.palm.app.contacts"),
     # woce-backup: a working Backup/Restore that stores on the device.
     # PatchOrReplace, not NewApps -- it takes over the stock
     # com.palm.app.backup id (the stock app is a dead UI over Palm's
@@ -252,7 +256,6 @@ IPK = {
 # Replayed by bake_overwrite_ipk(); order is not load-bearing.
 OVERWRITE_IPKS = {
     "acct-app":     ati_ipk(POR, "com.palm.app.accounts"),
-    "contacts":     ati_ipk(POR, "com.palm.app.contacts"),
     "messaging":    ati_ipk(POR, "com.palm.app.messaging"),
     "phone":        ati_ipk(POR, "com.palm.app.phone"),
     "chatthreader": ati_ipk(POR, "com.palm.messaging.chatthreader"),
@@ -912,6 +915,11 @@ def main():
         "./usr/palm/applications/com.palm.app.phone/",
         "./usr/palm/applications/com.palm.app.enyo-findapps/",
         "./usr/palm/applications/com.palm.app.backup/",
+        "./usr/palm/applications/com.palm.app.contacts/",
+        # CE's system/ account templates must cover exactly the stock files
+        "./usr/palm/public/accounts/com.palm.palmprofile/",
+        "./usr/palm/public/accounts/com.palm.facebook/",
+        "./usr/palm/public/accounts/com.palm.linkedin/",
         "./usr/palm/services/com.palm.messaging.chatthreader/",
         "./usr/palm/services/com.palm.service.accounts/",
         "./usr/palm/services/com.palm.service.contacts.linker/",
@@ -2291,72 +2299,64 @@ def main():
     wcopy(f"{DIAPP}/stylesheets/ce-about.css",
           os.path.join(DISRC, "ce-about.css"), 0o644)
 
-    # 11d) Account templates: the profile account is "webOS Account",
-    # Facebook stops offering a calendar or contacts, and LinkedIn is hidden.
-    # Three stock templates under
-    # /usr/palm/public/accounts, edited by account_templates.py -- the same
-    # module used to push the change to a dev device -- whose docstring has
-    # the reasons. Every JSON file under both template dirs is edited (the
-    # base template and each resources/<locale>/ override carry their own
-    # copy of the name / the provider list), and the module refuses any file
-    # that does not contain exactly what it expects to change.
-    sys.path.insert(0, HERE)
-    import account_templates
-    log('tier: account templates ("webOS Account"; no Facebook calendar/contacts; LinkedIn hidden)')
-    at_done = 0
-    for tdir in account_templates.EDITS:
-        prefix = f"./usr/palm/public/accounts/{tdir}/"
-        tfiles = read_rootfs(ROOTFS_TGZ, prefixes=[prefix])
-        for name in sorted(n for n in tfiles if n.endswith(".json")):
-            body = tfiles[name]["data"].decode("utf-8")
-            w(name[2:], account_templates.edit(tdir, name[2:], body).encode("utf-8"), 0o644)
-            at_done += 1
-    if at_done != 24:
-        sys.exit(f"ERROR: account templates: expected 24 template files "
-                 f"(8 each: palmprofile, facebook, linkedin), edited {at_done}")
+    # 11d) CE's system files from system/: the account templates (profile
+    # account named "webOS Account", Facebook without its dead CALENDAR and
+    # CONTACTS providers, LinkedIn hidden) and the accounts library's "Get
+    # started with your webOS account:" string. system/ holds them as finished
+    # files at their device paths -- the copies other projects (Lunacy) take --
+    # so the image takes them from there too; account_templates.py is what made
+    # them, and its docstring has the reasons. system/README.md maps the files.
+    #
+    # Each tree must cover exactly the files of what it replaces (the stock
+    # template dir; the accounts library tier 10 replayed from enyo-accounts),
+    # so a changed upstream fails here instead of shipping a mix.
+    SYSTEM = os.path.join(PROJ, "system")
+    log("tier: CE system files (account templates, accounts library) from system/")
 
-    # 11e) Contacts first launch + the accounts library's "get started" string.
-    # Both edit files the community core-apps replay (tier 10) baked, so they
-    # read the OVERLAY copy, not stock.
-    #
-    # Contacts: same change as the Calendar's (apps/com.palm.app.calendar) --
-    # offer the profile account's contacts as ready-to-use on-device contacts
-    # instead of an HP account to get started with. contacts-app/FirstUse.js is
-    # the community 3.0.6701 file plus that change; the hash pins the file it
-    # was made from, so a new contacts overwrite ipk fails here instead of
-    # silently losing its own FirstUse.js changes.
-    #
-    # Accounts library: account_templates.debrand_get_started() (its docstring
-    # has why only the string tables' VALUES change, never the key).
-    log("tier: Contacts first launch + accounts library \"get started\" string")
-    CT_FIRSTUSE = "usr/palm/applications/com.palm.app.contacts/app/FirstUse.js"
-    CT_FIRSTUSE_FROM = "174546c334fd9a00e1e94f11d608b7b8b432e4b21eb895ca63ce5e0d7fa74920"
-    with open(os.path.join(OUT_ROOT, CT_FIRSTUSE), "rb") as f:
-        got = hashlib.sha256(f.read()).hexdigest()
-    if got != CT_FIRSTUSE_FROM:
-        sys.exit(f"ERROR: {CT_FIRSTUSE} is not the community 3.0.6701 file "
-                 f"contacts-app/FirstUse.js was made from (sha256 {got[:16]}…); "
-                 f"re-derive the CE change from the new file")
-    wcopy(CT_FIRSTUSE, os.path.join(HERE, "contacts-app", "FirstUse.js"), 0o644)
-    # ... and CE's Contacts is 3.2.0, like the Calendar. Only the app's own
-    # appinfo.json moves; the overwrite ipk it came from keeps its version.
-    bump_app_version(os.path.join(OUT_ROOT, "usr/palm/applications/com.palm.app.contacts"),
-                     "3.0.6701", "3.2.0")
-    ACC_RES = "usr/palm/frameworks/enyo/0.10/framework/lib/accounts/resources"
-    gs_done = 0
-    for fn in sorted(os.listdir(os.path.join(OUT_ROOT, ACC_RES))):
-        if not fn.endswith(".json"):
-            continue
-        rel = f"{ACC_RES}/{fn}"
-        with open(os.path.join(OUT_ROOT, rel), encoding="utf-8") as f:
-            body = f.read()
-        new = account_templates.debrand_get_started(body, rel)
-        if new != body:
-            w(rel, new.encode("utf-8"), 0o644)
-            gs_done += 1
-    if gs_done != 6:
-        sys.exit(f"ERROR: accounts library: expected the \"get started\" string in 6 "
-                 f"tables (de en en_ca es fr it), edited {gs_done}")
+    def system_files(rel):
+        root = os.path.join(SYSTEM, rel)
+        out = set()
+        for dp, _, fns in os.walk(root):
+            for fn in fns:
+                out.add(os.path.relpath(os.path.join(dp, fn), root))
+        if not out:
+            sys.exit(f"ERROR: system/{rel} is missing or empty")
+        return out
+
+    sys_done = 0
+    for tdir in ("com.palm.palmprofile", "com.palm.facebook", "com.palm.linkedin"):
+        rel = f"usr/palm/public/accounts/{tdir}"
+        ours = system_files(rel)
+        stock_t = {n[len(f"./{rel}/"):] for n in stock_names if n.startswith(f"./{rel}/")}
+        if ours != stock_t:
+            sys.exit(f"ERROR: system/{rel} does not match the stock template's files: "
+                     f"only in system/ {sorted(ours - stock_t)}, only in stock {sorted(stock_t - ours)}")
+        for f in sorted(ours):
+            if f.endswith(".json"):
+                wcopy(f"{rel}/{f}", os.path.join(SYSTEM, rel, f), 0o644)
+                sys_done += 1
+    if sys_done != 24:
+        sys.exit(f"ERROR: account templates: expected 24 template JSON files "
+                 f"(8 each: palmprofile, facebook, linkedin), copied {sys_done}")
+
+    rel = "usr/palm/frameworks/enyo/0.10/framework/lib/accounts"
+    ours = system_files(rel)
+    replayed = set()
+    for dp, _, fns in os.walk(os.path.join(OUT_ROOT, rel)):
+        for fn in fns:
+            replayed.add(os.path.relpath(os.path.join(dp, fn), os.path.join(OUT_ROOT, rel)))
+    if ours != replayed:
+        sys.exit(f"ERROR: system/{rel} does not match the enyo-accounts replay: "
+                 f"only in system/ {sorted(ours - replayed)}, only in the replay {sorted(replayed - ours)}")
+    lib_done = []
+    for f in sorted(ours):
+        mine = open(os.path.join(SYSTEM, rel, f), "rb").read()
+        if mine != open(os.path.join(OUT_ROOT, rel, f), "rb").read():
+            w(f"{rel}/{f}", mine, 0o644)
+            lib_done.append(f)
+    if len(lib_done) != 6 or not all(f.startswith("resources/") for f in lib_done):
+        sys.exit(f"ERROR: accounts library: expected system/ to differ from the "
+                 f"community library in 6 string tables, got {lib_done}")
 
     # 12) rootcertsupdate : FULL build-time replay of the trust-store update.
     # postinst (3.x path): install scripts to /etc/ssl/scripts, then deploycerts:
@@ -3136,6 +3136,27 @@ def main():
         sys.exit(f"ERROR: {os.path.basename(IPK['calculator'])}: payload has no "
                  "usr/palm/applications/com.palm.app.calculator/appinfo.json")
     remove_staged_ipk("com.palm.app.calculator")
+
+    # 15g) Contacts 3.2.0: apps/com.palm.app.contacts via its PatchOrReplace
+    # ipk -- the community 3.0.6701 Contacts (which the core-apps replay used
+    # to bake straight from its overwrite ipk) plus CE's on-device first
+    # launch. Same result as that replay: baked at the rootfs path, stock
+    # files the app no longer has removed, and no staged preload left to
+    # install beside it.
+    log(f"tier: Contacts BAKED ({os.path.basename(IPK['contacts'])})")
+    d = ipk_extract_data(IPK["contacts"], os.path.join(tmp, "contacts"))
+    ct_baked = bake_tree(d)
+    CT_APP = "usr/palm/applications/com.palm.app.contacts"
+    if f"{CT_APP}/appinfo.json" not in ct_baked:
+        sys.exit(f"ERROR: {os.path.basename(IPK['contacts'])}: payload has no "
+                 f"{CT_APP}/appinfo.json")
+    n_rm = 0
+    for n in sorted(x for x in stock_names if x.startswith(f"./{CT_APP}/")):
+        if n[2:] not in ct_baked:
+            removes.append(n[1:])
+            n_rm += 1
+    log(f"  {n_rm} stock Contacts files removed")
+    remove_staged_ipk("com.palm.app.contacts")
 
     log(f"tier: BT gamepad BAKED ({os.path.basename(IPK['bt'])})")
     d = ipk_extract_data(IPK["bt"], os.path.join(tmp, "bt"))
@@ -4289,7 +4310,7 @@ def main():
                         "community first-use swap (AddToImage/OOBE webosaccount) "
                         "+ modern TLS (browser/luna/downloadmgr/mail ssl11 stacks "
                         "+ mojomail patches) + LunaCE + App Catalog + Maps 4.0.1 "
-                        "+ the community core-apps suite (accounts/contacts/"
+                        "+ the community core-apps suite (accounts/"
                         "messaging/phone/chatthreader/service.accounts/contacts."
                         "linker/contacts.plugin.messaging/enyo-accounts/enyo-"
                         "contactsui/messaging.library/luna-systemui) + Synergy "

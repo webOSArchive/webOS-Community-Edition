@@ -1,11 +1,14 @@
 """webOS CE edits to stock account templates under /usr/palm/public/accounts, and to
 the accounts library's "get started" string.
 
-Shared by bake.py (tier 11d) and by hand for a dev push to a device:
+This module MADE the finished files under system/ (system/README.md), which are what
+the image (bake.py tier 11d) and other projects take. Re-run it against stock copies to
+regenerate them:
 
     python3 build/full-ce/account_templates.py <dir-holding-the-template-dirs>
 
-rewrites the template JSON under <dir>/com.palm.{palmprofile,facebook,linkedin} in place.
+rewrites the template JSON under <dir>/com.palm.{palmprofile,facebook,linkedin} in place;
+debrand_get_started() does the accounts library's string tables.
 
 Both edits are TEXT edits on purpose. The stock templates are not all valid JSON
 (com.palm.palmprofile.json has a trailing comma inside its LOCAL.FILESTORAGE icon),
