@@ -2291,8 +2291,9 @@ def main():
     wcopy(f"{DIAPP}/stylesheets/ce-about.css",
           os.path.join(DISRC, "ce-about.css"), 0o644)
 
-    # 11d) Account templates: the profile account is "webOS Account", and
-    # Facebook stops offering a calendar. Two stock templates under
+    # 11d) Account templates: the profile account is "webOS Account",
+    # Facebook stops offering a calendar or contacts, and LinkedIn is hidden.
+    # Three stock templates under
     # /usr/palm/public/accounts, edited by account_templates.py -- the same
     # module used to push the change to a dev device -- whose docstring has
     # the reasons. Every JSON file under both template dirs is edited (the
@@ -2301,7 +2302,7 @@ def main():
     # that does not contain exactly what it expects to change.
     sys.path.insert(0, HERE)
     import account_templates
-    log('tier: account templates ("webOS Account"; no Facebook calendar)')
+    log('tier: account templates ("webOS Account"; no Facebook calendar/contacts; LinkedIn hidden)')
     at_done = 0
     for tdir in account_templates.EDITS:
         prefix = f"./usr/palm/public/accounts/{tdir}/"
@@ -2310,9 +2311,48 @@ def main():
             body = tfiles[name]["data"].decode("utf-8")
             w(name[2:], account_templates.edit(tdir, name[2:], body).encode("utf-8"), 0o644)
             at_done += 1
-    if at_done != 16:
-        sys.exit(f"ERROR: account templates: expected 16 template files "
-                 f"(8 palmprofile + 8 facebook), edited {at_done}")
+    if at_done != 24:
+        sys.exit(f"ERROR: account templates: expected 24 template files "
+                 f"(8 each: palmprofile, facebook, linkedin), edited {at_done}")
+
+    # 11e) Contacts first launch + the accounts library's "get started" string.
+    # Both edit files the community core-apps replay (tier 10) baked, so they
+    # read the OVERLAY copy, not stock.
+    #
+    # Contacts: same change as the Calendar's (apps/com.palm.app.calendar) --
+    # offer the profile account's contacts as ready-to-use on-device contacts
+    # instead of an HP account to get started with. contacts-app/FirstUse.js is
+    # the community 3.0.6701 file plus that change; the hash pins the file it
+    # was made from, so a new contacts overwrite ipk fails here instead of
+    # silently losing its own FirstUse.js changes.
+    #
+    # Accounts library: account_templates.debrand_get_started() (its docstring
+    # has why only the string tables' VALUES change, never the key).
+    log("tier: Contacts first launch + accounts library \"get started\" string")
+    CT_FIRSTUSE = "usr/palm/applications/com.palm.app.contacts/app/FirstUse.js"
+    CT_FIRSTUSE_FROM = "174546c334fd9a00e1e94f11d608b7b8b432e4b21eb895ca63ce5e0d7fa74920"
+    with open(os.path.join(OUT_ROOT, CT_FIRSTUSE), "rb") as f:
+        got = hashlib.sha256(f.read()).hexdigest()
+    if got != CT_FIRSTUSE_FROM:
+        sys.exit(f"ERROR: {CT_FIRSTUSE} is not the community 3.0.6701 file "
+                 f"contacts-app/FirstUse.js was made from (sha256 {got[:16]}…); "
+                 f"re-derive the CE change from the new file")
+    wcopy(CT_FIRSTUSE, os.path.join(HERE, "contacts-app", "FirstUse.js"), 0o644)
+    ACC_RES = "usr/palm/frameworks/enyo/0.10/framework/lib/accounts/resources"
+    gs_done = 0
+    for fn in sorted(os.listdir(os.path.join(OUT_ROOT, ACC_RES))):
+        if not fn.endswith(".json"):
+            continue
+        rel = f"{ACC_RES}/{fn}"
+        with open(os.path.join(OUT_ROOT, rel), encoding="utf-8") as f:
+            body = f.read()
+        new = account_templates.debrand_get_started(body, rel)
+        if new != body:
+            w(rel, new.encode("utf-8"), 0o644)
+            gs_done += 1
+    if gs_done != 6:
+        sys.exit(f"ERROR: accounts library: expected the \"get started\" string in 6 "
+                 f"tables (de en en_ca es fr it), edited {gs_done}")
 
     # 12) rootcertsupdate : FULL build-time replay of the trust-store update.
     # postinst (3.x path): install scripts to /etc/ssl/scripts, then deploycerts:
