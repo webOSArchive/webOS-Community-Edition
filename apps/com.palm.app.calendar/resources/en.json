@@ -1,0 +1,10 @@
+{
+	"1#This event is organized by #{organizer} and has 1 attendee.|1>#This event is organized by #{organizer} and has #{num} attendees.": "1#This event is organised by #{organizer} and has 1 attendee.|1>#This event is organised by #{organizer} and has #{num} attendees.",
+	"Are you sure you want to delete this event?": "Are you sure you wish to delete this event?",
+	"Calendar Colors": "Calendar Colours",
+	"Contact Attendees": "Contact attendees",
+	"Forever": "Indefinitely",
+	"Organizer": "Organiser",
+	"Set Custom Repeat": "Set custom repeat",
+	"This event repeats forever.": "This event repeats indefinitely."
+}

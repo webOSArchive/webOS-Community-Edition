@@ -1,0 +1,17 @@
+enyo.depends
+(	"DetailView.js"
+,	"DetailView.css"
+,	"DeleteConfirm.js"
+,	"EditView.css"
+,	"EditView.js"
+,	"TimeSelectView.js"
+,	"ParticipantsView.js"
+,	"RepeatView.js"
+,	"../shared/MeetingTimeFormatter.js"
+,	"../shared/BusyFreeManager.js"
+,	"../shared/CalendarEvent.js"
+,	"../shared/DatabaseManager.js"
+,	"../shared/FormatterCache.js"
+,	"../shared/Utilities.js"
+,	"../../libs/date.js"
+);

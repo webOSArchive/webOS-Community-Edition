@@ -1,0 +1,10 @@
+{
+	"1#This event is organized by #{organizer} and has 1 attendee.|1>#This event is organized by #{organizer} and has #{num} attendees.": "1#This event is organized by #{organizer} and has 1 attendee.|1>#This event is organized by #{organizer} and has #{num} attendees.",
+	"All Day Event": "All-Day Event",
+	"Change The Whole Series": "Change the Whole Series",
+	"Contact Attendees": "Contact Attendees",
+	"Delete The Whole Series": "Delete the Whole Series",
+	"Jump To...": "Jump to...",
+	"Organizer": "Organizer",
+	"Set Custom Repeat": "Set Custom Repeat"
+}

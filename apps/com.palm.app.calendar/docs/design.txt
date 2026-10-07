@@ -1,0 +1,73 @@
+
+TODOs:
+	- Implement CacheManager to handle event caching for improved performance.
+  	- Add loadTests and runTests launch params to the app.
+	- Integrate logger from Calendar Facebook Engine.
+	- Abstract attendees processing outside of the views (Attendees Manager?) so that changes/updates can be better propogated to the views.
+
+FYIs:
+	- When you see +variable and that variable is a Date, it's shorthand for variable.getTime().
+
+	+ Per ECMAScript Spec, setting a date instance's date to 0 updates that date instance to the last day of the previous month:
+		var x = new Date (2012, 2, 15);		// March	15, 2012
+		x.setDate (0);						// Feburary	29, 2012
+
+
+IDEAS:
+	+ Enable/Disable detailed logging via event creation:
+		+ Add account-specific event titled:
+			- "Enable Detailed Logging", note:<log-level> (i.e. info, debug)
+			- "Error History" for event that self-updates it notes with error summaries.
+	- Add agenda view.
+	- Make Preferences a right-hand sliding panel: 33% in landscape, 50% in portrait, full in smaller res'
+	- Add preference for launch view (i.e. last, day, week, month, agenda).
+	- Add preference to auto-advance the displayed day when the date changes if you're viewing today.
+	- Add per event CSS3 fade-in-out transitions during event updates (i.e add/modify/delete).
+	- 2011.10.10: Robert Yawn: Mike's idea of breaking up the 3 view combined query into 3 separate queries (for large date ranges like week/month) won't work yet because the "expand" parameter creates some potential overlap which could inadvertantly wipe a view.
+	- 2011.03.30: Robert Yawn: Add a popup/dialog manager to display specified views as needed (to be device agnostic, for example).
+	- 2011.03.30: Robert Yawn: Make edit view operate on a temp event, or perhaps just don't pull the values off of the fields until saving.
+	- 2011.03.30: Robert Yawn: New "quick" jump-to control with stacked persistent horizontal/vertical scrollers.  To be extended as different kinds for use (date/time/etc).
+
++ 2010.12.13: Mike Lee: Created DataHub to allow highly decoupled observation/notification:
+
+ 	- Allows objects to watch, ignore, and/or share information without direct access to each other.
+	- Works with enyo components via published properties (i.e. is24Hr)
+	- Works with Non-enyo objects via setPropertyName methods (i.e. setIs24Hr).
+
+	+ Syntax is as follows:
+
+		+ app.watch ({ publishedPropertyName: publishedPropertyOwner }):
+			+ Allows the publishedPropertyOwner to watch for information shared using publishedPropertyName.
+
+				i.e. app.watch ({ is24Hr: dayView });	// Allows Day View to receive 24hr clock mode updates.
+
+		+ app.ignore ({ publishedPropertyName: publishedPropertyOwner }):		
+			+ Allows the publishedPropertyOwner to ignore information shared using publishedPropertyName.
+			
+				i.e. app.ignore ({ is24Hr: dayView });	// Allows Day View to ignore 24hr clock mode updates.
+
+		+ app.share ({ publishedPropertyName: [informationArray] }):
+			+ Shares the informationArray with every publishedPropertyName watcher passing informationArray as parameters.
+
+				i.e. app.share ({ is24Hr: { data: true }});	// Shares 24hr clock mode state with all is24Hr watchers.
+
+		+ NOTES:
+
+			+ If you'd like the shared value to be kept and shared with any late watchers use this syntax:
+
+				app.share ({ property: { data: value, keep: true }});
+
++ 2011.9.14: Henry Hughes: Notes on new CacheManager solution for Dubonnet+:
+
+	- Does not currently listen for accounts changed, it probably should at some point to enable further ratelimiting on databaseChanged
+	- There is no way to cancel queries in the current implementation. I ran into issues with the design and allowing queries to be cancelled
+	  as it was pretty much a surefire way to desynchronize the timestamp cache from the event cache. At some point this should be revisited
+	  as it does improve performance pretty drastically if you allow cancellations.
+
+	  I think there may be some intractable issues here though due to the design of the cache. If a databaseChanged query is cancelled by
+	  a databaseChanged query, it shouldn't be too disasterous as the later query should be able to complete the work the first one would have
+	  required. However if a databaseChanged query is cancelled by a getDays query, things can go badly wrong here because databaseChanged queries
+	  try to populate all instances of a set of events throughout the cache, while getDays queries try to populate additional days for all events.
+	  The problem arises because a getDays query isn't going to know that the cache is missing events as-is, and will attempt to populate
+	  for the days its looking for only while leaving all prior days out of sync with reality.
+

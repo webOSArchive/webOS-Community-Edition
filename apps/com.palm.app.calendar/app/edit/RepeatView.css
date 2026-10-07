@@ -1,0 +1,15 @@
+.calendar-repeat-view {
+	height: 450px;
+}
+
+.repeat-view-subject {
+	overflow:hidden;
+	text-overflow: ellipsis;
+	height: 36px;
+	border-radius: 8px;
+	padding: 8px;
+}
+
+.repeat-weekday-checkbox {
+	padding: 0 15px 0 0;
+}

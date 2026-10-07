@@ -1,0 +1,53 @@
+
++ Milestones:
+	- ...
+
+
++ Blockers:
+	- ...
+
++ Concerns:
+    + App Menu no longer works in the browser since migrating from enyo 0.9 to enyo 0.10.
+	+ DFISH-8242: : enyo.DomNode.showingChanged() should be called on destroy() as it is on create()!
+	+ enyo.Carousel.fetchView ("center") returns left view after 1st scroll!
+	+ Changing an event's time to earlier than current fails to render due to not removing existing event before adding new.
+	+ !!! Passing the global reference to an enyo.Component constructor causes a seriously difficult to trace stack overflow problem!!!
+		- enyo.0.4: this.error (e.stack) causes: Uncaught RangeError: Maximum call stack size exceeded on emulator.
+	+ enyo.Dispatcher:57: "fn" is global! Is this by accident? Are there side-effects besides possibility of being clobbered?
+	+ enyo.ListSelector doesn't allow falsy values, bug filed? what's the number?
+
++ Tips:
+	- Can't launch in Chrome because it can't open the mock data files?  Try launching Chrome with this option:
+		/opt/google/chrome/google-chrome --allow-file-access-from-files
+
+
++ Extras:
+	- ...
+
++ Errors:
+
+	+ Seen on 2011.06.06 on Nova-Dartfish 3052 Week View (September 4) -> Month View (was Oct, 2011):
+
+		2011-06-06T12:41:58.954129Z [23450] webos-device user.crit LunaSysMgr: {LunaSysMgrJS}: com.palm.app.calendar:
+		Uncaught TypeError: Cannot read property '++HWpi4czUdx+UYM' of null, file:///media/cryptofs/apps/usr/palm/applications/com.palm.app.calendar/app/month/MonthDay.js:107
+
+	+ Seen on 2011.06.05 on Nova-Dartfish 3052 by cold launching Calendar with non-lazy-loaded DayView:
+
+		2011-06-06T01:20:08.711258Z [25994] webos-device user.crit LunaSysMgr: {LunaSysMgrJS}: com.palm.app.calendar:
+		Uncaught TypeError: Cannot read property 'alarmSoundOn' of null, file:///media/cryptofs/apps/usr/palm/applications/com.palm.app.calendar/app/shared/ReminderManager.js:554
+
+	+ Seen on 2011.06.05 on Nova-Dartfish 3052 by clicking "New event" button in Week View. Message shown 13 times on 1 click:
+
+		2011-06-05T23:59:15.603444Z [21141] webos-device user.crit LunaSysMgr: {LunaSysMgrJS}: com.palm.app.calendar: Uncaught TypeError: Cannot read property 'calendar.edit.EditView' of null, file:///media/cryptofs/apps/usr/palm/applications/com.palm.app.calendar/lib/build/enyo-build.js:218
+
+	+ Seen on 2011.06.05 on Nova-Dartfish 3052 by cold launching Calendar then tossing while still in card mode, relaunch fixes:
+
+		011-06-05T23:39:04.924932Z [19930] webos-device user.crit LunaSysMgr: {LunaSysMgrJS}: com.palm.app.calendar:
+		Uncaught TypeError: Cannot call method 'getElementById' of undefined, file:///media/cryptofs/apps/usr/palm/applications/com.palm.app.calendar/lib/build/enyo-build.js:1488
+
+		2011-06-05T23:43:32.691402Z [20198] webos-device user.crit LunaSysMgr: {LunaSysMgrJS}: com.palm.app.calendar:
+		Uncaught ReferenceError: setTimeout is not defined, file:///media/cryptofs/apps/usr/palm/applications/com.palm.app.calendar/lib/build/enyo-build.js:1658
+
+	+ Seen on 2011.05.16 after creating an event in Week View on the Pepper Sasha EAS Calendar:
+	
+		2011-05-16T13:59:16.160451Z [75190] webos-device user.crit LunaSysMgr: {LunaSysMgrJS}: com.palm.app.calendar: ReferenceError: setTimeout is not defined     at <error: TypeError: Object [object DOMWindow] has no method '__lookupGetter__'>     at Object.share (file:///media/cryptofs/apps/usr/palm/applications/com.palm.app.calendar/libs/DataHub.js:153:6)     at Object.databaseChanged (file:///media/cryptofs/apps/usr/palm/applications/com.palm.app.calendar/app/shared/CacheManager.js:78:20)     at clazz.notifyObservers (calendar/prologue.js:2800:45)     at handleEvents (calendar/prologue.js:2951:9)     at Future._maybeDispatch (palmfoundationsVersion1_0:132:293)     at Future.<anonymous> (palmfoundationsVersion1_0:130:8)     at dispatch (palmfoundationsVersion1_0:140:493), palmfoundationsVersion1_0:133

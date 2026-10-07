@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+	<title>Jasmine Test Runner</title>
+	<!--
+		Modified Jasmine Test Runner. We're using enyo.depends to fetch spec files, as there are simply too many of them
+		to list in the HTML file without it being a monumental pain. This required a bit of rearranging to get it to work
+		correctly, namely the jasmine CSS has to be loaded after enyo, but the jasmine JS has to be loaded before.
+	!-->
+	<script type="text/javascript" src="../../../../../jasmine/jasmine.js"></script>
+	<script type="text/javascript" src="../../../../../jasmine/jasmine-html.js"></script>
+
+	<script type="text/javascript" src="../../../../../enyo.current/0.10/framework/enyo.js" launch="nobridge"></script>
+
+	<link rel="stylesheet" type="text/css" href="../../../../../jasmine/jasmine.css">
+</head>
+
+<body>
+	<script type="text/javascript">
+		jasmine.getEnv().addReporter(new jasmine.TrivialReporter());
+		jasmine.getEnv().execute();
+	</script>
+</body>
+</html>

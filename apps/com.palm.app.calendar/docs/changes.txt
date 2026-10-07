@@ -1,0 +1,64 @@
+
+2011.01.29:
+
++ CHANGES:
+	+ DFISH-2256: Improved app launch time by 60%; down from ~10s to ~4s since submission 26:
+		- Minimized Mojo library dependencies.
+		- Identified and mocked out Mojo App initialization eliminating silent launch errors.
+		- Now lazy loading the Contacts library from EditView.
+		- Disabled loading ContactsUI as it's not currently useable.
+	- Day View: Fixed DFISH-1620 & DFISH-2072: All-Day events now rendered at top of Day View.
+	- Day View: Fixed DFISH-2115: Events remain after calendar account is deleted
+	- Day View: Fixed DFISH-2231: CalendarsManager color-cycling bug seen when viewing 9+ calendars.
+	- Preferences: Moved Sync button to top of view to match HI design.
+	- Calendar List: Changed "hold" behavior to set all calendars to the "held" one's state.
+	- Calendar List: Caches and reuses existing toggles; only creates toggles for new calendars.
+	- App: Moved event query and data sharing logic to CacheManager and DataHub respectively.
+	- DFISH-669: Implemented "Contact Attendees" (cross-launch email) from the Participant's View.
+	- Moved to enyo 0.6 and updated views to use Header & Footer in place of PageHeader & CommandMenu.
+	- Added preliminary (inactive) calendar.AppMenu implementation and made DataHub chainable.
+
+
++ NOTES:
+	- 
+
+
+2011.01.05:
+
++ Calendar: Dartfish: Initial D5 branch with Calendar re-architected to separate view & controller logic for async launch and in-browser development.
+
++ CHANGES:
+	- App.js		= App Controller; non-gui and where core app functionality should reside.
+	- AppView.js	= App GUI; handles all GUI interaction and  uses App and other modules as needed.
+	- Day.js		= Day View Controller; may rename to DayController as Day may be needed as a base type once Carousel is integrated.
+	- DayView sub-components moved into separate files (i.e. DayHour.js, DayEvent.js)
+	- Updated to use enyo v.0.4.
+
+	+ The app will now work in browser, switching to mock data and components when not in a webOS environment:
+		+ Need this for multiple reasons:
+			- http://nebula.palm.com/ is used to preview and sometimes QA the app so it has to mostly work there.
+			- Safari/Chrome/WebKit's Dev Tools (i.e. WebInspector) are awesome and often essential for debugging enyo but hindered
+			  if we crash as soon as we can't find EventManager because it couldn't load the Calendar library on nebula or elsewhere.
+
+	+ Updated in-app shared notification mechanism:
+		- Simplified names to app.watch(), app.ignore(), & app.share().
+		- Modified app.share to auto-wrap non-array values for app.share ({ prop: value }) syntax.
+
+	+ Fixed broken app menu and back gesture by creating DayView.HACK_EVENT_DELEGATION_HACK():
+		- Works around an enyo framework bug where the first created enyo.Component is used as the default event handler.
+
+	- Updated DayView to dynamically position events based on their start hour, in-hour positioning & multi-day display TBD.
+	- Fixed unfiled PreferencesView bug where Event Reminders sound wasn't being saved to DB.
+	- Fixed unfiled PreferencesView bug where Event Reminders always showed the ringtone type sub-field.
+	- Fixed a bug in ContactsManager likely causing attendee reverse-lookup to fail.
+	- Updated most functions to use "<name>: function <name> (...) {" format to reduce "anonymous" call stacks in WebInspector.
+	- Added app.flow.txt which contains debug output showing the app's launch-time call sequence.
+	- Created Week & Month View place holder files per DayView structure.
+	- Created initial depends.js files for Day, Week, Month and shared folders; actual use to be tested.
+
++ NOTES:
+	+ PreferencesView ListSelector's and the AppMenu generate this error when clicked via day view titlebar or used respectively:
+		- ManagedDOMBuilder.js:72  TypeError: Result of expression 'this.container.addControl' [undefined] is not a function.
+		- Caused by enyo bug and worked around via HACKS.HACK_ENYO_DEFAULT_TARGET_EVENT_HANDLER.
+ 	+ 
+

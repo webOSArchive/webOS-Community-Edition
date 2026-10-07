@@ -1,0 +1,14 @@
+{
+	", and ": " et ",
+	"0#No participants|1#1 meeting participant|##{n} meeting participants": "0#Aucun participant|1#1 participant à la réunion|##{n} articipants à la réunio",
+	"1#1st|2#2nd|3#3rd|21#21st|22#22nd|23#23rd|31#31st|##{n}th": "1#1er|2#|3#3|21#21|22#22|23#23|31#31|##{n}th",
+	"1#This event is organized by #{organizer} and has 1 attendee.|1>#This event is organized by #{organizer} and has #{num} attendees.": "\t1#Cet événement est organisé par vous et 1 personne y participera.|1>#Cet événement est organisé par vous et #{num} personnes y participeront.",
+	"1#every year on #{days}|1>#every #{interval} years on #{days}": "1#chaque année le(s) #{days}|1>#toutes les #{interval} années le(s) #{days}",
+	"Anniversaries": "Anniversaries",
+	"Every #{n} month(s)": "Tous les #{n} mois(s)",
+	"Every #{n} year(s)": "Toutes les #{n} année(s)",
+	"No Subject": "Sans objet",
+	"Running late. On my way...": "Je suis en retard, mais j’arrive…",
+	"This event is #{duration} long.": "Cet événement dure #{period}.",
+	"To get started, set up a Calendar account": "Pour commencer, définissez un compte calendrier"
+}

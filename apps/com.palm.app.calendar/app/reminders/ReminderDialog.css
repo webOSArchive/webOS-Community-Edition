@@ -1,0 +1,42 @@
+body {
+	color: #FFF;
+	font-family: Prelude, 'Prelude Medium', 'Segoe UI', Arial, Helvetica, sans-serif;
+	background:transparent;
+}
+.notification-icon {
+	margin-right:12px;
+	margin-left:2px;
+}
+.notification-text-box {
+	margin-bottom:9px;
+}
+.notification-subject {
+	font-size:16px;
+	font-weight:bold;
+}
+.notification-subject,
+.notification-body {
+	width:260px;
+	text-overflow: ellipsis;
+	overflow: hidden;
+	white-space:nowrap;
+}
+.notification-body,
+.notification-body-multi {
+	font-size:14px;
+	line-height:17px;
+}
+.notification-body-multi {
+	width:260px;
+	height:53px;
+	overflow:hidden;
+}
+.button-top {
+	margin-bottom:4px;
+}
+.button-right {
+	margin-left:4px;
+}
+.button-left {
+	margin-right:4px;
+}
