@@ -7,6 +7,7 @@ enyo.depends
 ,	"$enyo-lib/contactsui/"
 ,	"../libs/date.js"							// Okay because DateJS now avoids multiple instantiation thereby avoiding the Date.toString() stack overflow issue.
 ,	"shared/SimpleTransition.js"					// We need to include the custom transition before AppView.js
+,	"shared/HoursScroller.js"						// webOS CE: before day/ and week/, which use it
 ,	"AppMenu.js"
 ,	"AppView.css"
 ,	"AppView.js"

@@ -233,7 +233,7 @@ enyo.kind({
 
 	createDay: function createDay () {
 		var inWeekView		= this.inWeekView
-		,	hourContainer	= inWeekView ? {kind: enyo.Control} : {kind: enyo.Scroller, horizontal:false, vertical:true}
+		,	hourContainer	= inWeekView ? {kind: enyo.Control} : {kind: "calendar.HoursScroller", horizontal:false, vertical:true}	// webOS CE: was enyo.Scroller
 		,	hoursContainer
 		,	is24Hr			= this.is24Hr
 		;

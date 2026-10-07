@@ -39,7 +39,7 @@ enyo.kind({
 
 	components:	[
 		{name:"header", kind:"calendar.week.WeekHeader"},
-		{name:"weekHours", className:"week-hours", kind: enyo.Scroller, flex:1, autoHorizontal:false, horizontal:false, vertical:true, components: [
+		{name:"weekHours", className:"week-hours", kind: "calendar.HoursScroller", flex:1, autoHorizontal:false, horizontal:false, vertical:true, components: [	// webOS CE: was enyo.Scroller (see shared/HoursScroller.js)
 			{name: "weekContainer", className: "week-container", kind: enyo.Control, components: [
 				{name:"allDayContainer", className:"allday-header", kind: enyo.HFlexBox, components: [
 					{name:"allDayLabel", className:"label enyo-text-ellipsis events-header"}
