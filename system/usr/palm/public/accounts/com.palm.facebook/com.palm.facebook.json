@@ -32,36 +32,6 @@
 		],
 	
 	"capabilityProviders": [{
-		"capability" : "CALENDAR",
-		"id" : "com.palm.facebook.calendar",
-		"implementation" : "palm://com.palm.service.calendar.facebook/",
-		"onCreate" : "palm://com.palm.service.calendar.facebook/onCreate",
-		"onDelete" : "palm://com.palm.service.calendar.facebook/onDelete",
-		"onEnabled" : "palm://com.palm.service.calendar.facebook/onEnabled",
-		"onCredentialsChanged":"palm://com.palm.service.calendar.facebook/credentialsChanged",
-		"sync" : "palm://com.palm.service.calendar.facebook/sync",
-		"readOnlyData" : true,
-		"dbkinds" : {
-			"calendar" : "com.palm.calendar.facebook:1",
-			"calendarevent" : "com.palm.calendarevent.facebook:1"
-		}
-	},
-	{
-		"capability": "CONTACTS",
-		"id": "com.palm.facebook.contacts",
-		"implementation": "palm://com.palm.service.contacts.facebook/",
-		"onCreate": "palm://com.palm.service.contacts.facebook/onCreate",
-		"onEnabled": "palm://com.palm.service.contacts.facebook/onEnabled",
-		"onDelete": "palm://com.palm.service.contacts.facebook/onDelete",
-		"sync": "palm://com.palm.service.contacts.facebook/sync",
-		"onCredentialsChanged":"palm://com.palm.service.contacts.facebook/credentialsChanged",
-		"refetchPhoto": "palm://com.palm.service.contacts.facebook/refetchPhoto",
-		"readOnlyData": true,
-		"dbkinds": {
-			"contact": "com.palm.contact.facebook:1"
-		}
-	},
-	{
 		"capability": "PHOTO.UPLOAD",
 		"id": "com.palm.service.photos",
 		"implementation": "palm://com.palm.service.photos",

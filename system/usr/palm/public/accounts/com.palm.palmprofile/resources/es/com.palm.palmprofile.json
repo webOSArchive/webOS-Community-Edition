@@ -55,7 +55,7 @@
 		"loc_32x32": "images/mypalm-32x32.png",
 		"loc_48x48": "images/mypalm-48x48.png"
 	},
-	"loc_name": "Cuenta de HP webOS",
+	"loc_name": "Cuenta de webOS",
 	"readPermissions": [
 		"com.palm.service.contacts",
 		"com.palm.app.contacts"

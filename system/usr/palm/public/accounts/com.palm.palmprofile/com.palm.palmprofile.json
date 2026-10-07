@@ -1,6 +1,6 @@
 {
 	"templateId": "com.palm.palmprofile",
-	"loc_name": "HP webOS Account",
+	"loc_name": "webOS Account",
 	"icon": {
 		"loc_32x32": "images/mypalm-32x32.png",
 		"loc_48x48": "images/mypalm-48x48.png"

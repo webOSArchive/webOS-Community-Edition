@@ -1,4 +1,5 @@
 {
+	"hidden": true,
 	"capabilityProviders": [
 		{
 			"capability": "CONTACTS",

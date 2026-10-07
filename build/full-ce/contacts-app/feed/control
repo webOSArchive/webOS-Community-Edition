@@ -1,0 +1,8 @@
+Package: com.palm.app.contacts
+Version: @VERSION@
+Depends:
+Section: Utilities
+Architecture: all
+Maintainer: webOS Archive
+Description: Contacts (webOS CE)
+Source: { "Type":"Application", "Feed":"WOSA Modernize", "Category":"Modernize", "LastUpdated":"@EPOCH@", "Title":"Contacts (webOS CE)", "FullDescription":"The built-in Contacts, without the HP account it used to ask for.<br><br>Your contacts are ready the first time you open it: contacts you add are kept on the device, and Microsoft Exchange accounts sync alongside them as before.<br><br>Replaces the Contacts app in place. Restart Luna after installing.", "Changelog":"3.2.0: Opens with on-device contacts ready to use instead of asking for an HP account.", "MinWebOSVersion":"3.0.0", "DeviceCompatibility":["TouchPad","Touchpad Go"], "PostInstallFlags":"RestartLuna", "PostUpdateFlags":"RestartLuna" }

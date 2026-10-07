@@ -2338,6 +2338,10 @@ def main():
                  f"contacts-app/FirstUse.js was made from (sha256 {got[:16]}…); "
                  f"re-derive the CE change from the new file")
     wcopy(CT_FIRSTUSE, os.path.join(HERE, "contacts-app", "FirstUse.js"), 0o644)
+    # ... and CE's Contacts is 3.2.0, like the Calendar. Only the app's own
+    # appinfo.json moves; the overwrite ipk it came from keeps its version.
+    bump_app_version(os.path.join(OUT_ROOT, "usr/palm/applications/com.palm.app.contacts"),
+                     "3.0.6701", "3.2.0")
     ACC_RES = "usr/palm/frameworks/enyo/0.10/framework/lib/accounts/resources"
     gs_done = 0
     for fn in sorted(os.listdir(os.path.join(OUT_ROOT, ACC_RES))):
