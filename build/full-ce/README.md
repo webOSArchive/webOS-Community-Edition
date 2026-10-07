@@ -39,8 +39,11 @@ it has the same filename, so dropping it in replaces the old file outright.
   `symlinks.txt` links are recreated, and `db8-kinds/`/`db8-permissions/`
   files replace their stock `/etc/palm/db` counterparts wherever those
   actually live (several sit in per-owner subdirs). A dest under
-  `/media/cryptofs/apps/` (contacts, messaging) is baked as a **rootfs** app
+  `/media/cryptofs/apps/` (messaging) is baked as a **rootfs** app
   instead and the stock staged ipk subdir under `/usr/palm/ipkgs/` is removed.
+  Contacts used to come this way too; since 600074 it is CE's own 3.2.0 from
+  `apps/com.palm.app.contacts` (tier 15g), and the account templates, accounts
+  library strings and contacts framework come from `system/` (tier 11d).
   `org.webosarchive.tls-updates` is a meta-package and is ignored.
   Also here: **`com.palm.synergy.generic`** (Synergy Revival shared runtime).
   Its rootfs-overwrite tree bakes at real paths (imlibpurpletransport, the

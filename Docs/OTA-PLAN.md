@@ -111,7 +111,7 @@ Listed so the plan is honest about the critical path:
 
 ## 2. Path A — CE 3.1.0 → CE 3.2.0
 
-### 2.1 The delta (600070 → 600073, from the tracked overlays)
+### 2.1 The delta (600070 → 600075, from the tracked overlays)
 
 | Change | Paths | Notes |
 |---|---|---|
@@ -120,6 +120,11 @@ Listed so the plan is honest about the critical path:
 | Video handler job (new) | `/etc/event.d/ce-register-video-handler` + `/usr/palm/ce-seed/jobs/…sh` | see trap below |
 | Media TLS | **add** `/usr/lib/gstreamer-0.10/libgstcurlhttpsrc.so`, **remove** `libgstsouphttpsrc.so` | |
 | Calculator 3.2.0 | `/usr/palm/applications/com.palm.app.calculator/`, `/usr/palm/packages/com.palm.calculator/`; **remove** `/usr/palm/ipkgs/com.palm.app.calculator/` | |
+| Contacts 3.2.0 (600074) | `/usr/palm/applications/com.palm.app.contacts/{app/FirstUse.js,appinfo.json}` | already a rootfs app on 3.1.0 (the community build); source `apps/com.palm.app.contacts` |
+| Calendar 3.2.0 (600074) | the staged `/usr/palm/ipkgs/com.palm.app.calendar/…3.0.11007_all.ipk` is repacked | **no effect on an installed device**: Calendar lives in cryptofs, and the staged ipk keeps its 3.0.11007 filename. See §2.2 |
+| Account templates (600074) | `/usr/palm/public/accounts/com.palm.{palmprofile,facebook,linkedin}/**/*.json` (24 files) | "webOS Account"; Facebook without CALENDAR/CONTACTS; LinkedIn hidden. The accounts service caches templates until it restarts |
+| Accounts library strings (600074) | `/usr/palm/frameworks/enyo/0.10/framework/lib/accounts/resources/{de,en,en_ca,es,fr,it}.json` | "Get started with your webOS account:" |
+| Contacts framework AppPrefs (600075) | `/usr/palm/frameworks/contacts/submission/{114contacts.js,114/concatenated.js,114/javascript/AppPrefs.js}`, `/usr/palm/frameworks/mojo/builtins/palmcontactsVersion1_0.js` | one prefs record instead of two; existing duplicates heal on the next Contacts launch, so the OTA needs no data step |
 | Emoji fallback font (planned, `EMOJI-FONT.md`) | **add** `/usr/share/fonts/CE-Emoji.ttf` (+ OFL text), **patched** `/usr/lib/libWebKitLuna.so` (fifth fallback slot) | lib is held open by BrowserServer/WebAppMgr — fine in the ramdisk, a reason not to hotpatch |
 | Colour emoji images (planned, `EMOJI-FONT.md` §7) | **add** `/usr/palm/frameworks/ce-emoji/` (shared `emoji.js` + EmojiOne PNGs, ~10.5 MB); **changed** Messaging (images move out of its app dir), Email, Contacts | Email is a cryptofs app: its patch goes in `ce-ota-finish`, not the rootfs diff |
 | Photos hand-off | the staged `/usr/palm/ipkgs/com.palm.app.photos/…ipk` is repacked | **no effect on an installed device**: Photos already lives in cryptofs |
@@ -128,7 +133,9 @@ Listed so the plan is honest about the critical path:
 | First-boot jobs | `ce-firstboot-tweaks`, `ce-default-wallpaper`, `ce-remove-preloads` (AT&T wallpaper fix, de-shadow list) | already flag-done on a 3.1.0 device, so this is just file content |
 | ipkg db | the `.list`/`.md5sums` rewrites | |
 
-**About 93 files and 4 removals**, plus the emoji font and the patched
+**About 93 files and 4 removals** as of 600073; 600074–600075 add about 37
+more files (Contacts, the account templates and strings, the contacts
+framework), plus the emoji font and the patched
 `libWebKitLuna.so` once `EMOJI-FONT.md` lands. Before the emoji work, nothing
 replaced was held open by a long-lived process. The patched `libWebKitLuna.so`
 is held open by BrowserServer and WebAppMgr: one more reason Path A takes the
@@ -167,7 +174,16 @@ The rootfs diff can't express these:
    lived-in device it caches the old souphttpsrc. The Media TLS postinst documents
    that leaving it makes *no* souphttpsrc load.
 7. A Luna restart, or the reboot the armed flash already does, so cached Enyo
-   app code reloads.
+   app code reloads. The contacts framework's Mojo builtin and the account
+   templates (cached by `com.palm.service.accounts`) need the same.
+8. **Calendar 3.2.0.** Calendar is a cryptofs preload, and the image changes
+   only the staged ipk, keeping its 3.0.11007 filename so `app-install` does
+   not reinstall it every boot. So an installed device keeps the stock
+   Calendar. `ce-ota-finish` must lay the 3.2.0 app tree over
+   `/media/cryptofs/apps/usr/palm/applications/com.palm.app.calendar/` (the
+   tree in `apps/com.palm.app.calendar`, as in its feed ipk). Same shape as the
+   Photos hand-off (1). Note this also applies to a **reflash without erase**:
+   cryptofs survives a Doctor run.
 
 ### 2.3 Delivery tier: armed flash, on purpose
 
