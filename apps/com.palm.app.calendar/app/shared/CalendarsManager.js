@@ -16,6 +16,10 @@ enyo.kind({
 	published:
 	{	
 	},
+
+	LOCAL_CALENDAR_NAME: $L("On This Device"),
+	// The header's calendar toggles are too narrow for the full name.
+	LOCAL_CALENDAR_SHORT_NAME: $L("On-Device"),
 	
 	components: [
 		{name: "getAccounts", kind: "Accounts.getAccounts", onGetAccounts_AccountsAvailable: "gotAccounts"},
@@ -100,6 +104,14 @@ enyo.kind({
 		this.getCalendars();
 	},
 
+	getProfileAccount: function getProfileAccount() {
+		for (var acct in this.rawAccounts) {
+			if (this.rawAccounts.hasOwnProperty(acct) && this.rawAccounts[acct] && this.rawAccounts[acct].templateId == "com.palm.palmprofile") {
+				return this.rawAccounts[acct];
+			}
+		}
+	},
+
 	getCalendars: function getCalendars(){
 		//this.cmlog ("4: getCalendars");
 		this.db.getAllCalendars (this.gotCalendars, this.getCalendarsFailed, false);
@@ -136,40 +148,59 @@ enyo.kind({
 		var revsetNum2 = getRevsetNumber(revsetResponse2) || 0;
 		this.lastRevSet = Math.max(revsetNum1, revsetNum2);
 	
-		var added = false;		
-		var calendars = queryResult && queryResult.results;
-		if (calendars && calendars.length === 0) {
-			var db = this.db;
-			var colorList = this.colorList;
-			for (var acct in this.rawAccounts) {
-				if (this.rawAccounts.hasOwnProperty(acct) && this.rawAccounts[acct]) {
-					var accountInfo = this.rawAccounts[acct];
-					if (accountInfo.templateId == "com.palm.palmprofile") {
-						this.localCalendarId = accountInfo._id;
-						var palmProfileCalendar = {
-							"_kind": "com.palm.calendar:1",
-							"accountId": accountInfo._id,
-							"name": accountInfo.loc_name,
-							"isReadOnly": false,
-							"syncSource": "Local",
-							"excludeFromAll": false,
-							"color": colorList[0] //if we have no calendars, then no colors are used, and we can just grab this one.
-						//this will save injecting colors later, and one iteration through this init process.	
-						};
-						//this.cmlog("5A: gotCalendars: ADDING PALM PROFILE CALENDAR");
-						console.log("CalendarsManager: Adding profile calendar");
-						db.addPalmProfileCalendar(palmProfileCalendar);
-						added = true;
+		var calendars = (queryResult && queryResult.results) || [];
+
+		// webOS CE: the Local calendar lives on the profile account (there is no HP sync
+		// behind it any more, it is simply the on-device calendar). HP only created it when
+		// the calendar table was completely empty, and dropped it from view whenever its
+		// accountId stopped matching a live account -- either way the user was left with
+		// no writable calendar. Create it whenever none exists, and re-attach an orphaned
+		// one to the current profile account. Synced calendars (EAS) are never touched.
+		var profileAccount = this.getProfileAccount();
+		if (profileAccount) {
+			var localCalendars = [], orphans = [], i, cal;
+			for (i = 0; i < calendars.length; i++) {
+				cal = calendars[i];
+				if (cal.syncSource == "Local" && cal._kind == "com.palm.calendar:1") {	// Do NOT Localize
+					localCalendars.push(cal);
+					if (cal.accountId != profileAccount._id && !this.rawAccounts[cal.accountId]) {
+						orphans.push(cal);
 					}
 				}
-			}//END:for .. rawAccounts
+			}
 
-			if (added) {
-				this.watchCalendars();
+			localCalendars.length && (this.addingLocalCalendar = false);
+			if (!localCalendars.length && !this.addingLocalCalendar) {
+				// Set until the new calendar shows up, so a watch firing for some other
+				// calendar (an EAS sync, say) in the meantime cannot add a second one.
+				this.addingLocalCalendar = true;
+				var localCalendar = {
+					"_kind": "com.palm.calendar:1",
+					"accountId": profileAccount._id,
+					"name": this.LOCAL_CALENDAR_NAME,
+					"isReadOnly": false,
+					"syncSource": "Local",
+					"excludeFromAll": false
+				};
+				// With no other calendars no color is taken yet; otherwise injectColors picks a free one.
+				!calendars.length && (localCalendar.color = this.colorList[0]);
+				console.log("CalendarsManager: Adding local calendar");
+				this.db.addPalmProfileCalendar(localCalendar);
+				this.watchCalendars();		// The watch fires on the new calendar and re-runs getCalendars.
 				return;
 			}
+
+			if (orphans.length) {
+				var reattached = [];
+				for (i = 0; i < orphans.length; i++) {
+					console.log("CalendarsManager: Re-attaching local calendar " + orphans[i]._id + " to account " + profileAccount._id);
+					orphans[i].accountId = profileAccount._id;		// Shown right away; the merge makes it stick.
+					reattached.push({"_id": orphans[i]._id, "accountId": profileAccount._id});
+				}
+				this.db.updateCalendars(reattached, this.setCalendarsCallback, this.setCalendarsCallback);
+			}
 		}
-		this.rawCalendars = calendars || [];
+		this.rawCalendars = calendars;
 		this.watchCalendars();
 		//this generates the calendar object-hash and the accounts array
 		this.generateAccountsAndCalendarArray();
@@ -224,8 +255,9 @@ enyo.kind({
 			var accountTemplate = rawAccount && this.accountTemplates[rawAccount.templateId];
 			cal.subKind = accountTemplate && this.findAccountSubkind(accountTemplate);
 
-			// Make sure that old Palm Profile accounts get the correct HP webOS Account name.
-			(rawAccount.templateId == "com.palm.palmprofile") && (cal._kind == "com.palm.calendar:1") && ( cal.name = rawAccount.alias || rawAccount.loc_name || $L("HP webOS Account"));
+			// webOS CE: the profile account's calendar is the on-device calendar. Name it for
+			// what it is, not for the account (HP's name, or the signed-in member's alias).
+			(rawAccount.templateId == "com.palm.palmprofile") && (cal._kind == "com.palm.calendar:1") && (cal.name = this.LOCAL_CALENDAR_NAME);
 			
 			if (!cal.subKind) {
 				cal.subKind = enyo.application.databaseManager.eventTable;
@@ -476,6 +508,12 @@ enyo.kind({
 
 		// Use the account template's generic icon
 		var rawAccount = this.rawAccounts[account.accountId];
+
+		// webOS CE: the profile template's icon is a pair of sync arrows, and the local
+		// calendar does not sync. Show a calendar instead. (Relative to app/calendar.html.)
+		if (rawAccount && rawAccount.templateId == "com.palm.palmprofile") {
+			return "../images/header-icon-calendar.png";
+		}
 		var accountTemplate = rawAccount && this.accountTemplates[rawAccount.templateId];
 
 		if (accountTemplate && accountTemplate.icon && accountTemplate.icon.loc_32x32) {

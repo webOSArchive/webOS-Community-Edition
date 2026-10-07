@@ -123,6 +123,8 @@
 	"Number of Occurrences": "Numero di occorrenze",
 	"Occurs #{n} times": "Si verifica #{n} volte",
 	"Occurs #{recurrence} from #{eventTime}. #{effective}.": "Si verifica #{recurrence} da #{eventTime}. #{effective}.",
+	"On This Device": "Su questo dispositivo",
+	"On-Device": "Dispositivo",
 	"Orange": "Arancione",
 	"Organizer": "Organizzatore",
 	"Pink": "Rosa",
@@ -157,6 +159,7 @@
 	"Thursday": "giovedì",
 	"Timed": "Orario specifico",
 	"To": "A",
+	"To get started, add a calendar account": "Per iniziare, aggiungere un account calendario",
 	"To get started, set up a Calendar account": "Per iniziare, configurare un account calendario",
 	"Today": "Oggi",
 	"Tomorrow": "Domani",
@@ -172,5 +175,7 @@
 	"Yesterday": "Ieri",
 	"Your calendar accounts": "Account del calendario",
 	"custom recurrence": "ripetizione personalizzata",
-	"weekdays": "giorni feriali"
+	"weekdays": "giorni feriali",
+	"Your calendar is ready to use. Events you add are kept on this device:": "Il calendario è pronto. Gli eventi aggiunti vengono salvati su questo dispositivo:",
+	"Your calendars": "I tuoi calendari"
 }

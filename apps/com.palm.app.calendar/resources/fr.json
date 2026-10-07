@@ -123,6 +123,8 @@
 	"Number of Occurrences": "Nombre d’occurrences",
 	"Occurs #{n} times": "Se produit #{n} fois",
 	"Occurs #{recurrence} from #{eventTime}. #{effective}.": "Se produit #{recurrence} depuis #{eventTime}. #{effective}.",
+	"On This Device": "Sur cet appareil",
+	"On-Device": "Appareil",
 	"Organizer": "Organisateur",
 	"Pink": "Rose",
 	"Preferences & Accounts": "Préférences et comptes",
@@ -156,6 +158,7 @@
 	"Thursday": "Jeudi",
 	"Timed": "À durée limitée",
 	"To": "À",
+	"To get started, add a calendar account": "Pour commencer, ajoutez un compte calendrier.",
 	"To get started, set up a Calendar account": "Pour commencer, définissez un compte calendrier.",
 	"Today": "Aujourd’hui",
 	"Tomorrow": "Demain",
@@ -171,5 +174,7 @@
 	"Yesterday": "Hier",
 	"Your calendar accounts": "Vos comptes calendrier",
 	"custom recurrence": "récurrence personnalisée",
-	"weekdays": "jours ouvrables"
+	"weekdays": "jours ouvrables",
+	"Your calendar is ready to use. Events you add are kept on this device:": "Votre calendrier est prêt. Les événements que vous ajoutez sont conservés sur cet appareil :",
+	"Your calendars": "Vos calendriers"
 }

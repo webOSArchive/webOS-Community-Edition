@@ -1,0 +1,8 @@
+Package: com.palm.app.calendar
+Version: @VERSION@
+Depends:
+Section: Utilities
+Architecture: all
+Maintainer: webOS Archive
+Description: Calendar (webOS CE)
+Source: { "Type":"Application", "Feed":"WOSA Modernize", "Category":"Modernize", "LastUpdated":"@EPOCH@", "Title":"Calendar (webOS CE)", "FullDescription":"The built-in Calendar, without the HP account it used to ask for.<br><br>Your calendar is ready the first time you open it: events are kept on the device in a calendar called On This Device, and Microsoft Exchange accounts sync alongside it as before. The dead Facebook calendar option is gone.<br><br>Replaces the stock Calendar in place. Restart Luna after installing.", "Changelog":"3.2.0: Opens straight into an on-device calendar instead of asking for an HP account; the on-device calendar is never lost when the account it belongs to is replaced.", "MinWebOSVersion":"3.0.0", "DeviceCompatibility":["TouchPad","Touchpad Go"], "PostInstallFlags":"RestartLuna", "PostUpdateFlags":"RestartLuna", "Icon":"http://stacks.webosarchive.org/feeds/modernize/ipkgs/assets/icons/calendar.png" }

@@ -5,7 +5,7 @@ enyo.kind({
 
 	components: [
 		{kind:"ApplicationEvents", onUnload: "unloadHandler"},
-		{name: "firstLaunch", kind: "firstLaunchView", onAccountsFirstLaunchDone: "firstLaunchCompleted", capability: 'CALENDAR', 
+		{name: "firstLaunch", kind: "calendar.FirstLaunchAccounts", onAccountsFirstLaunchDone: "firstLaunchCompleted", capability: 'CALENDAR', 
 						iconSmall: "../images/header-icon-calendar48x48.png", 
 						iconLarge: "../images/icon-256x256.png"}
 	],
@@ -19,9 +19,15 @@ enyo.kind({
 	},
 
 	ready: function ready () {
+		// webOS CE: the profile account's calendar is a plain on-device calendar (nothing
+		// syncs it since HP's servers closed), so offer it as ready to use rather than as an
+		// HP account to "get started with". localFileStorage is the accounts library's
+		// built-in "use what's on the device" layout; calendar.FirstLaunchAccounts fixes up
+		// its row below.
 		var msgs = {
-				pageTitle	: $L("Your calendar accounts"),
-				welcome		: $L("To get started, set up a Calendar account")
+				pageTitle			: $L("Your calendars"),
+				welcome				: $L("To get started, add a calendar account"),
+				localFileStorage	: $L("Your calendar is ready to use. Events you add are kept on this device:")
 			};
 		var exclude = undefined;
 		this.$.firstLaunch.startFirstLaunch (exclude, msgs);
@@ -36,4 +42,21 @@ enyo.kind({
 		enyo.application.share ({firstLaunchDone: {data: true}});
 	}
 
+});
+
+// The accounts library labels the localFileStorage row with the profile account's alias
+// and icon -- the signed-in member's name (or nothing) next to a pair of sync arrows.
+// Show the on-device calendar's own name and a calendar icon instead.
+enyo.kind({
+	name		: "calendar.FirstLaunchAccounts",
+	kind		: "firstLaunchView",
+
+	onAccountsAvailable: function onAccountsAvailable () {
+		this.inherited (arguments);
+		var calMgr = enyo.application.calendarsManager;
+		if (this.profileAccount) {
+			this.$.localStorageImage.setSrc ("../images/header-icon-calendar.png");
+			calMgr && this.$.localStorageName.setContent (calMgr.LOCAL_CALENDAR_NAME);
+		}
+	}
 });

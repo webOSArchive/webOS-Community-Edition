@@ -234,6 +234,11 @@ IPK = {
     # scripts/calculator-app.sh release). PatchOrReplace: it takes over the
     # stock preload under the same package name and app id.
     "calculator":  ati_ipk(POR, "com.palm.app.calculator"),
+    # the CE Calendar (apps/com.palm.app.calendar, packaged by
+    # scripts/calendar-app.sh release): an on-device calendar instead of the
+    # dead HP account. Its app tree replaces the one inside the stock staged
+    # preload ipk (see edit_calendar) -- the ipk itself is not installed.
+    "calendar":    ati_ipk(POR, "com.palm.app.calendar"),
     # woce-backup: a working Backup/Restore that stores on the device.
     # PatchOrReplace, not NewApps -- it takes over the stock
     # com.palm.app.backup id (the stock app is a dead UI over Palm's
@@ -869,6 +874,8 @@ def main():
         "./usr/palm/ipkgs/com.palm.app.photos/com.palm.app.photos_3.0.8001_all.ipk",
         # ... and the Clock ipk, repacked only to carry a 3.1 app version
         "./usr/palm/ipkgs/com.palm.app.clock/com.palm.app.clock_3.0.1904_all.ipk",
+        # ... and the Calendar ipk, repacked with the CE Calendar's app tree
+        "./usr/palm/ipkgs/com.palm.app.calendar/com.palm.app.calendar_3.0.11007_all.ipk",
         # CE platform tweaks (connectivity check, app installer, keyboard size)
         # + the JS-service launcher and the account service's dbus launcher
         "./usr/bin/run-js-service",
@@ -2013,6 +2020,27 @@ def main():
         # so the version they see should follow the release.
         bump_app_version(approot, "3.0.1904", "3.1.1904")
 
+    def edit_calendar(approot):
+        # The CE Calendar (3.2.0) is a whole app tree, not a patch set: it lives
+        # in apps/com.palm.app.calendar and reaches the build through its feed
+        # ipk in PatchOrReplace. Swap it in for the stock tree.
+        #
+        # It stays a staged PRELOAD rather than becoming a rootfs app like the
+        # Calculator: the Calendar carries db8 kinds/permissions and activities
+        # under configuration/, which the stock preload install registers.
+        # Baking it into the rootfs would mean re-homing all of those by hand.
+        # Same rule as bump_app_version(): the staged ipk's filename, control
+        # Version and manifest.json stay 3.0.11007; only appinfo says 3.2.0.
+        cal = ipk_extract_data(IPK["calendar"], os.path.join(tmp, "calendar"))
+        src = os.path.join(cal, "usr/palm/applications/com.palm.app.calendar")
+        for need in ("appinfo.json", "index.html", "configuration/db/kinds/com.palm.calendar"):
+            if not os.path.exists(os.path.join(src, need)):
+                sys.exit(f"ERROR: {os.path.basename(IPK['calendar'])}: payload has no "
+                         f"com.palm.app.calendar/{need}")
+        shutil.rmtree(approot)
+        shutil.copytree(src, approot, symlinks=True)
+        log(f"  app tree replaced from {os.path.basename(IPK['calendar'])}")
+
     repack_staged_ipk("./usr/palm/ipkgs/com.quickoffice.webos_2.1.2113_ARM_release-arm.ipk",
                       "com.quickoffice.webos", edit_qo)
     repack_staged_ipk("./usr/palm/ipkgs/com.quickoffice.ar_10.3.484_ARM_release-arm.ipk",
@@ -2021,6 +2049,8 @@ def main():
                       "com.palm.app.photos", edit_photos)
     repack_staged_ipk("./usr/palm/ipkgs/com.palm.app.clock/com.palm.app.clock_3.0.1904_all.ipk",
                       "com.palm.app.clock", edit_clock)
+    repack_staged_ipk("./usr/palm/ipkgs/com.palm.app.calendar/com.palm.app.calendar_3.0.11007_all.ipk",
+                      "com.palm.app.calendar", edit_calendar)
 
     # Photos SERVICE half (rootfs): dynamic PHOTO.UPLOAD source routing +
     # remote-first deletion. Utils.js's hunk 1 context has two whitespace-only
@@ -2260,6 +2290,29 @@ def main():
           os.path.join(DISRC, "about-scene.html"), 0o644)
     wcopy(f"{DIAPP}/stylesheets/ce-about.css",
           os.path.join(DISRC, "ce-about.css"), 0o644)
+
+    # 11d) Account templates: the profile account is "webOS Account", and
+    # Facebook stops offering a calendar. Two stock templates under
+    # /usr/palm/public/accounts, edited by account_templates.py -- the same
+    # module used to push the change to a dev device -- whose docstring has
+    # the reasons. Every JSON file under both template dirs is edited (the
+    # base template and each resources/<locale>/ override carry their own
+    # copy of the name / the provider list), and the module refuses any file
+    # that does not contain exactly what it expects to change.
+    sys.path.insert(0, HERE)
+    import account_templates
+    log('tier: account templates ("webOS Account"; no Facebook calendar)')
+    at_done = 0
+    for tdir in account_templates.EDITS:
+        prefix = f"./usr/palm/public/accounts/{tdir}/"
+        tfiles = read_rootfs(ROOTFS_TGZ, prefixes=[prefix])
+        for name in sorted(n for n in tfiles if n.endswith(".json")):
+            body = tfiles[name]["data"].decode("utf-8")
+            w(name[2:], account_templates.edit(tdir, name[2:], body).encode("utf-8"), 0o644)
+            at_done += 1
+    if at_done != 16:
+        sys.exit(f"ERROR: account templates: expected 16 template files "
+                 f"(8 palmprofile + 8 facebook), edited {at_done}")
 
     # 12) rootcertsupdate : FULL build-time replay of the trust-store update.
     # postinst (3.x path): install scripts to /etc/ssl/scripts, then deploycerts:

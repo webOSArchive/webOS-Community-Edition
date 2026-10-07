@@ -25,7 +25,6 @@ enyo.kind({
 	G11N: // Cached Globalization strings:
 	{	HideAll	: $L ("Hide All")
 	,	ShowAll	: $L ("Show All")
-	,	HPWebOS	: $L ("HP webOS")
 	},
 
 	components: [
@@ -152,7 +151,7 @@ enyo.kind({
 			calendar=	calendars [i];
 			id		=	calendar._id;
 			toggle	=	toggleMap [id];
-			name	=	(calendar.syncSource == "Local") ? this.G11N.HPWebOS : calendar.showName;	// TODO: Palm Profile template needs the new name
+			name	=	(calendar.syncSource == "Local") ? enyo.application.calendarsManager.LOCAL_CALENDAR_SHORT_NAME : calendar.showName;	// webOS CE: was HP's "HP webOS".
 			color	=	id == "all" ? "grey" : calendar.color;									// Handle  old "All" calendar in this new design.
 			on		=	("visible" in calendar) ? !!calendar.visible : true;						// Check for existing on/off state, otherwise assume 'on'
 			on		&&	numShowing++;															// Save the total number of calendars to switch the hide/show all button state
