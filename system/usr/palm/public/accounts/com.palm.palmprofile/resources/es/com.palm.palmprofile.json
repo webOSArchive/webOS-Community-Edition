@@ -1,0 +1,68 @@
+{
+	"capabilityProviders": [
+		{
+			"capability": "CONTACTS",
+			"dbkinds": {
+				"contact": "com.palm.contact.palmprofile:1"
+			},
+			"id": "com.palm.palmprofile.contacts",
+			"refetchPhoto": "palm://com.palm.service.contacts/refetchPhoto"
+		},
+		{
+			"capability": "CALENDAR",
+			"id": "com.palm.palmprofile.calendar"
+		},
+		{
+			"capability": "TASKS",
+			"id": "com.palm.palmprofile.tasks"
+		},
+		{
+			"capability": "MEMOS",
+			"id": "com.palm.palmprofile.memos"
+		},
+		{
+			"alwaysOn": true,
+			"capability": "PHONE",
+			"icon": {
+				"loc_32x32": "images/mypalm-32x32.png",
+				"loc_48x48": "images/mypalm-48x48.png"
+			},
+			"id": "com.palm.palmprofile.voice",
+			"loc_name": "Empresa telefónica",
+			"loc_shortName": "Empresa telefónica"
+		},
+		{
+			"capability": "MESSAGING",
+			"capabilitySubtype": "SMS",
+			"icon": {
+				"loc_32x32": "images/sms-32x32.png",
+				"loc_48x48": "images/sms-48x48.png",
+				"splitter": "images/sms-32x32.png"
+			},
+			"id": "com.palm.palmprofile.sms",
+			"loc_name": "Cuenta SMS",
+			"loc_shortName": "Texto"
+		},
+		{
+			"capability": "LOCAL.FILESTORAGE",
+			"icon": {
+				"loc_32x32": "images/touchpad-32x32.png"
+			},
+			"id": "com.palm.palmprofile.localfilestore"
+		}
+	],
+	"icon": {
+		"loc_32x32": "images/mypalm-32x32.png",
+		"loc_48x48": "images/mypalm-48x48.png"
+	},
+	"loc_name": "Cuenta de HP webOS",
+	"readPermissions": [
+		"com.palm.service.contacts",
+		"com.palm.app.contacts"
+	],
+	"templateId": "com.palm.palmprofile",
+	"writePermissions": [
+		"com.palm.accountservices",
+		"com.palm.app.firstuse"
+	]
+}

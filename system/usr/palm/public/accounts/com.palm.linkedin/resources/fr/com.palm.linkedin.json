@@ -1,0 +1,41 @@
+{
+	"capabilityProviders": [
+		{
+			"capability": "CONTACTS",
+			"dbkinds": {
+				"contact": "com.palm.contact.linkedin:1"
+			},
+			"id": "com.palm.linkedin.contacts",
+			"implementation": "palm://com.palm.service.contacts.linkedin/",
+			"onCreate": "palm://com.palm.service.contacts.linkedin/onCreate",
+			"onCredentialsChanged": "palm://com.palm.service.contacts.linkedin/credentialsChanged",
+			"onDelete": "palm://com.palm.service.contacts.linkedin/onDelete",
+			"onEnabled": "palm://com.palm.service.contacts.linkedin/onEnabled",
+			"readOnlyData": true,
+			"refetchPhoto": "palm://com.palm.service.contacts.linkedin/refetchPhoto",
+			"sync": "palm://com.palm.service.contacts.linkedin/sync"
+		}
+	],
+	"disallowed_locales": [
+		"en_cn",
+		"zh_cn",
+		"zh_hk"
+	],
+	"icon": {
+		"loc_32x32": "images/linkedin-32x32.png",
+		"loc_48x48": "images/linkedin-48x48.png"
+	},
+	"loc_name": "LinkedIn",
+	"loc_usernameLabel": "ADRESSE EMAIL",
+	"readPermissions": [
+		"com.palm.service.contacts",
+		"com.palm.service.contacts.linkedin",
+		"com.palm.service.contacts.linker",
+		"com.palm.app.contacts"
+	],
+	"templateId": "com.palm.linkedin",
+	"validator": "palm://com.palm.service.contacts.linkedin/checkCredentials",
+	"writePermissions": [
+		"com.palm.app.contacts"
+	]
+}

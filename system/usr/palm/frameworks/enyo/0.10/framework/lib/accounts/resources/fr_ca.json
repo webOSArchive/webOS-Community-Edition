@@ -1,0 +1,10 @@
+{
+	"Are you sure you want to remove this account and all associated data from this application? To remove the account from the device completely, use the accounts application.": "Voulez-vous vraiment supprimer de cette application ce compte et toutes les données associées? Pour supprimer complètement le compte de l’appareil, utilisez l’application des comptes.",
+	"Are you sure you want to remove this account and all associated data from your device? Data from this account will be erased from all applications.": "Voulez-vous vraiment supprimer de votre appareil ce compte et toutes les données associées? Les données de ce compte seront supprimées de toutes les applications.",
+	"Email": "Courriel",
+	"Email HP Synergy Services": "Courriel Services HP Synergy",
+	"Please enter a valid email address.": "Veuillez entrer une adresse de courriel valide.",
+	"SSL certificate expired": "Certificat SSL échu",
+	"The account credentials you entered are incorrect. Try again.": "Les coordonnées d’identification de compte que vous avez entrées sont incorrectes. Veuillez réessayer.",
+	"Welcome!": "Bienvenue!"
+}

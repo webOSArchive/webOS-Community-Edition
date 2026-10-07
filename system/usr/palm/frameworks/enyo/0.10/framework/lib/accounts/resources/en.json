@@ -1,0 +1,9 @@
+{
+	"Address Lookup": "Address Look-up",
+	"Are you sure you want to remove this account and all associated data from this application? To remove the account from the device completely, use the accounts application.": "Are you sure you want to remove this account and all associated data from this application? To remove the account from the device completely, use the Accounts application.",
+	"Change Login Settings": "Change Log-in Settings",
+	"Get started with your HP webOS account:": "Get started with your HP webOS Account:",
+	"Only one account of this type can exist": "Only one account of this type can exist.",
+	"The contacts are on your #{device}, but can't be edited.  You can edit data and add new contacts after you re-insert the SIM.": "The contacts are on your #{device}, but cannot be edited.  You can edit data and add new contacts after you re-insert the SIM.",
+	"The contacts are on your #{device}, but can't be edited.  You can only edit data on devices that have SIM support.": "The contacts are on your #{device}, but cannot be edited.  You can only edit data on devices with SIM support."
+}

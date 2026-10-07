@@ -1,0 +1,8 @@
+{
+	"#{phoneNumber} - SIM Removed": "#{phoneNumber} - no hay SIM",
+	"Are you sure you want to remove this account and all associated data from your device? Data from this account will be erased from all applications.": "¿Estás seguro de que quieres eliminar esta cuenta y todos sus datos asociados de tu dispositivo? Los datos de esta cuenta se borrarán de todas las aplicaciones.",
+	"Memos": "Notas",
+	"Memos HP Synergy Services": "Servicios de HP Synergy - Notas",
+	"Must be connected to a network to sign in": "Debes estar conectado a una red para iniciar sesión.",
+	"Only one account of this type can exist": "Sólo puede haber una cuenta de este tipo"
+}
