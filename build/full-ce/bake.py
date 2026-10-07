@@ -647,7 +647,11 @@ def verify_generated_sources():
             if not os.path.isfile(p):
                 continue
             js_files += 1
-            r = subprocess.run([node, "--check", p], capture_output=True, text=True)
+            # Mojo builtins (mojo/builtins/*.js) are V8-internal code that calls
+            # natives such as %FunctionSetPrototype; stock ones parse only so.
+            flags = (["--allow-natives-syntax"]
+                     if rel.startswith("usr/palm/frameworks/mojo/builtins/") else [])
+            r = subprocess.run([node, *flags, "--check", p], capture_output=True, text=True)
             if r.returncode != 0:
                 problems.append(f"/{rel}: {r.stderr.strip().splitlines()[-1] if r.stderr.strip() else 'parse error'}")
 
