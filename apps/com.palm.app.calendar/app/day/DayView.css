@@ -133,7 +133,9 @@
 	position					: absolute;
 	top							: 28px;
 	left						: 27px;
-	width						: 965px;
+	/* Wider than any screen: .day-container (overflow: hidden) ends it at the day's edge.
+	   HP's 965px reached the edge only on the TouchPad's 1024px screen. */
+	width						: 4000px;
 	height						: 5px;
 	z-index						: -1;
 }
