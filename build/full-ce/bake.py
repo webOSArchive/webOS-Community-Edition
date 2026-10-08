@@ -2411,7 +2411,8 @@ def main():
     # 11e) App Catalog icons: the old HP shopping bag -> the webOS App Catalog
     # artwork (the community catalog's own icon, so the "Find more..." rows in
     # Exhibition, Search and the accounts lists match the app they open).
-    # Stock has no shared asset -- each app and framework ships its own copy --
+    # Stock has no shared asset -- each app and framework ships its own copy,
+    # and the 24px notification glyph is a hand-made colour version --
     # so every copy is a finished file in system/ at its device path. The
     # accounts library's two copies ride tier 11d's tree above; findapps-icon.png
     # is lifted from the catalog ipk in tier 8.
@@ -2421,6 +2422,7 @@ def main():
         "usr/palm/frameworks/accounts.ui/submission/41/images/appcatalog-32x32.png",
         "usr/palm/frameworks/accounts.ui/submission/41/images/1.5/appcatalog-32x32.png",
         "usr/lib/luna/system/luna-systemui/images/notification-large-appcatalog.png",
+        "usr/lib/luna/system/luna-systemui/images/notification-small-appcatalog.png",
         "usr/palm/applications/com.palm.app.swmanager/images/appcatalog_icon.png",
         "usr/palm/services/com.palm.service.appcatalog/icon.png",
         "usr/palm/ipkgs/payment/icon.png",
