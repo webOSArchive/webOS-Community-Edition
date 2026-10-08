@@ -12,6 +12,7 @@ re-applying CE's edits. The apps themselves are in [`../apps/`](../apps/).
 | `usr/palm/frameworks/enyo/0.10/framework/lib/accounts/` | community enyo-accounts 1.1.1.1 | "Get started with your webOS account:" (string-table values only) |
 | `usr/palm/frameworks/contacts/` | stock 3.0.5 (submission 114) | `AppPrefs`: one prefs record per kind instead of two on first launch, and existing duplicates healed. In three copies: `javascript/AppPrefs.js`, `114/concatenated.js`, `114contacts.js` (the Node service) |
 | `usr/palm/frameworks/mojo/builtins/palmcontactsVersion1_0.js` | stock 3.0.5 | the same `AppPrefs` fix in the prebuilt copy LunaSysMgr gives apps instead of `concatenated.js` |
+| App Catalog icons: `usr/palm/applications/com.palm.app.{exhibitionpreferences,searchpreferences}/images/appcatalog.png`, `usr/palm/frameworks/accounts.ui/submission/41/images/{,1.5/}appcatalog-32x32.png`, the accounts library's `images/appcatalog-{32x32,48x48}.png`, `usr/lib/luna/system/luna-systemui/images/notification-large-appcatalog.png`, `usr/palm/applications/com.palm.app.swmanager/images/appcatalog_icon.png`, `usr/palm/services/com.palm.service.appcatalog/icon.png`, `usr/palm/ipkgs/payment/icon.png` | stock 3.0.5 / community enyo-accounts | the HP (or Palm) shopping bag replaced by the webOS App Catalog icon, at each file's original size (32/48/64 px) |
 
 The template and accounts-library edits are made by
 [`../build/full-ce/account_templates.py`](../build/full-ce/account_templates.py), whose docstring

@@ -1078,8 +1078,14 @@ def main():
     cat_ipk_name = os.path.basename(IPK["catalog"])
     w(f"usr/palm/ipkgs/{cat_ipk_name}", open(IPK["catalog"], "rb").read(), 0o644)
     log(f"  staged usr/palm/ipkgs/{cat_ipk_name}")
-    # Remove stock's staged catalog ipk. Keep findapps-icon.png — the manifest
-    # entry still points at it and the artwork is unchanged.
+    # findapps-icon.png is the preload icon the manifest entry points at. Stock's
+    # is the HP bag; take the shipped catalog's own icon, like Maps below.
+    d = ipk_extract_data(IPK["catalog"], os.path.join(tmp, "catalog"))
+    cat_icon_src = os.path.join(d, "usr/palm/applications/com.palm.app.enyo-findapps/icon.png")
+    if not os.path.isfile(cat_icon_src):
+        sys.exit(f"ERROR: {cat_ipk_name}: no icon.png in payload to stage as the preload icon")
+    w("usr/palm/ipkgs/findapps-icon.png", open(cat_icon_src, "rb").read(), 0o644)
+    # Remove stock's staged catalog ipk.
     cat_staged = sorted(n for n in stock_names
                         if n.startswith("./usr/palm/ipkgs/")
                         and "enyo-findapps" in n)
@@ -2359,9 +2365,13 @@ def main():
         if mine != open(os.path.join(OUT_ROOT, rel, f), "rb").read():
             w(f"{rel}/{f}", mine, 0o644)
             lib_done.append(f)
-    if len(lib_done) != 6 or not all(f.startswith("resources/") for f in lib_done):
+    lib_icons = ["images/appcatalog-32x32.png", "images/appcatalog-48x48.png"]
+    lib_strings = [f for f in lib_done if f not in lib_icons]
+    if (len(lib_strings) != 6 or not all(f.startswith("resources/") for f in lib_strings)
+            or not all(f in lib_done for f in lib_icons)):
         sys.exit(f"ERROR: accounts library: expected system/ to differ from the "
-                 f"community library in 6 string tables, got {lib_done}")
+                 f"community library in 6 string tables and the 2 App Catalog "
+                 f"icons, got {lib_done}")
 
     # The stock contacts framework (no community build replaces it): its
     # AppPrefs lives in FOUR copies -- the source file, concatenated.js (what
@@ -2397,6 +2407,34 @@ def main():
     if mine == read_rootfs(ROOTFS_TGZ, exact=[f"./{rel}"])[f"./{rel}"]["data"]:
         sys.exit(f"ERROR: system/{rel} is identical to stock; the AppPrefs fix is missing")
     w(rel, mine, 0o644)
+
+    # 11e) App Catalog icons: the old HP shopping bag -> the webOS App Catalog
+    # artwork (the community catalog's own icon, so the "Find more..." rows in
+    # Exhibition, Search and the accounts lists match the app they open).
+    # Stock has no shared asset -- each app and framework ships its own copy --
+    # so every copy is a finished file in system/ at its device path. The
+    # accounts library's two copies ride tier 11d's tree above; findapps-icon.png
+    # is lifted from the catalog ipk in tier 8.
+    CATALOG_ICONS = (
+        "usr/palm/applications/com.palm.app.exhibitionpreferences/images/appcatalog.png",
+        "usr/palm/applications/com.palm.app.searchpreferences/images/appcatalog.png",
+        "usr/palm/frameworks/accounts.ui/submission/41/images/appcatalog-32x32.png",
+        "usr/palm/frameworks/accounts.ui/submission/41/images/1.5/appcatalog-32x32.png",
+        "usr/lib/luna/system/luna-systemui/images/notification-large-appcatalog.png",
+        "usr/palm/applications/com.palm.app.swmanager/images/appcatalog_icon.png",
+        "usr/palm/services/com.palm.service.appcatalog/icon.png",
+        "usr/palm/ipkgs/payment/icon.png",
+    )
+    log("tier: App Catalog icons (HP bag -> webOS App Catalog) from system/")
+    stock_icons = read_rootfs(ROOTFS_TGZ, exact=[f"./{r}" for r in CATALOG_ICONS])
+    for rel in CATALOG_ICONS:
+        if f"./{rel}" not in stock_icons:
+            sys.exit(f"ERROR: App Catalog icon /{rel} is not in the stock rootfs; "
+                     f"stock moved it, so find the new path before shipping the old bag")
+        mine = open(os.path.join(SYSTEM, rel), "rb").read()
+        if mine == stock_icons[f"./{rel}"]["data"]:
+            sys.exit(f"ERROR: system/{rel} is still the stock HP bag")
+        w(rel, mine, 0o644)
 
     # 12) rootcertsupdate : FULL build-time replay of the trust-store update.
     # postinst (3.x path): install scripts to /etc/ssl/scripts, then deploycerts:
