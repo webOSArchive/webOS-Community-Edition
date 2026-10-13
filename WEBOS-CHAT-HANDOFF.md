@@ -90,8 +90,11 @@ pre-start.
   `touchpadtest`, all buddies already linked to a person, so this was never exercised. It was
   broken: the chatthreader's `findPersonViaBuddy` never resolved on a buddy miss, and the
   message was stored but never filed into a conversation (found by the Lunacy agent on a
-  Pixel). Fixed in chatthreader 1.1.0.3 (`AddToImage/PatchOrReplace`); still to verify on topaz
-  by sending from an account that isn't one of codepoet's buddies.
+  Pixel). Fixed in chatthreader 1.1.0.3 (`AddToImage/PatchOrReplace`). Verified on topaz with
+  injected db8 messages (not yet a real send from a stranger account): on 1.1.0 both a
+  `lunacyprobe1` and a `curator` message hung (`findByIM` misses `curator` too on CE); after
+  installing 1.1.0.3 through ipkgservice both got conversations and showed in Messaging.
+  Released 3.1.0 ships the bug, so the enabler should carry the one-line fix for 3.1.0 devices.
 - **Signing out of the webOS Account** should remove the chat account, and signing in should
   bring it back. Signing back in needs your password on the device.
 - **A new pass phrase on the website** should be picked up by the hourly sync.
