@@ -198,6 +198,10 @@ def inputs_stamp():
             with open(full, "rb") as f:
                 d = hashlib.sha256(f.read()).hexdigest()
             entries.append((os.path.relpath(full, PROJ), d))
+    # source files outside AddToImage that bake.py splices into the image
+    for rel in ("packages/webos-chat/imwrap-resident-wait.block",):
+        with open(os.path.join(PROJ, rel), "rb") as f:
+            entries.append((rel, hashlib.sha256(f.read()).hexdigest()))
     lunace_bin = os.path.join(LUNACE, "bin", "LunaSysMgr-LunaCE-topaz")
     if os.path.exists(lunace_bin):
         with open(lunace_bin, "rb") as f:
@@ -1449,6 +1453,31 @@ def main():
         "exec /var/imdaemon.sh",
         "imtransport pre-start gate", count=1)
     w("etc/event.d/imtransport", imt, 0o644)
+
+    # That gate (~80s on a first-boot-free boot: cryptofs mount + two full
+    # reads) is long enough for something to call com.palm.imlibpurple first
+    # -- the transport's own loginstate activities, or the accounts service's
+    # onEnabled -- so ls-hubd launches an on-demand copy, which takes
+    # imwrap.sh's singleton lock. imwrap.sh then made the resident launch
+    # exit 0, so upstart respawned it through the whole gate again every
+    # ~32s (re-reading the 31MB runtime each time) until the 30/hour limit
+    # stopped the job, leaving only the on-demand copy -- which idles out as
+    # soon as every account is offline, with nothing resident behind it.
+    # Measured on 600056 with webOS Chat installed: every boot with an IM
+    # account. Upstream starts the job straight at ls-hubd_private-ready and
+    # usually wins the race; CE's gate is what opened it. Fix: the resident
+    # launch (IM_RESIDENT, set by imdaemon.sh) stays up as the job's main
+    # process and takes over when the on-demand copy exits.
+    imw = open(os.path.join(RO, "var/imwrap.sh")).read()
+    imw = sure_replace(
+        imw,
+        '    echo "$(date -Iseconds 2>/dev/null) imwrap.sh: already running as pid $OLDPID, not starting a second instance" >> "$LOG"\n'
+        '    exit 0\n',
+        # identical to packages/webos-chat/imwrap-resident-wait.block and the
+        # upstream imlibpurpleservice change sent to Herrie
+        open(os.path.join(PROJ, 'packages/webos-chat/imwrap-resident-wait.block')).read(),
+        "imwrap.sh resident-launch wait", count=1)
+    w("var/imwrap.sh", imw, 0o755)
 
     # once-per-flash cryptofs seeding + an unconditional kick for imtransport.
     # Generic: every dir under /usr/palm/ce-seed/cryptofs/ is merged into
