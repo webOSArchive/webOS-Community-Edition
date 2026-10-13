@@ -13,7 +13,8 @@
 #   setup page         -> /usr/palm/applications/org.webosarchive.chat.setup/ (hidden app that
 #                         Accounts opens from Add Account and Change Login Settings)
 #   IM transport       -> /usr/bin/imlibpurpletransport (fixed build; see step 6)
-#   /var/imwrap.sh     -> resident-launch wait + stuck-startup watchdog (step 5)
+#   /var/imdaemon.sh   -> keep-alive that has ls-hubd launch the transport, plus the transport's
+#                         private role accepting it (step 5)
 #
 # Everything takes effect at the next boot (PostInstallFlags RestartDevice): ls-hubd reads
 # roles and launchers, the transport loads plugins, and the activity manager registers
@@ -104,40 +105,56 @@ tree "$STAGE/app/$SETUP" /usr/palm/applications/$SETUP || { log "setup page copy
 tree "$STAGE/service/configuration/activities/$SVCID" /etc/palm/activities/$SVCID \
     || { log "activities copy FAILED"; fail=1; }
 
-# 5) /var/imwrap.sh (Synergy generic's transport launcher): a resident launch that finds an
-# on-demand transport already holding the lock now waits for it instead of exiting. Without
-# this, every boot with an IM account (this package guarantees one) has upstart respawn
-# imtransport through its ~75 s pre-start every ~32 s until the respawn limit stops the job
-# for good. The same change is in the CE 3.2.0 image and was sent upstream to
-# imlibpurpleservice; skipped when the file already has it. The cleanup restores the original
-# on removal, unless Synergy has replaced the file since.
+# 5) One launcher for the transport. Synergy's imtransport upstart job (/var/imdaemon.sh) and
+# ls-hubd's on-demand activation both launched it, and at boot the hub's copy usually won
+# (anything calling com.palm.imlibpurple before the job is up). This package's imdaemon.sh, from
+# the same imlibpurpleservice commit as the transport, launches nothing: it calls the transport
+# on the bus so ls-hubd starts it, keeps it resident (/var/run/imlibpurple.resident, read by the
+# transport), and restarts one that never gets onto the bus. It calls as com.palm.lunasend,
+# which the transport's private role is given here; without that it falls back to launching
+# the transport directly, as Synergy's did. Originals are kept once as .webos-chat-orig and put
+# back on removal if the files are still ours. A Synergy (re)install replaces both.
+#
+# An earlier build of this package patched /var/imwrap.sh instead (a resident launch waiting
+# behind the on-demand copy, with a watchdog). Nothing goes through that path now: put the
+# original back.
 IMW=/var/imwrap.sh
-MARK='resident launch waiting for it to exit'
-CUR='stuck in startup for 60s'   # only in the current version of the block
-# An earlier version of this package applied the block without the stuck-startup watchdog:
-# start again from the original it saved, so the current block goes in.
-if [ -f "$IMW" ] && grep -q "$MARK" "$IMW" && ! grep -q "$CUR" "$IMW" &&
-   [ -f "$IMW.webos-chat-orig" ] && ! grep -q "$MARK" "$IMW.webos-chat-orig"; then
-    cp -p "$IMW.webos-chat-orig" "$IMW.wcbase" && mv -f "$IMW.wcbase" "$IMW" &&
-        log "upgrading the earlier $IMW patch"
+if [ -f "$IMW.webos-chat-orig" ] && grep -q 'resident launch waiting for it to exit' "$IMW" 2>/dev/null &&
+   ! grep -q 'resident launch waiting for it to exit' "$IMW.webos-chat-orig"; then
+    mv -f "$IMW.webos-chat-orig" "$IMW" && log "put back the original $IMW"
 fi
-if [ -f "$IMW" ] && ! grep -q "$MARK" "$IMW"; then
-    awk -v blk="$STAGE/imwrap-resident-wait.block" '
-        held != "" {
-            if ($0 == "    exit 0") { while ((getline l < blk) > 0) print l; n++; held = ""; next }
-            print held; held = ""
-        }
-        index($0, "imwrap.sh: already running as pid $OLDPID, not starting a second instance") \
-            && substr($0, 1, 9) == "    echo " { held = $0; next }
-        { print }
-        END { if (held != "") print held; exit (n == 1) ? 0 : 1 }
-    ' "$IMW" > "$IMW.wcnew" && sh -n "$IMW.wcnew" && grep -q "$MARK" "$IMW.wcnew"
+IMD=/var/imdaemon.sh
+if [ -f "$STAGE/bin/imdaemon.sh" ] && [ -f "$IMD" ]; then
+    NEW=$(md5sum "$STAGE/bin/imdaemon.sh" | cut -d' ' -f1)
+    if [ "$(md5sum "$IMD" | cut -d' ' -f1)" != "$NEW" ]; then
+        [ -f "$IMD.webos-chat-orig" ] || cp -p "$IMD" "$IMD.webos-chat-orig" || fail=1
+        if put "$STAGE/bin/imdaemon.sh" "$IMD" 755; then
+            echo "$NEW" > "$IMD.webos-chat-md5"
+            log "installed $IMD (ls-hubd launches the transport)"
+        else
+            log "$IMD copy FAILED"; fail=1
+        fi
+    fi
+fi
+ROLE=/usr/share/ls2/roles/prv/com.palm.imlibpurple.json
+NODE=$(which node 2>/dev/null || echo /usr/palm/nodejs/node)
+if [ -f "$ROLE" ] && ! grep -q '"com.palm.lunasend"' "$ROLE"; then
+    [ -f "$ROLE.webos-chat-orig" ] || cp -p "$ROLE" "$ROLE.webos-chat-orig"
+    # the path goes in the environment: node 0.4 runs an argument after -e as a script
+    F="$ROLE" "$NODE" -e '
+        var fs = require("fs"), f = process.env.F, r = JSON.parse(fs.readFileSync(f, "utf8")), n = 0;
+        (r.permissions || []).forEach(function (p) {
+            if (p.service === "com.palm.imlibpurple" && p.inbound) { p.inbound.push("com.palm.lunasend"); n++; }
+        });
+        if (n !== 1) process.exit(1);
+        fs.writeFileSync(f + ".wcnew", JSON.stringify(r, null, 4) + "\n");
+    ' && chmod 644 "$ROLE.wcnew" && mv -f "$ROLE.wcnew" "$ROLE"
     if [ $? = 0 ]; then
-        [ -f "$IMW.webos-chat-orig" ] || cp -p "$IMW" "$IMW.webos-chat-orig"
-        chmod 755 "$IMW.wcnew" && mv -f "$IMW.wcnew" "$IMW" && log "patched $IMW (resident launch waits)"
+        md5sum "$ROLE" | cut -d' ' -f1 > "$ROLE.webos-chat-md5"
+        log "let com.palm.lunasend call com.palm.imlibpurple"
     else
-        rm -f "$IMW.wcnew"
-        log "WARNING: $IMW is not the version this patch expects; left unchanged"
+        rm -f "$ROLE.wcnew"
+        log "WARNING: could not add com.palm.lunasend to $ROLE; imdaemon.sh launches the transport directly"
     fi
 fi
 

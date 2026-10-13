@@ -6,8 +6,8 @@
 # Inputs:
 #   packages/webos-chat/          control, postinst, prerm, ls2 roles + launchers, VERSION,
 #                                 OSCAR_COMMIT (pinned Oscar commit), TRANSPORT_COMMIT (pinned
-#                                 imlibpurpleservice commit, built by build-imlibpurpletransport.sh),
-#                                 imwrap-resident-wait.block
+#                                 imlibpurpleservice commit, built by build-imlibpurpletransport.sh,
+#                                 which also supplies files/var/imdaemon.sh from that commit)
 #   $OSCAR_REPO (../Oscar)        the Oscar-AIM-for-webOS checkout. The pinned commit's client/
 #                                 is exported with git archive, so local edits there are ignored.
 #                                 libaim.so is built from it with Oscar's own build-touchpad.sh,
@@ -64,7 +64,6 @@ feed)
     cp "$SRC/ls2/prv/$SVCID.json" "$D/ls2/prv/"
     cp "$SRC/ls2/pub/$SVCID.json" "$D/ls2/pub/"
     cp "$SRC/ls2/$SVCID.service" "$D/ls2/"
-    cp "$SRC/imwrap-resident-wait.block" "$D/"
     printf '%s\n' "$COMMIT" > "$D/OSCAR_COMMIT"
 
     # the fixed IM transport, built from the pinned imlibpurpleservice commit
@@ -72,6 +71,9 @@ feed)
         || { tail -20 "$W/transport-build.log" >&2; exit 1; }
     mkdir -p "$D/bin"
     cp "$ROOT/build/work/transport-build/out/imlibpurpletransport" "$D/bin/"
+    # its keep-alive job script, from the same commit (has ls-hubd launch the transport)
+    cp "$ROOT/build/work/transport-build/src/imlibpurpleservice/files/var/imdaemon.sh" "$D/bin/"
+    sh -n "$D/bin/imdaemon.sh"
     cp "$SRC/TRANSPORT_COMMIT" "$D/TRANSPORT_COMMIT"
     for f in $(find "$D" -name '*.json') $(find "$D/service/configuration" -type f); do
         node -e 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"))' "$f" \

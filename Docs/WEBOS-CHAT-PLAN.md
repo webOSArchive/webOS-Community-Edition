@@ -26,14 +26,15 @@ The Oscar changes (asks 1–3 in the findings) landed in Oscar `dc79cfd`
 
 ## 1. Chat Enabler (CE 3.1.0, Preware)
 
-**Status (2026-10-12):** `scripts/webos-chat-enabler.sh feed` builds
-`build/work/ipk/org.webosarchive.webos-chat_3.1.0_armv7.ipk`. Its parts were tested piece by
-piece on topaz (CE 3.1.0); the package as a whole still needs one install-and-test pass before
-release.
+**Status (2026-10-13):** `scripts/webos-chat-enabler.sh feed` builds
+`build/work/ipk/org.webosarchive.webos-chat_3.1.0_armv7.ipk`. The whole package passed install,
+chat, update, Accounts removal, Preware removal and restart on topaz (CE 3.1.0), compared
+side by side with a stock 3.0.5 TouchPad. Results are in `WEBOS-CHAT-HANDOFF.md`.
 
-- **Oscar:** pinned in `packages/webos-chat/OSCAR_COMMIT` (`5886516`). It adds the hidden setup
-  page `org.webosarchive.chat.setup`, the public `enable` method and the plugin alias patch.
-- **IM transport:** pinned in `TRANSPORT_COMMIT` (`9ecf634` on codepoet80/imlibpurpleservice).
+- **Oscar:** pinned in `packages/webos-chat/OSCAR_COMMIT` (`bf5daed`). It adds the hidden setup
+  page `org.webosarchive.chat.setup`, the public `enable` method, the plugin alias patch, and
+  `onDelete` in the template (removing the account removes libpurple's copy of it).
+- **IM transport:** pinned in `TRANSPORT_COMMIT` (`1960854` on codepoet80/imlibpurpleservice).
   It's built by `scripts/build-imlibpurpletransport.sh` from pinned public sources and installed
   over Synergy's (the original is kept). It fixes:
   - presence after an auto-login;
@@ -41,9 +42,16 @@ release.
   - removed buddies coming back;
   - stale rows that couldn't be removed;
   - signing back in after a restart;
-  - auto-away after 5 minutes.
-- **`imwrap-resident-wait.block`:** the resident launch waits for an on-demand copy instead of
-  respawning, and kills a copy stuck in startup (the boot hang) after 60 s.
+  - auto-away after 5 minutes;
+  - signing in accounts webOS no longer has (`d3120ab`);
+  - two launchers racing (`1960854`, below).
+- **One launcher (`/var/imdaemon.sh`, from the same commit):** the imtransport job no longer
+  launches the transport. It calls it on the bus so ls-hubd starts it, keeps it resident with a
+  flag file, and restarts a copy that doesn't answer on the bus within 60 s. The transport's
+  private role gets `com.palm.lunasend` for that call. This replaces the
+  `imwrap-resident-wait.block` patch (the 3.1.0 enabler no longer touches `/var/imwrap.sh`, and
+  puts back the original where an earlier build patched it). The block file stays only because
+  the 3.2.0 bake still uses it; see "Revisit" below.
 - **Public bus:** a public launcher and role (inbound `*`), because Accounts runs the setup page's
   calls on the public bus.
 
@@ -105,17 +113,23 @@ the not-CE gate.
 ### prerm (detached)
 
 On a Preware removal, the prerm runs inside LunaSysMgr. So it only writes a
-cleanup script to `/tmp` and starts it fully detached, with
-`start-stop-daemon -b`, since CE's busybox has no `setsid`.
+cleanup script to `/var/palm` and starts it fully detached, with
+`start-stop-daemon -b`, since CE's busybox has no `setsid`. A one-shot boot job runs the same
+script again if a restart cuts it off.
 
 The cleanup:
-1. waits 20 s;
-2. if the staged payload is still there, it was an **update**: do nothing;
+1. waits for ipkg to remove the payload (ipkg's record and a payload file both gone; up to 2 min);
+2. if the payload is still there, it was an **update**: do nothing. (ipkgservice doesn't run the
+   prerm on an upgrade or a same-version reinstall at all; measured);
 3. otherwise:
-   - delete every `org.webosarchive.chat` account (bounded `luna-send`s);
-   - cancel the three activities;
-   - remove the plugin from both places, plus the template, the service, the
-     roles, the launcher and the activities.
+   - delete every `org.webosarchive.chat` account as `com.palm.webosarchive.chat`, the only
+     caller in the template's `writePermissions`, while the template is still there; its
+     `onDelete` has the transport drop libpurple's copy;
+   - cancel the service's activities by id;
+   - remove the plugin from both places, plus the template, the service, the roles, the
+     launcher, the activities, the setup page and the service's state;
+   - put back the transport, `/var/imdaemon.sh` and the transport's role, each only if it is
+     still the file this package installed.
 
 ### Oscar `dc79cfd` covers the asks
 
@@ -182,31 +196,37 @@ The cleanup:
 3. **The overlay manifest's `inputs_sha256`** picks up the new ipk, so the
    overlay freshness guard covers it.
 
-### Revisit: the transport watchdog (kept for 3.1.0, decide for 3.2.0)
+### Revisit: the transport watchdog (replaced in the 3.1.0 enabler, still in the 3.2.0 bake)
 
-**What it is:** `imwrap-resident-wait.block` (also in the 3.2.0 bake and upstream as
-imlibpurpleservice `a40e37c`). It kills an on-demand transport that sits for 60 s with one
-thread blocked on a futex, and lets the resident launch take over. A watchdog is a bandaid, and
-it could kill a working transport if its heuristic is ever wrong. It stays in 3.1.0 only
-because, without it, the user's only way out of the hang is restarting the device.
+**What it was:** `imwrap-resident-wait.block` (imlibpurpleservice `15f09c9` + `a40e37c`). The
+imtransport job and ls-hubd both launched the transport. The job's launch waited behind the
+hub's copy, and killed one that sat for 60 s with one thread blocked on a futex.
+
+**What replaced it (imlibpurpleservice `1960854`, in the 3.1.0 enabler):** the job launches
+nothing. `imdaemon.sh` calls `com.palm.imlibpurple` and ls-hubd starts it, so there is one
+launcher and nothing to race. A copy stuck in startup is detected by not answering on the bus
+within 60 s, not by a guess from `/proc`. This was the LuneOS project's suggestion ("start it
+via dbus"). Measured on topaz 2026-10-13: a killed transport is back in 5 s; a frozen one is
+replaced 60 s later and signed in 4 s after that; a 90 s Wi-Fi outage keeps the same process
+(resident through the flag file).
 
 **What's known about the hang:**
-- 2 of 7 boots on 2026-10-12 (topaz), both right after files were swapped on the device; the
-  next 5 boots were clean. So it isn't known to happen in normal use.
-- The cause isn't found. The leading suspect is CE/Synergy's own wrappers: `imwrap.sh` and
-  `imdaemon.sh` delete `/dev/shm/sem.PmLogLib` on every launch, a semaphore every PmLog process
-  shares.
-- Stock webOS had none of this machinery (a single on-demand launch, no wrappers) and no
-  watchdog.
+- 2 of 7 boots on 2026-10-12 (topaz), both right after files were swapped on the device. On
+  2026-10-13, 6 boots with an on-device recorder (`/var/log/chatboot/`) showed none.
+- The cause isn't found. The Lunacy project found two early returns in PmLogLib's constructor
+  that skip releasing `sem.PmLogLib`, but topaz logged no `PmLogLib: shmget/shmat` errors on
+  either hung boot. So the likelier cause is a PmLog process killed between taking and releasing
+  the lock, which fixing those returns wouldn't cover.
+- **Keep deleting `/dev/shm/sem.PmLogLib` before each launch.** That deletion is the only thing
+  that unwedges a locked one. (An earlier version of this plan suggested stopping it; that was
+  wrong.)
 
 **For 3.2.0:**
-1. Find out whether the hang occurs without test churn: run repeated clean boots of the 3.2.0
-   candidate, and have the release test capture the hung process (maps, `/dev/shm`, other
-   futex waiters, a minicore via SIGABRT) instead of killing it.
-2. If it occurs, fix the cause. The first candidate is to stop deleting the shared semaphore
-   and see whether the hang goes away.
-3. Then drop the watchdog from the block, the bake and the upstream PR, unless the hang turns
-   out to be outside our control.
+1. Bake `imdaemon.sh` from the pinned transport commit, plus the role entry, the way the
+   enabler's postinst installs them, and drop the block from `bake.py` (lines ~202 and ~1476).
+   Then delete `packages/webos-chat/imwrap-resident-wait.block`.
+2. Keep the boot recorder in the release test, so a hang is captured with its stack and
+   semaphore holders instead of only being restarted.
 
 ### Image-specific work
 
