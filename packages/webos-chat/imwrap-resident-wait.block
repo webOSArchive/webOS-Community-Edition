@@ -1,0 +1,30 @@
+    if [ -z "$IM_RESIDENT" ]; then
+      echo "$(date -Iseconds 2>/dev/null) imwrap.sh: already running as pid $OLDPID, not starting a second instance" >> "$LOG"
+      exit 0
+    fi
+    # The resident (upstart) launch lost the race to an on-demand copy ls-hubd started first --
+    # anything calling com.palm.imlibpurple before the imtransport job is up does that, e.g. the
+    # loginstate activities at boot. Exiting here made upstart respawn the job every few seconds
+    # (through its pre-start, if it has one) until its respawn limit stopped it for good, leaving
+    # only the on-demand copy, which idles out once every account is offline with nothing
+    # resident behind it. Stay up as the job's main process instead, and take over (through the
+    # stale-lock reclaim below) once that copy exits.
+    echo "$(date -Iseconds 2>/dev/null) imwrap.sh: on-demand pid $OLDPID holds the transport; resident launch waiting for it to exit" >> "$LOG"
+    # An on-demand copy that never got past startup will never exit by itself: one thread blocked
+    # on a futex before its first log line (a PmLog client killed mid-init during boot leaves
+    # sem.PmLogLib locked; see the self-heal below). A healthy transport waits in poll(), so after
+    # 60 s of that, kill it and take over -- the reclaim below clears the semaphore first.
+    stuck=0
+    while kill -0 "$OLDPID" 2>/dev/null; do
+      sleep 5
+      if [ "$(cat /proc/$OLDPID/wchan 2>/dev/null)" = futex_wait_queue_me ] &&
+         grep -q '^Threads:[[:space:]]*1$' /proc/$OLDPID/status 2>/dev/null; then
+        stuck=$((stuck+5))
+        if [ $stuck -ge 60 ]; then
+          echo "$(date -Iseconds 2>/dev/null) imwrap.sh: on-demand pid $OLDPID stuck in startup for 60s (futex, 1 thread); killing it" >> "$LOG"
+          kill -9 "$OLDPID" 2>/dev/null
+        fi
+      else
+        stuck=0
+      fi
+    done

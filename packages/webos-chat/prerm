@@ -1,0 +1,92 @@
+#!/bin/sh
+# webOS Chat Enabler (AIM): removal.
+#
+# On a Preware removal this runs SYNCHRONOUSLY inside LunaSysMgr (as pmPreRemove.script), so
+# a blocking luna-send here freezes the UI for good. All the work is therefore handed to a
+# detached cleanup that starts after this script has returned and ipkg has finished.
+#
+# The cleanup first waits, then checks whether the package's staged payload is still there.
+# If it is, this was an UPDATE (the new version's postinst has already put its files in
+# place) and the cleanup does nothing. If it's gone, the package was removed, and the cleanup:
+#   - deletes every webOS Chat account (while its template is still loaded, so the accounts
+#     service can tear it down; it reads templates once, at start)
+#   - removes the plugin, template, setup page, service, roles, launcher, activities and the
+#     service's state (/var/preferences/com.palm.webosarchive.chat: deleting the account
+#     above reads to the service as "chat turned off", which must not outlive the package)
+#   - cancels the activities
+# The running transport keeps the plugin it already loaded until the restart Preware asks for.
+
+C=/tmp/webos-chat-cleanup.sh
+cat > $C <<'EOF'
+#!/bin/sh
+SVCID=com.palm.webosarchive.chat
+TPL=org.webosarchive.chat
+LOG=/var/log/webos-chat-enabler.log
+log() { echo "$(date 2>/dev/null) cleanup: $*" >> "$LOG" 2>/dev/null; }
+# lsq <uri> <json>: luna-send with a bounded wait (the bus may be slow mid-removal).
+lsq() {
+    T=/tmp/webos-chat-lsq.$$
+    luna-send -n 1 "$1" "$2" > $T 2>/dev/null </dev/null &
+    p=$!; i=0
+    while [ $i -lt 15 ] && kill -0 $p 2>/dev/null; do sleep 1; i=$((i+1)); done
+    kill $p 2>/dev/null
+    cat $T; rm -f $T
+}
+sleep 20
+for d in /media/cryptofs/apps/usr/palm/webosarchive/webos-chat /usr/palm/webosarchive/webos-chat; do
+    if [ -d "$d/service" ]; then
+        log "package still installed (update) -- nothing to clean up"
+        rm -f "$0"; exit 0
+    fi
+done
+log "package removed -- cleaning up"
+
+# webOS Chat accounts, by id
+lsq palm://com.palm.service.accounts/listAccounts '{}' | tr '{' '\n' \
+  | grep "\"templateId\":\"$TPL\"" | sed -n 's/.*"_id":"\([^"]*\)".*/\1/p' \
+  | while read -r id; do
+        log "deleting webOS Chat account $id"
+        lsq palm://com.palm.service.accounts/deleteAccount "{\"accountId\":\"$id\"}" >/dev/null
+    done
+sleep 5
+
+for a in "webOS Chat start" "webOS Chat hourly" "webOS Chat profile"; do
+    lsq palm://com.palm.activitymanager/cancel "{\"activityName\":\"$a\"}" >/dev/null
+done
+
+mount -o remount,rw / 2>/dev/null
+rm -f /media/cryptofs/synergy-purple-plugins/libaim.so \
+      /usr/palm/ce-seed/cryptofs/synergy-purple-plugins/libaim.so
+rm -rf /usr/palm/public/accounts/$TPL /usr/palm/services/$SVCID /etc/palm/activities/$SVCID \
+       /usr/palm/applications/org.webosarchive.chat.setup /var/preferences/$SVCID
+rm -f /usr/share/ls2/roles/prv/$SVCID.json /usr/share/ls2/roles/pub/$SVCID.json \
+      /usr/share/dbus-1/system-services/$SVCID.service /usr/share/dbus-1/services/$SVCID.service
+# our /var/imwrap.sh change, only if the file is still ours (a Synergy update replaces it)
+IMW=/var/imwrap.sh
+if [ -f "$IMW.webos-chat-orig" ]; then
+    if grep -q 'resident launch waiting for it to exit' "$IMW" 2>/dev/null \
+       && ! grep -q 'resident launch waiting for it to exit' "$IMW.webos-chat-orig"; then
+        mv -f "$IMW.webos-chat-orig" "$IMW"
+    else
+        rm -f "$IMW.webos-chat-orig"
+    fi
+fi
+# our IM transport, only if the file is still ours (a Synergy update replaces it)
+T=/usr/bin/imlibpurpletransport
+if [ -f "$T.webos-chat-orig" ]; then
+    if [ "$(md5sum "$T" 2>/dev/null | cut -d' ' -f1)" = "$(cat "$T.webos-chat-md5" 2>/dev/null)" ]; then
+        mv -f "$T.webos-chat-orig" "$T"
+    else
+        rm -f "$T.webos-chat-orig"
+    fi
+fi
+rm -f "$T.webos-chat-md5"
+log "removed; restart the device to finish"
+rm -f "$0"
+EOF
+chmod 755 $C
+# Fully detached: own session, no inherited fds, so nothing here can hold LunaSysMgr. CE's
+# busybox has no setsid applet; start-stop-daemon -b does the setsid and the fd closing.
+start-stop-daemon -S -b -x /bin/sh -- $C </dev/null >/dev/null 2>&1 \
+    || ( nohup sh $C </dev/null >/dev/null 2>&1 & ) >/dev/null 2>&1 </dev/null
+exit 0

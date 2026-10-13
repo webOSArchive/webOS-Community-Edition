@@ -1,0 +1,170 @@
+#!/bin/sh
+# webOS Chat Enabler (AIM) for webOS CE: org.webosarchive.webos-chat.
+#
+# Puts the three webOS Chat pieces from the Oscar repository where CE needs them
+# (see Docs/WEBOS-CHAT-FINDINGS.md for why each goes where it does):
+#   libaim.so          -> /media/cryptofs/synergy-purple-plugins/ (imwrap.sh bind-mounts it
+#                         over /usr/lib/purple-2, so a copy only in /usr/lib/purple-2 would be
+#                         hidden), and the CE seed so a re-initialised cryptofs gets it back
+#   account template   -> /usr/palm/public/accounts/org.webosarchive.chat/
+#   service            -> /usr/palm/services/com.palm.webosarchive.chat/ + ls2 roles + launcher
+#   activities         -> /etc/palm/activities/com.palm.webosarchive.chat/ (the configurator
+#                         only reads a service's own configuration/ under /media/cryptofs/apps)
+#   setup page         -> /usr/palm/applications/org.webosarchive.chat.setup/ (hidden app that
+#                         Accounts opens from Add Account and Change Login Settings)
+#   IM transport       -> /usr/bin/imlibpurpletransport (fixed build; see step 6)
+#   /var/imwrap.sh     -> resident-launch wait + stuck-startup watchdog (step 5)
+#
+# Everything takes effect at the next boot (PostInstallFlags RestartDevice): ls-hubd reads
+# roles and launchers, the transport loads plugins, and the activity manager registers
+# activities at start. So this script only copies files: no luna-send, no initctl.
+#
+# Runs from Preware (ipkgservice, root, cryptofs mounted, payload staged under
+# /media/cryptofs/apps) and is written to also survive an OTA (mmipkg, chroot /rootfs, payload
+# unpacked straight into the rootfs, no cryptofs): there a nonzero exit aborts the whole update,
+# so only the not-webOS-CE gate may fail, and an OTA only ever runs on CE.
+
+PKG=org.webosarchive.webos-chat
+SVCID=com.palm.webosarchive.chat
+TPL=org.webosarchive.chat
+LOG=/var/log/webos-chat-enabler.log
+log() { echo "$(date 2>/dev/null) postinst: $*" >> "$LOG" 2>/dev/null; echo "webos-chat: $*"; }
+
+STAGE=
+for d in /media/cryptofs/apps/usr/palm/webosarchive/webos-chat /usr/palm/webosarchive/webos-chat; do
+    [ -d "$d/service" ] && STAGE=$d && break
+done
+
+# 0) webOS CE only. Legacy webOS has its own enabler under this package name; this build's
+# plugin and service are for CE's Synergy transport and would do nothing useful elsewhere.
+if ! grep -q 'PRODUCT_VERSION_STRING=webOS CE' /etc/palm-build-info 2>/dev/null; then
+    echo "webos-chat: this build is for webOS CE 3.1.0 and later. Not installing." >&2
+    exit 1
+fi
+if [ -z "$STAGE" ]; then
+    log "staged payload not found -- nothing installed"
+    exit 0
+fi
+if [ ! -x /usr/bin/imlibpurpletransport ] || [ ! -f /etc/event.d/imtransport ]; then
+    log "WARNING: CE's IM transport is missing; installing anyway, chat won't sign in without it"
+fi
+
+mount -o remount,rw / 2>/dev/null
+
+# put <src> <dst> <mode>: copy through a temp file and rename, so a file something already has
+# open or mmap'd (the transport and libaim.so, on an update) keeps its old inode instead of
+# being rewritten in place. Rewriting a mapped file on cryptofs's FUSE store left a 0-byte file
+# for Synergy.
+put() {
+    mkdir -p "$(dirname "$2")" || return 1
+    cp -f "$1" "$2.wcnew" && chmod "$3" "$2.wcnew" && mv -f "$2.wcnew" "$2"
+}
+# tree <srcdir> <dstdir>: replace a directory's contents with the staged copy.
+tree() {
+    rm -rf "$2" && mkdir -p "$2" && cp -rf "$1/." "$2/"
+}
+fail=0
+
+# 1) the AIM plugin
+P=libaim.so
+if grep -q ' /media/cryptofs ' /proc/mounts 2>/dev/null; then
+    put "$STAGE/purple-2/$P" /media/cryptofs/synergy-purple-plugins/$P 755 \
+        || { log "plugin copy to cryptofs FAILED"; fail=1; }
+else
+    log "cryptofs not mounted (OTA?): the plugin comes from the seed at the next boot"
+fi
+if [ -d /usr/palm/ce-seed/cryptofs/synergy-purple-plugins ]; then
+    put "$STAGE/purple-2/$P" /usr/palm/ce-seed/cryptofs/synergy-purple-plugins/$P 755 \
+        || { log "plugin copy to the seed FAILED"; fail=1; }
+fi
+
+# 2) the account template
+tree "$STAGE/accounts/$TPL" /usr/palm/public/accounts/$TPL || { log "template copy FAILED"; fail=1; }
+
+# 3) the service, its ls2 roles and its launcher. The launcher's name must end in .service or
+# ls-hubd never sees it.
+tree "$STAGE/service" /usr/palm/services/$SVCID || { log "service copy FAILED"; fail=1; }
+put "$STAGE/ls2/prv/$SVCID.json" /usr/share/ls2/roles/prv/$SVCID.json 644 || fail=1
+put "$STAGE/ls2/pub/$SVCID.json" /usr/share/ls2/roles/pub/$SVCID.json 644 || fail=1
+put "$STAGE/ls2/$SVCID.service" /usr/share/dbus-1/system-services/$SVCID.service 644 || fail=1
+# The public bus too: Accounts loads the setup page in its own window, and the page's calls to
+# this service go out on the PUBLIC bus (measured: "ls-hubd.public: Service not listed in
+# service files"). Same pairing as com.palm.service.accounts, and the same inbound ["*"]: the
+# hub checks inbound against the sender's service name, and a page's calls come from
+# LunaSysMgr carrying only an app id ("org.webosarchive.chat.setup 1014"), so no list of
+# names can admit just the page.
+put "$STAGE/ls2/$SVCID.service" /usr/share/dbus-1/services/$SVCID.service 644 || fail=1
+
+# 3b) the setup page Accounts opens for this account type (validator.customUI). A hidden app
+# ("visible": false): no Launcher icon.
+SETUP=org.webosarchive.chat.setup
+tree "$STAGE/app/$SETUP" /usr/palm/applications/$SETUP || { log "setup page copy FAILED"; fail=1; }
+
+# 4) the activities, where the configurator registers them at the next start
+tree "$STAGE/service/configuration/activities/$SVCID" /etc/palm/activities/$SVCID \
+    || { log "activities copy FAILED"; fail=1; }
+
+# 5) /var/imwrap.sh (Synergy generic's transport launcher): a resident launch that finds an
+# on-demand transport already holding the lock now waits for it instead of exiting. Without
+# this, every boot with an IM account (this package guarantees one) has upstart respawn
+# imtransport through its ~75 s pre-start every ~32 s until the respawn limit stops the job
+# for good. The same change is in the CE 3.2.0 image and was sent upstream to
+# imlibpurpleservice; skipped when the file already has it. The cleanup restores the original
+# on removal, unless Synergy has replaced the file since.
+IMW=/var/imwrap.sh
+MARK='resident launch waiting for it to exit'
+CUR='stuck in startup for 60s'   # only in the current version of the block
+# An earlier version of this package applied the block without the stuck-startup watchdog:
+# start again from the original it saved, so the current block goes in.
+if [ -f "$IMW" ] && grep -q "$MARK" "$IMW" && ! grep -q "$CUR" "$IMW" &&
+   [ -f "$IMW.webos-chat-orig" ] && ! grep -q "$MARK" "$IMW.webos-chat-orig"; then
+    cp -p "$IMW.webos-chat-orig" "$IMW.wcbase" && mv -f "$IMW.wcbase" "$IMW" &&
+        log "upgrading the earlier $IMW patch"
+fi
+if [ -f "$IMW" ] && ! grep -q "$MARK" "$IMW"; then
+    awk -v blk="$STAGE/imwrap-resident-wait.block" '
+        held != "" {
+            if ($0 == "    exit 0") { while ((getline l < blk) > 0) print l; n++; held = ""; next }
+            print held; held = ""
+        }
+        index($0, "imwrap.sh: already running as pid $OLDPID, not starting a second instance") \
+            && substr($0, 1, 9) == "    echo " { held = $0; next }
+        { print }
+        END { if (held != "") print held; exit (n == 1) ? 0 : 1 }
+    ' "$IMW" > "$IMW.wcnew" && sh -n "$IMW.wcnew" && grep -q "$MARK" "$IMW.wcnew"
+    if [ $? = 0 ]; then
+        [ -f "$IMW.webos-chat-orig" ] || cp -p "$IMW" "$IMW.webos-chat-orig"
+        chmod 755 "$IMW.wcnew" && mv -f "$IMW.wcnew" "$IMW" && log "patched $IMW (resident launch waits)"
+    else
+        rm -f "$IMW.wcnew"
+        log "WARNING: $IMW is not the version this patch expects; left unchanged"
+    fi
+fi
+
+# 6) the IM transport (/usr/bin/imlibpurpletransport), built from codepoet80/imlibpurpleservice at
+# the commit in TRANSPORT_COMMIT: Synergy's 3e1d0da plus the fixes found getting webOS Chat to
+# work on CE -- presence after an auto-login, buddy removal (a crash loop, then removed buddies
+# coming back), signing back in after a restart, and no auto-away 5 minutes after sign-in. The
+# original is kept once as .webos-chat-orig; removal puts it back if the file is still ours.
+# A later Synergy (re)install overwrites this file; reinstall this package after one.
+T=/usr/bin/imlibpurpletransport
+if [ -f "$STAGE/bin/imlibpurpletransport" ] && [ -f "$T" ]; then
+    NEW=$(md5sum "$STAGE/bin/imlibpurpletransport" | cut -d' ' -f1)
+    if [ "$(md5sum "$T" | cut -d' ' -f1)" != "$NEW" ]; then
+        [ -f "$T.webos-chat-orig" ] || cp -p "$T" "$T.webos-chat-orig" || fail=1
+        if put "$STAGE/bin/imlibpurpletransport" "$T" 755; then
+            echo "$NEW" > "$T.webos-chat-md5"
+            log "installed the IM transport from imlibpurpleservice $(cat "$STAGE/TRANSPORT_COMMIT" 2>/dev/null)"
+        else
+            log "IM transport copy FAILED"; fail=1
+        fi
+    fi
+fi
+
+# Root stays read-write: ipkg writes its own status after this script returns.
+if [ "$fail" = 0 ]; then
+    log "installed; restart the device to start webOS Chat"
+else
+    log "installed with errors (see above); reinstall to retry"
+fi
+exit 0

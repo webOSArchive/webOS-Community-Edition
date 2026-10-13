@@ -1,0 +1,1 @@
+{"role": {"allowedNames": ["com.palm.webosarchive.chat"], "type": "regular", "exeName": "js"}, "permissions": [{"inbound": ["*"], "outbound": ["*"], "service": "com.palm.webosarchive.chat"}]}
