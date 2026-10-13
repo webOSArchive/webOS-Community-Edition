@@ -15,6 +15,7 @@
 #   IM transport       -> /usr/bin/imlibpurpletransport (fixed build; see step 6)
 #   /var/imdaemon.sh   -> keep-alive that has ls-hubd launch the transport, plus the transport's
 #                         private role accepting it (step 5)
+#   chatthreader fix   -> the chatthreader's newmessageassistant.js on 3.1.0 (step 7)
 #
 # Everything takes effect at the next boot (PostInstallFlags RestartDevice): ls-hubd reads
 # roles and launchers, the transport loads plugins, and the activity manager registers
@@ -188,6 +189,30 @@ if [ -f "$STAGE/bin/imlibpurpletransport" ] && [ -f "$T" ]; then
             log "IM transport copy FAILED"; fail=1
         fi
     fi
+fi
+
+# 7) the chatthreader's person lookup. The chatthreader 3.1.0 ships (1.1.0, Synergy's person-link
+# fallback) never finishes the lookup for a sender with no contact and no buddy linked to one,
+# so that message is stored but never filed into a conversation: the first message from every
+# new webOS Chat user. Swap in the fixed file only when the installed one is that exact build;
+# anything else (fixed already, stock, someone else's) is left alone. The original is kept once
+# as .webos-chat-orig; removal puts it back if the file is still ours.
+CT=/usr/palm/services/com.palm.messaging.chatthreader/assistants/newmessageassistant.js
+CT_BUGGY=37c050bc5d95710e2073f9b6661fac7f
+if [ -f "$STAGE/chatthreader/newmessageassistant.js" ] && [ -f "$CT" ]; then
+    case "$(md5sum "$CT" | cut -d' ' -f1)" in
+    $CT_BUGGY)
+        [ -f "$CT.webos-chat-orig" ] || cp -p "$CT" "$CT.webos-chat-orig" || fail=1
+        if put "$STAGE/chatthreader/newmessageassistant.js" "$CT" 644; then
+            md5sum "$CT" | cut -d' ' -f1 > "$CT.webos-chat-md5"
+            log "fixed the chatthreader's lookup for senders who aren't linked buddies"
+        else
+            log "chatthreader fix copy FAILED"; fail=1
+        fi
+        ;;
+    $(md5sum "$STAGE/chatthreader/newmessageassistant.js" | cut -d' ' -f1)) ;;
+    *) log "chatthreader is not the 3.1.0 build; left alone" ;;
+    esac
 fi
 
 # Root stays read-write: ipkg writes its own status after this script returns.

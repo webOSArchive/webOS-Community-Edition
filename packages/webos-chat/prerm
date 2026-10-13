@@ -16,8 +16,8 @@
 #     service's state (/var/preferences/com.palm.webosarchive.chat: deleting the account
 #     above reads to the service as "chat turned off", which must not outlive the package)
 #   - cancels the activities
-#   - puts back /usr/bin/imlibpurpletransport, /var/imdaemon.sh, the transport's private role
-#     (and /var/imwrap.sh, which an earlier build patched) as they were before install, each
+#   - puts back /usr/bin/imlibpurpletransport, /var/imdaemon.sh, the transport's private role,
+#     the chatthreader's newmessageassistant.js (and /var/imwrap.sh, which an earlier build patched) as they were before install, each
 #     only if the file is still the one this package installed
 # The running transport keeps the plugin it already loaded until the restart Preware asks for.
 
@@ -113,9 +113,10 @@ if [ -f "$IMW.webos-chat-orig" ]; then
         rm -f "$IMW.webos-chat-orig"
     fi
 fi
-# our IM transport, its keep-alive script and its role change, each only if the file is still
-# ours (a Synergy update replaces them)
-for F in /usr/bin/imlibpurpletransport /var/imdaemon.sh /usr/share/ls2/roles/prv/com.palm.imlibpurple.json; do
+# our IM transport, its keep-alive script, its role change and the chatthreader fix, each only
+# if the file is still ours (a Synergy or chatthreader update replaces them)
+for F in /usr/bin/imlibpurpletransport /var/imdaemon.sh /usr/share/ls2/roles/prv/com.palm.imlibpurple.json \
+         /usr/palm/services/com.palm.messaging.chatthreader/assistants/newmessageassistant.js; do
     if [ -f "$F.webos-chat-orig" ]; then
         if [ "$(md5sum "$F" 2>/dev/null | cut -d' ' -f1)" = "$(cat "$F.webos-chat-md5" 2>/dev/null)" ]; then
             mv -f "$F.webos-chat-orig" "$F"

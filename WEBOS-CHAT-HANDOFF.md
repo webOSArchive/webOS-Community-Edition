@@ -12,7 +12,8 @@ except time to sign in after boot, which is about 10 s slower. Still untested: t
 ## Package
 
 - **Built with:** `scripts/webos-chat-enabler.sh feed`, producing
-  `build/work/ipk/org.webosarchive.webos-chat_3.1.0_armv7.ipk` (version 3.1.0).
+  `build/work/ipk/org.webosarchive.webos-chat_3.1.1_armv7.ipk` (version 3.1.1: 3.1.0 plus the
+  chatthreader fix below).
 - **Pins:**
   - Oscar `bf5daed`: adds `onDelete` to the account template.
   - transport `1960854` on codepoet80/imlibpurpleservice: one launcher (see below).
@@ -94,7 +95,12 @@ pre-start.
   injected db8 messages (not yet a real send from a stranger account): on 1.1.0 both a
   `lunacyprobe1` and a `curator` message hung (`findByIM` misses `curator` too on CE); after
   installing 1.1.0.3 through ipkgservice both got conversations and showed in Messaging.
-  Released 3.1.0 ships the bug, so the enabler should carry the one-line fix for 3.1.0 devices.
+  Released 3.1.0 ships the bug, so enabler 3.1.1 carries the fix (postinst step 7): it swaps in
+  the fixed `newmessageassistant.js` only over the exact 3.1.0 file (md5 `37c050bc…`), keeps the
+  original, and removal puts it back if the file is still ours. Verified on topaz: upgrade
+  3.1.0 → 3.1.1 through ipkgservice swapped the file; after the restart an injected
+  `lunacyprobe2` message was threaded at once. The removal restore is not yet exercised.
+  Still owed: a real send from a stranger account.
 - **Signing out of the webOS Account** should remove the chat account, and signing in should
   bring it back. Signing back in needs your password on the device.
 - **A new pass phrase on the website** should be picked up by the hourly sync.
@@ -105,8 +111,10 @@ pre-start.
 
 ## topaz's state now
 
-- **CE device:** enabler 3.1.0 (this build) installed, signed in as `codepoet`, chatting with
-  the stock device.
+- **CE device:** enabler 3.1.1 installed, chatthreader fixed by it. **Not signed in:** at 11:41
+  PDT the service replaced codepoet's account (what it does on a pass phrase change), and
+  since then the server answers `AcctMgr_Bad_Authentication`. Not caused by 3.1.1 (Messaging
+  already showed Offline before it was installed); not yet investigated.
 - **Test instrumentation, still installed:**
   - `/var/palm/chatbootrec.sh`, run by `/var/palm/event.d/chatbootrec` (log in
     `/var/log/chatboot/`). On every boot it samples the transport every 2 s for 5 minutes, and

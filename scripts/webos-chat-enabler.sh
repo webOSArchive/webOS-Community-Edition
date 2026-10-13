@@ -75,6 +75,19 @@ feed)
     cp "$ROOT/build/work/transport-build/src/imlibpurpleservice/files/var/imdaemon.sh" "$D/bin/"
     sh -n "$D/bin/imdaemon.sh"
     cp "$SRC/TRANSPORT_COMMIT" "$D/TRANSPORT_COMMIT"
+    # the chatthreader's fixed newmessageassistant.js, from the chatthreader ipk CE bakes (3.2.0
+    # and later): 3.1.0 shipped a lookup that never resolves for a sender who isn't a linked
+    # buddy, so the postinst swaps the fixed file in on 3.1.0
+    CTIPK=$(ls "$ROOT"/AddToImage/PatchOrReplace/com.palm.messaging.chatthreader_*_all.ipk | sort -V | tail -1)
+    mkdir "$W/ct"
+    (cd "$W/ct" && ar x "$CTIPK" data.tar.gz && tar xzf data.tar.gz \
+        && tar xzf media/cryptofs/chatthreader-overwrite/com.palm.messaging.chatthreader/payload.tar.gz \
+           ./assistants/newmessageassistant.js)
+    mkdir -p "$D/chatthreader"
+    cp "$W/ct/assistants/newmessageassistant.js" "$D/chatthreader/"
+    node --check "$D/chatthreader/newmessageassistant.js"
+    grep -q 'Always set a result' "$D/chatthreader/newmessageassistant.js" \
+        || { echo "$CTIPK lacks the findPersonViaBuddy fix" >&2; exit 1; }
     for f in $(find "$D" -name '*.json') $(find "$D/service/configuration" -type f); do
         node -e 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"))' "$f" \
             || { echo "bad JSON: $f" >&2; exit 1; }
