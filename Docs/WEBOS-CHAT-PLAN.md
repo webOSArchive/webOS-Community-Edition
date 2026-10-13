@@ -61,7 +61,7 @@ side by side with a stock 3.0.5 TouchPad. Results are in `WEBOS-CHAT-HANDOFF.md`
 |---|---|
 | Package id | `org.webosarchive.webos-chat`, shared with the legacy-webOS enabler |
 | Title | webOS Chat Enabler (AIM) |
-| Version | 3.1.0; the legacy enabler uses lower versions |
+| Version | 3.1.1 (3.1.0 plus the chatthreader fix, KNOWN-ISSUES #15); the legacy enabler uses lower versions |
 | Architecture | `armv7` (it carries `libaim.so`) |
 | Preware | `Source` JSON: Feed "WOSA Modernize", Category "Modernize", `MinWebOSVersion` 3.1.0 (keeps it off legacy devices), `Post{Install,Update,Remove}Flags` `RestartDevice` |
 | Launcher | no icon: there's no app, and the payload is staged under `usr/palm/webosarchive/webos-chat/` |
@@ -161,6 +161,11 @@ The cleanup:
    the account.
 4. **Chat** both ways with Lunacy and with a stock device that has the hosts
    line.
+4b. **First message from someone who isn't a buddy** (no contact, no linked
+   buddy): it gets a conversation. Without a second account, inject a
+   `com.palm.immessage.libpurple:1` record as `com.palm.imlibpurple` (folder
+   `inbox`, `flags.visible: true`) and check it gets `conversations`
+   (KNOWN-ISSUES #15).
 5. **Reboot:** the activities and the account are still there, and the account
    signs in again.
 6. **New pass phrase on the website:** replaced within the hour.
@@ -198,6 +203,9 @@ The cleanup:
      upgrade it from the feed.
 3. **The overlay manifest's `inputs_sha256`** picks up the new ipk, so the
    overlay freshness guard covers it.
+4. **The chatthreader fix** (KNOWN-ISSUES #15) comes from chatthreader 1.1.0.3,
+   already in `AddToImage/PatchOrReplace`. The enabler's postinst step 7 then
+   finds the fixed file and leaves it alone.
 
 ### Revisit: the transport watchdog (replaced in the 3.1.0 enabler, still in the 3.2.0 bake)
 

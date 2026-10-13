@@ -135,6 +135,35 @@ Harmless, same root cause, same fix.
 
 ---
 
+## 15. A message from someone who isn't a linked buddy is never threaded — FIXED in webOS Chat Enabler 3.1.1 and chatthreader 1.1.0.3
+
+**Severity: high for webOS Chat users. It drops the first message from every new
+contact.** Found 2026-10-13 by the Lunacy agent on a Pixel, after the enabler's
+own testing had passed. That testing only used buddies already linked to a person.
+
+**What is wrong.** 3.1.0 bakes chatthreader 1.1.0 (Synergy's person-link
+fallback). In `newmessageassistant.js`, `findPersonViaBuddy`'s second `then()`
+reads `future.result` on a buddy miss but never sets a new one. Foundations
+clears `isset` before each `then()` and only dispatches the next one on a new
+result, so `contactReverseLookup` never resolves. The message is stored in db8
+but never gets `conversations`. On CE, `findByIM` also misses linked buddies
+(`curator`), so on topaz even those messages took this path and hung.
+
+**Fix.**
+- **3.1.0 devices:** webOS Chat Enabler 3.1.1. Postinst step 7 swaps in the
+  fixed file, but only over the exact 3.1.0 file (md5 `37c050bc…`), and keeps
+  the original. Removal puts the original back if the file is still ours.
+- **3.2.0 bake:** chatthreader 1.1.0.3 in `AddToImage/PatchOrReplace`.
+- **Upstream:** PR from `codepoet80/com.palm.messaging.chatthreader`
+  (`fix-findpersonviabuddy-miss`) against Herrie's
+  `herrie/milestone1-channel-routing`. Synergy devices have the same bug.
+
+**Verified on topaz** with messages injected into db8 (see
+`WEBOS-CHAT-HANDOFF.md`). Not yet verified with a real send from an account
+that isn't a buddy. The enabler's removal restore hasn't been run.
+
+---
+
 ## 1. ipkgservice wedged on first boot — REPAIR VERIFIED ON HARDWARE (600063)
 
 **Severity: high — first observed on 600056.** Fires during first use; **clears

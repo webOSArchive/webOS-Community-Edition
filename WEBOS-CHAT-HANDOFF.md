@@ -1,11 +1,12 @@
-# webOS Chat Enabler: status (2026-10-13)
+# webOS Chat Enabler: status (2026-10-13, enabler 3.1.1)
 
 Tested on topaz, side by side with a stock TouchPad:
 - **CE device:** `c37f7a…`, webOS CE 3.1.0.
 - **Stock reference:** `1b4452…`, HP webOS 3.0.5 with the stock AIM account and an
   `/etc/hosts` line for `login.messaging.aol.com`.
 
-Every path a user can take now works on CE. It matches or beats the stock setup everywhere
+Every path tested works on CE. Those tests missed the first message from a sender who isn't a
+linked buddy, which was broken until 3.1.1 (KNOWN-ISSUES #15). It matches or beats the stock setup everywhere
 except time to sign in after boot, which is about 10 s slower. Still untested: the rows in
 "Not tested yet" below. Publishing to the feed is your call.
 
@@ -100,7 +101,10 @@ pre-start.
   original, and removal puts it back if the file is still ours. Verified on topaz: upgrade
   3.1.0 → 3.1.1 through ipkgservice swapped the file; after the restart an injected
   `lunacyprobe2` message was threaded at once. The removal restore is not yet exercised.
-  Still owed: a real send from a stranger account.
+  Still owed: a real send from a stranger account. Upstream: branch
+  `fix-findpersonviabuddy-miss` is pushed to `codepoet80/com.palm.messaging.chatthreader`.
+  The PR against Herrie's `herrie/milestone1-channel-routing` waits until after release
+  (KNOWN-ISSUES #15).
 - **Signing out of the webOS Account** should remove the chat account, and signing in should
   bring it back. Signing back in needs your password on the device.
 - **A new pass phrase on the website** should be picked up by the hourly sync.
