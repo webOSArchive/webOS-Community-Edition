@@ -3,20 +3,25 @@
 #
 # On a Preware removal this runs SYNCHRONOUSLY inside LunaSysMgr (as pmPreRemove.script), so
 # a blocking luna-send here freezes the UI for good. All the work is therefore handed to a
-# detached cleanup that starts after this script has returned and ipkg has finished.
+# detached cleanup (/var/palm/webos-chat-cleanup.sh) that starts after this script has returned
+# and ipkg has finished. A one-shot boot job runs it again if a restart interrupts it.
 #
-# The cleanup first waits, then checks whether the package's staged payload is still there.
-# If it is, this was an UPDATE (the new version's postinst has already put its files in
-# place) and the cleanup does nothing. If it's gone, the package was removed, and the cleanup:
+# The cleanup waits for ipkg to remove the package's staged payload (up to 2 minutes). If the
+# payload is still there after that, this was an UPDATE (the new version's postinst has put its
+# files in place) and the cleanup does nothing. If it's gone, the package was removed, and the
+# cleanup:
 #   - deletes every webOS Chat account (while its template is still loaded, so the accounts
 #     service can tear it down; it reads templates once, at start)
 #   - removes the plugin, template, setup page, service, roles, launcher, activities and the
 #     service's state (/var/preferences/com.palm.webosarchive.chat: deleting the account
 #     above reads to the service as "chat turned off", which must not outlive the package)
 #   - cancels the activities
+#   - puts back /var/imwrap.sh and /usr/bin/imlibpurpletransport as they were before install,
+#     each only if the file is still the one this package installed
 # The running transport keeps the plugin it already loaded until the restart Preware asks for.
 
-C=/tmp/webos-chat-cleanup.sh
+C=/var/palm/webos-chat-cleanup.sh
+J=/var/palm/event.d/org.webosarchive.webos-chat-cleanup
 cat > $C <<'EOF'
 #!/bin/sh
 SVCID=com.palm.webosarchive.chat
@@ -26,37 +31,71 @@ log() { echo "$(date 2>/dev/null) cleanup: $*" >> "$LOG" 2>/dev/null; }
 # lsq <uri> <json>: luna-send with a bounded wait (the bus may be slow mid-removal).
 lsq() {
     T=/tmp/webos-chat-lsq.$$
-    luna-send -n 1 "$1" "$2" > $T 2>/dev/null </dev/null &
+    luna-send -n 1 $LSA "$1" "$2" > $T 2>/dev/null </dev/null &
     p=$!; i=0
     while [ $i -lt 15 ] && kill -0 $p 2>/dev/null; do sleep 1; i=$((i+1)); done
     kill $p 2>/dev/null
     cat $T; rm -f $T
 }
-sleep 20
-for d in /media/cryptofs/apps/usr/palm/webosarchive/webos-chat /usr/palm/webosarchive/webos-chat; do
-    if [ -d "$d/service" ]; then
-        log "package still installed (update) -- nothing to clean up"
-        rm -f "$0"; exit 0
-    fi
-done
+# Wait for ipkg to finish removing the staged payload (it does that after this prerm returns),
+# up to 2 minutes, then give an update's postinst a few seconds to put a new one back. Payload
+# present at the end = this was an update (or the removal failed): leave everything alone.
+# Installed = ipkg still has the package's record AND its payload files exist. Not a directory
+# test: ipkg's remove deletes the files but leaves the (empty) directories, which made every
+# removal look like an update and skipped the whole cleanup.
+staged() {
+    for r in /media/cryptofs/apps /; do
+        [ -f "$r/usr/lib/ipkg/info/org.webosarchive.webos-chat.control" ] &&
+        [ -f "$r/usr/palm/webosarchive/webos-chat/service/service.js" ] && return 0
+    done
+    return 1
+}
+i=0
+while [ $i -lt 24 ] && staged; do sleep 5; i=$((i+1)); done
+sleep 10
+if staged; then
+    log "package still installed (update, or removal did not finish) -- nothing to clean up"
+    rm -f /var/palm/event.d/org.webosarchive.webos-chat-cleanup "$0"; exit 0
+fi
 log "package removed -- cleaning up"
 
 # webOS Chat accounts, by id
-lsq palm://com.palm.service.accounts/listAccounts '{}' | tr '{' '\n' \
-  | grep "\"templateId\":\"$TPL\"" | sed -n 's/.*"_id":"\([^"]*\)".*/\1/p' \
+# Only this template's accounts (listAccounts filters by templateId); account records are db8
+# objects whose ids start with "++", unlike the short ids of their nested capability providers.
+# Run from the boot job, the accounts service may not answer yet: retry until it does (2 min),
+# or an empty answer would look like "no accounts" and leave them behind.
+i=0; ACCTS=""
+while [ $i -lt 24 ]; do
+    ACCTS=$(lsq palm://com.palm.service.accounts/listAccounts "{\"templateId\":\"$TPL\"}")
+    case "$ACCTS" in *'"returnValue":true'*) break;; esac
+    sleep 5; i=$((i+1))
+done
+case "$ACCTS" in *'"returnValue":true'*) ;; *) log "accounts service did not answer; webOS Chat accounts may be left";; esac
+echo "$ACCTS" | grep -o '"_id":"++[^"]*"' | cut -d'"' -f4 | sort -u \
   | while read -r id; do
         log "deleting webOS Chat account $id"
-        lsq palm://com.palm.service.accounts/deleteAccount "{\"accountId\":\"$id\"}" >/dev/null
+        # as the service: deleteAccount only accepts callers in the template's writePermissions
+        LSA="-a $SVCID" lsq palm://com.palm.service.accounts/deleteAccount "{\"accountId\":\"$id\"}" | grep -q '"returnValue":true' \
+            || log "  could not delete $id"
     done
 sleep 5
 
-for a in "webOS Chat start" "webOS Chat hourly" "webOS Chat profile"; do
-    lsq palm://com.palm.activitymanager/cancel "{\"activityName\":\"$a\"}" >/dev/null
-done
+# the service's activities (persistent ones survive reboots), by id: cancelling by name only
+# matches the name/creator pair, and the creator here is the service, not this script
+lsq palm://com.palm.activitymanager/list '{"details":true}' | sed 's/},{"activityId"/}\n{"activityId"/g' \
+  | grep "\"serviceId\":\"$SVCID\"" | sed -n 's/.*"activityId":\([0-9][0-9]*\).*/\1/p' \
+  | while read -r aid; do
+        log "cancelling activity $aid"
+        lsq palm://com.palm.activitymanager/cancel "{\"activityId\":$aid}" >/dev/null
+    done
 
 mount -o remount,rw / 2>/dev/null
+# run from the boot job, cryptofs may not be mounted yet: wait for it (up to 2 minutes)
+i=0; while [ $i -lt 24 ] && ! grep -q ' /media/cryptofs ' /proc/mounts; do sleep 5; i=$((i+1)); done
 rm -f /media/cryptofs/synergy-purple-plugins/libaim.so \
       /usr/palm/ce-seed/cryptofs/synergy-purple-plugins/libaim.so
+# ipkg's remove leaves the package's (empty) staging directories behind
+rm -rf /media/cryptofs/apps/usr/palm/webosarchive/webos-chat
 rm -rf /usr/palm/public/accounts/$TPL /usr/palm/services/$SVCID /etc/palm/activities/$SVCID \
        /usr/palm/applications/org.webosarchive.chat.setup /var/preferences/$SVCID
 rm -f /usr/share/ls2/roles/prv/$SVCID.json /usr/share/ls2/roles/pub/$SVCID.json \
@@ -82,9 +121,15 @@ if [ -f "$T.webos-chat-orig" ]; then
 fi
 rm -f "$T.webos-chat-md5"
 log "removed; restart the device to finish"
-rm -f "$0"
+rm -f /var/palm/event.d/org.webosarchive.webos-chat-cleanup "$0"
 EOF
 chmod 755 $C
+# If the device restarts before the cleanup finishes (Preware asks for a restart right after the
+# removal), finish it at the next boot: a one-shot job that runs the same script, which deletes
+# the job when it completes. Written to a temp file and renamed: upstart watches this directory
+# and can read a half-written job file.
+printf 'start on stopped finish\nconsole none\nexec /bin/sh %s\n' "$C" > /var/palm/.webos-chat-cleanup.job
+mv -f /var/palm/.webos-chat-cleanup.job "$J"
 # Fully detached: own session, no inherited fds, so nothing here can hold LunaSysMgr. CE's
 # busybox has no setsid applet; start-stop-daemon -b does the setsid and the fd closing.
 start-stop-daemon -S -b -x /bin/sh -- $C </dev/null >/dev/null 2>&1 \
