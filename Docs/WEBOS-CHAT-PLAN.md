@@ -114,13 +114,16 @@ the not-CE gate.
 
 On a Preware removal, the prerm runs inside LunaSysMgr. So it only writes a
 cleanup script to `/var/palm` and starts it fully detached, with
-`start-stop-daemon -b`, since CE's busybox has no `setsid`. A one-shot boot job runs the same
-script again if a restart cuts it off.
+`start-stop-daemon -b -x <script>`, since CE's busybox has no `setsid`. With `-x /bin/sh` it
+matches any running shell and starts nothing. A one-shot boot job runs the same script again if
+a restart cuts it off; measured finishing 23 s into boot. The postinst kills a pending cleanup
+and deletes its job, because a removal is never followed by a postinst.
 
 The cleanup:
 1. waits for ipkg to remove the payload (ipkg's record and a payload file both gone; up to 2 min);
 2. if the payload is still there, it was an **update**: do nothing. (ipkgservice doesn't run the
-   prerm on an upgrade or a same-version reinstall at all; measured);
+   prerm on an upgrade or a same-version reinstall at all; measured. Preware's remove-then-install
+   `replace` applies only to types with `updateAsReplace`, and `Linux Application` isn't one);
 3. otherwise:
    - delete every `org.webosarchive.chat` account as `com.palm.webosarchive.chat`, the only
      caller in the template's `writePermissions`, while the template is still there; its

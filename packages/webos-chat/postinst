@@ -52,6 +52,18 @@ fi
 
 mount -o remount,rw / 2>/dev/null
 
+# A cleanup left by an earlier removal (prerm) may still be waiting, or be due at the next boot.
+# A postinst means the package is installed again, and no removal is ever followed by one, so
+# cancel it: otherwise it could decide "removed" and delete the files and accounts this install
+# is putting in place. (Preware updates this package type by installing over it, with no prerm;
+# this covers a remove followed quickly by an install, or any tool that updates by replace.)
+for d in /proc/[0-9]*; do
+    [ "${d#/proc/}" = $$ ] && continue
+    tr '\0' ' ' 2>/dev/null < "$d/cmdline" | grep -q /var/palm/webos-chat-cleanup.sh && kill "${d#/proc/}" 2>/dev/null &&
+        log "cancelled a pending cleanup from an earlier removal"
+done
+rm -f /var/palm/webos-chat-cleanup.sh /var/palm/event.d/org.webosarchive.webos-chat-cleanup
+
 # put <src> <dst> <mode>: copy through a temp file and rename, so a file something already has
 # open or mmap'd (the transport and libaim.so, on an update) keeps its old inode instead of
 # being rewritten in place. Rewriting a mapped file on cryptofs's FUSE store left a 0-byte file

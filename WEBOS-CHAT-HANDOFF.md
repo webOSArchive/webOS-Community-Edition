@@ -23,6 +23,14 @@ except time to sign in after boot, which is about 10 s slower. Still untested: t
   - **Account removal:** the template's `onDelete` makes the transport remove libpurple's saved
     copy of the account (screen name and chat key in `accounts.xml`). Before, it outlived the
     account.
+  - **Package scripts** (after the Preware feed agent's review):
+    - the postinst cancels a removal's pending cleanup, so a remove followed by a quick
+      reinstall can't delete the new install;
+    - the prerm writes the cleanup through a temp file;
+    - the prerm starts the cleanup with `start-stop-daemon -x <script>`. With `-x /bin/sh` it
+      had found a running shell and started nothing, and only the nohup fallback worked;
+    - the control type is `Linux Application`, as in the legacy build. `Application` gave
+      Preware a Launch button for a package with no app.
 
 ## Measured, CE vs stock
 
@@ -35,6 +43,8 @@ except time to sign in after boot, which is about 10 s slower. Still untested: t
 | Transport killed | back in 5 s | (no keep-alive) |
 | Transport frozen in startup | replaced after 60 s, signed in 4 s later | (no recovery) |
 | Messages both ways, presence both ways | yes | yes |
+| 1 h 43 m unplugged, screen off | asleep 88%; 9 of 9 pings delivered in 0–3 s; 10 reconnects; same transport process throughout | asleep 88%; 9 of 9 delivered in 0–2 s; 14 reconnects; same process throughout |
+| Message to a sleeping tablet | wakes it, delivered | wakes it, delivered |
 
 Sign-in is measured as an ESTABLISHED TCP connection to port 5190, not the db8 login state
 (it still says "online" from before a reboot) and not `imstdout.log` (the transport's stdout
@@ -60,6 +70,14 @@ is block-buffered, so lines arrive late).
    - no `.webos-chat-*` files are left, and `accounts.xml` holds 0 accounts;
    - db8 keeps only palmprofile and telephony;
    - after the restart, the stock transport runs and makes no AIM connection.
+6. **Remove, then reinstall straight away:** the postinst cancels the waiting cleanup, and
+   nothing is deleted after it.
+7. **Remove, then restart before the cleanup runs:** the boot job finishes it 23 s into boot.
+   The account is deleted, every file is back to stock, and the job removes itself.
+
+Preware updates this package type (`Linux Application`) by installing over it, with no prerm
+(`packages.js`, `updateAsReplace`). Remove-then-install is only used for kernels, patches, fonts,
+themes and the OS types.
 
 Yesterday's "no chat account after install" wasn't a bug. That install boot lasted 57 s before
 the removal: the service had only reached `listAccounts`, and the transport was still in
@@ -71,8 +89,8 @@ pre-start.
   bring it back. Signing back in needs your password on the device.
 - **A new pass phrase on the website** should be picked up by the hourly sync.
 - **A wrong pass phrase** shouldn't cause a tight retry loop (watch the server log).
-- **Overnight stability** with the screen off and unplugged. The test devices are on USB, which
-  blocks suspend.
+- **Longer than 2 hours unplugged.** It went 1 h 43 m (table above). Battery drain wasn't
+  measured.
 - **OOBE sign-in.** This belongs to 3.2.0.
 
 ## topaz's state now
@@ -98,3 +116,7 @@ pre-start.
 - **A Synergy reinstall** overwrites the enabler's transport and `imdaemon.sh`; the user has to
   reinstall the enabler afterwards.
 - **The transport's "skip nameless buddy" filter** is still upstream behaviour.
+- **Away status differs from stock, on purpose for now.** Stock goes away 5 minutes after
+  signing in (libpurple's auto-away, with no source of user activity). CE stays available
+  (transport `2be2099`). We'll match stock later. Check whether that timer is what triggers the
+  stock tablet's 304 s reconnects.

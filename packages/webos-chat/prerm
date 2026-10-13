@@ -23,7 +23,9 @@
 
 C=/var/palm/webos-chat-cleanup.sh
 J=/var/palm/event.d/org.webosarchive.webos-chat-cleanup
-cat > $C <<'EOF'
+# Written to a temp file and renamed, so a cleanup still running from an earlier removal attempt
+# keeps reading its own copy.
+cat > $C.new <<'EOF'
 #!/bin/sh
 SVCID=com.palm.webosarchive.chat
 TPL=org.webosarchive.chat
@@ -126,7 +128,7 @@ done
 log "removed; restart the device to finish"
 rm -f /var/palm/event.d/org.webosarchive.webos-chat-cleanup "$0"
 EOF
-chmod 755 $C
+chmod 755 $C.new && mv -f $C.new $C
 # If the device restarts before the cleanup finishes (Preware asks for a restart right after the
 # removal), finish it at the next boot: a one-shot job that runs the same script, which deletes
 # the job when it completes. Written to a temp file and renamed: upstart watches this directory
@@ -134,7 +136,9 @@ chmod 755 $C
 printf 'start on stopped finish\nconsole none\nexec /bin/sh %s\n' "$C" > /var/palm/.webos-chat-cleanup.job
 mv -f /var/palm/.webos-chat-cleanup.job "$J"
 # Fully detached: own session, no inherited fds, so nothing here can hold LunaSysMgr. CE's
-# busybox has no setsid applet; start-stop-daemon -b does the setsid and the fd closing.
-start-stop-daemon -S -b -x /bin/sh -- $C </dev/null >/dev/null 2>&1 \
+# busybox has no setsid applet; start-stop-daemon -b does the setsid and the fd closing. -x names
+# the script itself: with -x /bin/sh it finds any running shell, reports "already running" and
+# starts nothing.
+start-stop-daemon -S -b -x $C </dev/null >/dev/null 2>&1 \
     || ( nohup sh $C </dev/null >/dev/null 2>&1 & ) >/dev/null 2>&1 </dev/null
 exit 0
