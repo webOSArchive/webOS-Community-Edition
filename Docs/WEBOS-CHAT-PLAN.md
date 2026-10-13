@@ -182,6 +182,32 @@ The cleanup:
 3. **The overlay manifest's `inputs_sha256`** picks up the new ipk, so the
    overlay freshness guard covers it.
 
+### Revisit: the transport watchdog (kept for 3.1.0, decide for 3.2.0)
+
+**What it is:** `imwrap-resident-wait.block` (also in the 3.2.0 bake and upstream as
+imlibpurpleservice `a40e37c`). It kills an on-demand transport that sits for 60 s with one
+thread blocked on a futex, and lets the resident launch take over. A watchdog is a bandaid, and
+it could kill a working transport if its heuristic is ever wrong. It stays in 3.1.0 only
+because, without it, the user's only way out of the hang is restarting the device.
+
+**What's known about the hang:**
+- 2 of 7 boots on 2026-10-12 (topaz), both right after files were swapped on the device; the
+  next 5 boots were clean. So it isn't known to happen in normal use.
+- The cause isn't found. The leading suspect is CE/Synergy's own wrappers: `imwrap.sh` and
+  `imdaemon.sh` delete `/dev/shm/sem.PmLogLib` on every launch, a semaphore every PmLog process
+  shares.
+- Stock webOS had none of this machinery (a single on-demand launch, no wrappers) and no
+  watchdog.
+
+**For 3.2.0:**
+1. Find out whether the hang occurs without test churn: run repeated clean boots of the 3.2.0
+   candidate, and have the release test capture the hung process (maps, `/dev/shm`, other
+   futex waiters, a minicore via SIGABRT) instead of killing it.
+2. If it occurs, fix the cause. The first candidate is to stop deleting the shared semaphore
+   and see whether the hang goes away.
+3. Then drop the watchdog from the block, the bake and the upstream PR, unless the hang turns
+   out to be outside our control.
+
 ### Image-specific work
 
 - **The OOBE gap.** A sign-in during OOBE happens about 2 minutes before the
