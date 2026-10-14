@@ -1,0 +1,184 @@
+/*.enyo-bg-xxxx {
+	background:#1f1f1f url(../images/content-bg.png) !important;
+}
+.AlbumGrid {
+	margin: 10px;
+}
+/*this style is not being used*/
+/* Start Added by JC*/
+/*.AlbumGridRowItem {
+	border-top: none;
+	border-bottom: none;
+}
+
+.AlbumHeaderDivider
+{
+	background-image: url(../images/divider_separator_line.png);
+	background-repeat: repeat-x;
+	background-position: bottom;
+	width: 100%;
+}
+.MultiselectTop > div {
+	border-bottom: 1px solid #3D3D3D;
+.MultiselectBottom > div {
+}
+
+*/
+
+/******************************************/
+/*style used to give a border image to show that its a header. same styling is repeated in library.css*/
+.AlbumMode .PanelHeader {
+ 	-webkit-border-image: url(../images/header-tile.png) 5 repeat repeat;
+}
+
+
+/***********************Bottom ToolBar info content styles *******************/
+/*this style is used for the date/image/video count on the bottom toolbar*/
+.AlbumSubHeaderText {
+	color: #bfbfbf;
+	font-size: 0.7em;
+	margin-right: 5px;
+	padding-right: 5px;
+}
+	/*appends the | after everysection info eg. date|images|video*/
+		.AlbumSubHeaderText:after {
+			content: ' |';
+		}
+	/*Will remove the last | for the last chind and replace it with empty content*/
+		.AlbumSubHeaderText:last-child:after {
+			content: '';
+		}
+/***********************End of Bottom ToolBar info content styles *******************/
+
+
+/******* classname used in AlbumGridView.js spreads out the images in a grid arrangement***************/
+.AlbumGridThumb {
+	position: relative;
+	width: 240px;
+	height: 240px;
+	text-align: center;
+}
+/*each image and video thumbnail info bar position and spacing styles*/
+	.AlbumGridThumbImg {
+		-webkit-border-image: url(../images/photo-9tile.png) 6 7 7 6 repeat repeat;
+		border-width: 6px 7px 7px 6px;
+		margin: auto;
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
+	}
+
+/*
+DEFINED IN NonCssParams.js
+.AlbumGridThumb img {
+	height: 100px;
+}
+*/
+/************************************ Multislect controls on edit
+/*classname used in AlbumModeMultiselectControls.js and AlbumMode.js*/
+/*styling to display the topheader slidedown on edit button click in album mode.*/
+.MultiselectControls {
+	position: absolute;
+	width: 100%;
+	/* background-image: url(../images/divider_background.png); */
+	z-index: 10;
+}
+
+	.MultiselectControls > div {
+		width: 100%;
+		/*height: 100%;*/
+	}
+
+	.MultiselectTop {
+	  /*  line-height: 50px;*/
+		height: 50px;
+		top: 0px;
+		color: #fff;
+		-webkit-transition: top 0.25s linear;
+		background: url(../images/multi-select-header.png) repeat-x;
+	}
+
+
+
+	.MultiselectBottom {
+		line-height: 50px;
+		height: 54px;
+		bottom: 0px;
+		-webkit-transition: bottom 0.25s linear;
+		background: url(../images/multi-select-header.png) repeat-x;
+	}
+
+
+
+	.MultiselectHideBottom {
+		bottom: -54px;
+	}
+
+	.MultiselectHideTop {
+		top: -60px;
+	}
+
+	@-webkit-keyframes pulse {
+		from {
+			-webkit-transform: scale(1.0);
+		}
+		to {
+			-webkit-transform: scale(1.1);
+		}
+	}
+		/** images on select border color with highlight*/
+		.MultiselectHighlight > img,
+		.AlbumModeMultiselect div.MultiselectHighlight img:not(.bar-left-icon) {
+			z-index: 15;
+			border-width: 15px;
+			border-color: none;
+			-webkit-border-image: url(../images/multi-select-9tile.png) 15 15 15 15 repeat repeat;
+		}
+		/*styling to dull or reduce the brightness a little to make the highlight very noticable*/
+		.AlbumModeMultiselect div:not(.MultiselectHighlight) img,
+		.AlbumModeMultiselect div:not(.MultiselectHighlight) .bar-left img,
+		.AlbumModeMultiselect div:not(.MultiselectHighlight) .bar-label,
+		.AlbumModeMultiselect div:not(.MultiselectHighlight) .bar-right {
+			opacity:.4;
+		}
+		/*Styling to increase the brighness on individual image selection to show the selection.*/
+		.AlbumModeMultiselect div.MultiselectHighlight img,
+		.AlbumModeMultiselect .PanelHeader div .gridview-header-controls img,
+		.AlbumModeMultiselect div.MultiselectBottom img,
+		.AlbumModeMultiselect div.MultiselectHighlight .bar-left img,
+		.AlbumModeMultiselect div.MultiselectHighlight .bar-label,
+		.AlbumModeMultiselect div.MultiselectHighlight .bar-right
+		 {
+			opacity:1;
+	}
+	.PhotosPopup_title .enyo-modaldialog-title {
+		margin-bottom:0px;
+	}
+	.PopupContent{
+		font-size:0.8rem;
+		padding:0 5px 5px 5px;
+	}
+		/************** Add to album Picker popup classNames used in AlbumPickerPopup.js***************/
+.enyo-input-focus {
+	-webkit-border-image: url(../images/input-focus.png) 14 stretch stretch;
+	border-width:14px;
+}
+
+	.enyo-input-focus .enyo-virtual-scroller {
+		margin:-10px -13px -10px -19px;
+	}
+	.enyo-modaldialog-content .enyo-accel-children {
+		margin-top:-2px;
+	}
+
+/************ Styling for editing the album on the header***********************/
+.edit-album-name {
+	width: 300px;
+	margin-top: -7px;
+	position:relative;
+	right:50%;
+}
+
+

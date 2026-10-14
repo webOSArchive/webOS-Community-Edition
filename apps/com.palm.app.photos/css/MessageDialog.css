@@ -1,0 +1,27 @@
+
+.enyo-msgBox {
+    position: relative;
+    overflow: hidden;
+}
+
+.enyo-msgBox-msgArea {
+    font-family: Arial, sans-serif, Helvetica;
+    font-size: 14pt;
+    padding: 6px;
+}
+
+.enyo-msgBox-btnArea {
+    padding-top: 18px;
+}
+
+.enyo-msgBox-animStart {
+	-webkit-transform: rotate(0deg) scale(0);
+	opacity: 0;
+	-webkit-transition-property: opacity, -webkit-transform;
+	-webkit-transition-duration: 1s, 1s;
+}
+
+.enyo-msgBox-animEnd {
+	-webkit-transform: rotate(0deg) scale(1);
+	opacity: 1;
+}

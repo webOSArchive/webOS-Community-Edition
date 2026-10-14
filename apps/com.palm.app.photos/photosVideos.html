@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+	<title>Photos</title>
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="viewport" content="width=device-width initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<script src="/usr/palm/frameworks/enyo/0.10/framework/enyo.js" launch="nodebug&nobridge" type="text/javascript"></script> 
+</head>
+<body>
+
+<script type="text/javascript">
+	
+	// XXXXX debugging: help track down runaway setTimer() and setInterval()
+	/*
+	if (window.PalmSystem) {
+		var wrapWindowTimerFunc = function(funcName) {
+			var orig = window[funcName];
+			var newTimerFunc = function(func, timeout) {
+				var caller = arguments.callee.caller;
+				var at = Date.now();
+				var wrapped = function() {
+					webosEvent.start('', 'photos.'+funcName, 'called by: ' + caller + '   at: ' + at);
+					func(arguments);
+					webosEvent.stop('', 'photos.'+funcName, '');
+				}
+				orig(wrapped, timeout);
+			}
+			window[funcName] = newTimerFunc;
+		}
+		
+		wrapWindowTimerFunc('setTimeout');
+		wrapWindowTimerFunc('setInterval');
+	}
+	*/
+	
+	enyo.VirtualScroller.prototype.accelerated = true;
+	
+	// Currently in 0.9, enyo.args.debug is a s string (if present).  This
+	// also works if it becomes a boolean, which I'll push for.
+	var isDebugging = enyo.args.debug === true || enyo.args.debug === "true";
+	var forceFirstUse = enyo.args.forceFirstUse === "true";
+	
+	enyo.keyboard.setResizesWindow(false);
+	
+	// We're currently interested in the time to dynamically instantiate filmstrips...
+//	window.wrap_grid_refresh = wrapMethod(DbGrid.prototype, "refresh");
+//	window.wrap_library_create_album = wrapMethod(Library.prototype, "createAlbum");
+//	window.wrap_album_create = wrapMethod(Album.prototype, "myCreate");
+
+/*
+	window.wrap_event_dispatch = wrapMethod(
+		enyo.dispatcher, 
+		"dispatch",
+		{
+			preLogger: function(evt) { return "[[" + evt.type + " >> " + evt.target.id + "]]"; },
+			postLogger: function(result, evt) { return "[[" + evt.type + " >> " + evt.target.id + "]]"; },
+			filter: function(evt) { 
+				if (!window.wrap_event_dispatch) return true; // filter event out
+				evt.profiling = true; // for my own enyo hacking, won't do anything w/ stock enyo
+				return false;  // don't filter it out
+			}	
+		}
+	);
+*/	
+
+	var doPhotosApp = function (dbService) {
+		var app = enyo.create({
+			kind: "TabletUI",
+			name: "ui",
+			isDebugging: isDebugging,
+			forceFirstUse: forceFirstUse,
+			dbservice: dbService,
+			components: [
+				{ name: "photoservice",kind:"PhotosService"}
+			]
+		});
+		window.app = app;
+
+		console.log("CREATED PHOTOS APP WITH Db SERVICE: " + app.$.dbservice.kind);
+		console.log("CREATED PHOTOS APP WITH Photos SERVICE: " + app.$.photoservice.kind);
+		app.renderInto(document.body);
+	
+		// For debugging... make it easy to delay initial loading of images.
+		var poke = function() {
+			app.$.dbservice.sendPoke();
+			app.$.photoservice.facebookSyncAlbums();
+			app.requestThumbnailGeneration();
+		}
+		window.setTimeout(poke, NonCssParams.DEBUG_pauseBeforeInitialAlbumLoad);
+	};
+
+	// If we're running on the device/emulator, use the normal service.
+	// If we're running in a web-browswer, use the mock-version of the service.
+	var dbService = (window.PalmSystem) ? "MojoDbService" : "MockMojoDbService";
+	doPhotosApp(dbService);
+	
+</script>
+</body>
+</html>
+

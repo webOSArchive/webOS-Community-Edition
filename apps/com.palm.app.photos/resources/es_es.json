@@ -1,0 +1,14 @@
+{
+	"Are you sure you want to delete these #{itemCount} videos?": "¿Estás seguro de que quieres eliminar estos #{itemCount} vídeos?",
+	"Are you sure you want to delete this video?": "¿Estás seguro de que quieres eliminar este vídeo?",
+	"Create New Album": "Crear nuevo álbum",
+	"No items selected": "No hay elementos seleccionados",
+	"No items selected for adding to album": "No hay elementos seleccionados para añadir al álbum",
+	"No items selected for deletion": "No hay elementos seleccionados para borrar",
+	"Photos & Videos": "Fotos y vídeos",
+	"Remote service failed to respond": "El servicio remoto no ha respondido",
+	"Video is corrupted": "El vídeo está dañado.",
+	"Your photos and videos libraries": "Tus bibliotecas de fotos y vídeos",
+	"modified new message.": "nuevo mensaje modificado.",
+	"videos": "vídeos"
+}

@@ -1,0 +1,140 @@
+.video-view {
+    position: relative;
+}
+
+.video-view .vid-header-bar {
+    position: absolute;
+    left: 0px;
+    height: 40px;
+    width: 100%;
+    padding: 5px 10px;
+    background: transparent url(../images/media-toolbar.png) repeat-x;
+    opacity: 0.8;
+    -webkit-transition: top 0.15s linear;
+}
+
+.video-view .vid-title {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #ffffff;
+    text-align: center;
+}
+
+.video-view .show-vid-header-bar {
+    top: 0px;
+}
+
+.video-view .hide-vid-header-bar {
+    top: -40px;
+}
+
+.video-view .vid-ctrl-bar {
+    -webkit-border-image: url(../images/controls-9tile.png) 20 20 20 20;
+    border-width: 10px;
+    padding: 0px 0px 0px 0px;
+    position: absolute;
+    top: 80%;
+    -webkit-transition: bottom 0.15s linear;
+    font-size: 11pt;
+    color: #ffffff;
+}
+
+.video-view .show-vid-ctrl-bar {
+    top: 80%;
+}
+
+.video-view .hide-vid-ctrl-bar {
+    top: -80%;
+}
+
+.video-view .play-time-tally-left {
+    float: left;
+    margin-top: 8px;
+}
+
+.video-view .play-time-tally-right {
+    float: right;
+    margin-top: 8px;
+}
+
+.video-view .video-default,
+.video-view video {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.video-view .video-icon {
+    position: absolute;
+    width: 58px;
+    height: 52px;
+    margin: 0 auto;
+    background-color: transparent;
+}
+
+.video-view .show-video-icon {
+    display: block;
+}
+
+.video-view .hide-video-icon {
+    display: none;
+}
+ 
+.video-view .play-button {
+    float: left;
+    margin-top: -8px;
+    margin-left: -8px;
+    height: 44px;
+    width: 45px;
+    background: url(../images/icn-play.png) 10px 8px no-repeat;
+}
+
+.video-view .pause-button {
+    float: left;
+    margin-top: -8px;
+    margin-left:-8px;
+    height: 45px;
+    width: 45px;
+    background: url(../images/icn-pause.png) 10px 8px no-repeat;
+}
+
+.video-view .zoom-larger-button {
+    float: right;
+    margin-top:-8px;
+    width: 50px;
+    height: 43px;
+    background: transparent url(../images/icn-fillscreen.png) no-repeat 10px 8px;
+}
+
+.video-view .zoom-smaller-button {
+    float: right;
+    margin-top:-8px;
+    width: 50px;
+    height: 43px;
+    background: transparent url(../images/icn-normalsize.png) no-repeat 10px 8px;
+}
+
+.video-view .video-slider {
+    position: relative;
+}
+
+.video-view .video-scrubber {
+    margin: -13px -18px;
+}
+
+.enyo-slider {
+    margin-top: -8px;
+    padding: 20px 10px 20px 10px;
+}
+
+.video-view .seeker-wide {
+    position: absolute;
+    top: 0;
+    left: 90px;
+    width: 430px;
+}
+
+.video-view .seeker-narrow {
+    position: absolute;
+    top: 45px;
+    left: 0;
+}

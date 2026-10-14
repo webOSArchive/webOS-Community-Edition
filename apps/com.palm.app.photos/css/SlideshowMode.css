@@ -1,0 +1,202 @@
+.slideshow {
+    position: relative;
+    background-color: #000000;
+}
+
+.slideshow .toolbar {
+    position: absolute;
+    color: #ffffff;
+    background-color: rgba(13,13,13,0.5);
+    left: 0;
+    width: 100%;
+    height: 63px;
+    padding: 10px 5px 5px 5px;
+    -webkit-transition: top 0.15s linear;
+    z-index: 1000;
+}
+
+.slideshow .show-toolbar {
+    top: 0;
+}
+
+.slideshow .hide-toolbar {
+    top: -63px;
+}
+
+.slideshow .album-select-pane {
+    position: absolute;
+    top: 54px;
+    right: 4px;
+    width: auto;
+    min-width: 234px;
+    max-width: 334px;
+	padding: 5px;
+	-webkit-border-image: url(../images/menu-background.png) 12 12 12 12 stretch stretch;
+    border-width: 12px;
+    z-index: 1010;
+}
+
+/*
+.slideshow .album-select-menu {
+	min-width:60px;
+	max-width: 500px;
+	border-width: 19px;
+	height:auto;
+	-webkit-border-image: url(../images/menu-background.png) 23 23 23 23 stretch stretch;
+}
+*/
+
+.slideshow .first-use {
+    top: -2000px;
+}
+
+/*
+.slideshow .album-select-menu-item .enyo-item {
+    font-size: 18px;
+    color: #000;
+    padding: 0;
+	margin: 0;
+	border:none;
+}
+*/
+.slideshow .album-select-menu-item {
+    position: relative;
+    padding: 0;
+	margin: 0;
+    border-top: 1px solid #c0c0c0;
+    height: 36px;
+    width: auto;
+}
+.slideshow .album-select-menu-item:first-child {
+	border-top: none;
+}
+
+.slideshow .aCheckBox {
+    position: absolute;
+    top: 7px;
+    left: 0px;
+    width: 32px;
+    height: 26px;
+}
+
+.slideshow .aChecked {
+    background: transparent url(../images/checkmark-dark.png) no-repeat;
+}
+
+.slideshow .aUnchecked {
+    background: transparent;
+}
+
+.slideshow .album-menu-label {
+    position: absolute;
+    top: 7px;
+    left: 42px;
+    font-size: 18px;
+    color: #000000;
+    padding-top: 4px;
+    width: 100%;
+	min-width: 158px;
+	max-width: 258px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+/*
+.slideshow .album-select-menu div div .page:first-child .enyo-item {
+	border-top: none;
+}
+
+.slideshow .album-select-menu div div .page:last-child .enyo-item {
+	border-bottom:none;
+}
+*/
+
+.slideshow .commandbar {
+    position: absolute;
+    background-color: transparent;
+    left: 0;
+    width: 100%;
+    height: 63px;
+    padding: 10px 5px 5px 5px;
+    -webkit-transition: bottom 0.15s linear;
+    z-index: 1000;
+}
+
+.slideshow .show-commandbar {
+    bottom: 0px;
+}
+
+.slideshow .hide-commandbar {
+    bottom: -63px;
+}
+
+.slideshow .timing-menu {
+    position: absolute;
+    /* height: auto; */
+	border-radius: 4px;
+    background-color: rgba(255,255,250,0.95);
+    overflow: hiden;
+    z-index: 1010;
+}
+
+.slideshow .timing-menu-item {
+    position: relative;
+    border-top: 1px solid #c0c0c0;
+    height: 26px;
+    padding: 6px;
+}
+.slideshow .timing-menu-item:first-child {
+	border-top: none;
+}
+
+.slideshow .timing-menu-label {
+    float: left;
+    font-size: 18px;
+    color: #000000;
+    margin-left: 10px;
+    padding-top: 4px;
+}
+
+.slideshow .show {
+    display: block;
+}
+
+.slideshow .hide {
+    display: none;
+}
+
+#slideshow_dropdown_client .album-select-menu {
+
+}
+
+#slideshow_dropdown_client .enyo-virtual-scroller {
+	left: 5px !important;
+	width: 390px !important;
+}
+
+.slideshow .tCheckBox {
+    float: left;
+    width: 32px;
+    height: 26px;
+    background: transparent url(../images/checkmark-dark.png) no-repeat;
+}
+
+.slideshow .tChecked {
+    visibility: visible;
+}
+
+.slideshow .tUnchecked {
+    visibility: hidden;
+}
+
+.slideshow .enyo-button img.shuffle,
+.slideshow .enyo-button img.pause,
+.slideshow .enyo-button img.timer {
+    margin-top: -3px;
+}
+
+.slideshow .enyo-button.enyo-button-down img.shuffle,
+.slideshow .enyo-button.enyo-button-down img.pause,
+.slideshow .enyo-button.enyo-button-down img.timer {
+    margin-top: -35px;
+}

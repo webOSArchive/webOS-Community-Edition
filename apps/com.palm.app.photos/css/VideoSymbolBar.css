@@ -1,0 +1,50 @@
+.video-symbol {
+    position: absolute;
+    background: url(../images/video-overlay.png) repeat-x;
+}
+
+.video-symbol-bar-top {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 29px;
+}
+
+.video-symbol-bar-bottom {
+    bottom: 0px;
+    left: 0;
+    right: 0;
+    height: 29px;
+	line-height:29px;
+	z-index: 20;  /* greater than "video-symbol-bar-bottom" */
+}
+
+.AlbumGridThumb .video-symbol-bar-bottom {
+	bottom: 5px;
+}
+
+.video-symbol .bar-left {
+    float: left;
+}
+
+.bar-left .bar-left-icon {
+	margin-left: 9px;
+}
+
+.video-symbol .bar-label {
+    /* width: do not set width, as it is calculated dynamically */
+	padding: 0px 10px 0 5px;
+    font-size: 12px;
+    font-weight: bold;
+    color: #ffffff;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.video-symbol .bar-right {
+    float: right;
+	padding-right:10px;
+    font-size: 12px;
+    color: #ffffff;
+}

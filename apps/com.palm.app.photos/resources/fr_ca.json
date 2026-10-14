@@ -1,0 +1,11 @@
+{
+	"Are you sure you want to delete these #{itemCount} images?": "Voulez-vous vraiment supprimer ces #{itemCount} images?",
+	"Are you sure you want to delete these #{itemCount} items?": "Voulez-vous vraiment supprimer ces #{itemCount} éléments?",
+	"Are you sure you want to delete these #{itemCount} videos?": "Voulez-vous vraiment supprimer ces #{itemCount} vidéos?",
+	"Are you sure you want to delete this album?": "Voulez-vous vraiment supprimer cet album?",
+	"Are you sure you want to delete this image?": "Voulez-vous vraiment supprimer cette image?",
+	"Are you sure you want to delete this stuff?": "Voulez-vous vraiment supprimer cela?",
+	"Are you sure you want to delete this video?": "Voulez-vous vraiment supprimer cette vidéo?",
+	"Get started with media on your device:": "Commencer à utiliser les supports sur votre appareil :",
+	"Photos & Videos": "Photos et vidéos"
+}

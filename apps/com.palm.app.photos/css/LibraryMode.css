@@ -1,0 +1,135 @@
+/******* Library panel header icon position ********/
+.LibraryMode .PanelHeader .library-navigation-icon-20x20 {
+	margin: 17px 7px 0 5px;
+}
+
+
+/*Aligning header title to position center*/
+.LibraryMode .PanelHeader:first-child .enyo-hflexbox div:nth-child(2) {
+	margin: 0 auto;	
+}
+/* styling to get the bottom border for the panel header for library mode $$repeating in albumMode.css$$*/
+.LibraryMode .PanelHeader:first-child {
+	/* background: url(../images/header-tile.png) top left repeat-x; */
+	-webkit-border-image: url(../images/header-tile.png) 5 repeat repeat;
+}
+
+
+/* to get the stacked cards effect for the album grid in Library mode*/
+.LibraryMode .AlbumGridThumbImg {
+		-webkit-border-image: url(../images/stack-9tile.png) 19 17 19 13;
+		border-width: 18px 15px 15px 15px;
+		margin: auto;
+		position: absolute; 
+		top: 0; 
+		bottom: 0; 
+		left: 0; 
+		right: 0;
+}
+
+/*** CSS Not Used ****/
+
+
+/*.AlbumStrip {
+	margin: 10px 0 35px 0;
+}*/
+
+/*.AlbumStripScroller .enyo-scroller-scrollee {
+	/* padding: 25px 0 25px 5px;
+	height: 154px; */
+/*}
+
+.AlbumStripHeader {
+	margin: 0 0 5px 0;
+	text-align: center;
+	position: static;
+	line-height:22px;
+	height: 40px;
+}
+
+.AlbumStripTitle {
+	font-size: 18px;
+	color: #fff; 
+	margin-left: 5px;
+	position: static;
+	overflow:hidden;
+	text-overflow:ellipsis;
+	white-space:nowrap;
+	max-width:300px;
+}
+/*.AlbumStripIcon {
+	width: 30px;
+	height: 30px; 
+	margin-bottom: -4px;
+	padding: 0;
+	background-repeat:no-repeat;
+}
+
+.AlbumStripIcon.local_class {
+	background-position: 0px 3px;
+}
+
+.AlbumStripIcon:not(.local_class) {
+	background-position: 5px 10px;
+}
+
+.AlbumStripInfo {
+	font-size: 12pt;
+	margin: 0px 5px;
+	color: #71716E;
+	position: static;
+}
+
+.AlbumStripInfoRecent {
+	font-size: 15px;
+	margin: 0px 5px;
+	color: #bfbfbf;
+	position: static;
+}*/
+
+/*.AlbumStripThumb {
+	border: 2px solid #fff;
+	position: relative;
+	padding: 0px;
+	margin-right:6px;
+	height: 140px;*/
+	/* -webkit-box-shadow: 0px 3px 2px 0px #000; */
+}
+
+/*.AlbumStrip .viewAlbum {
+	font-size: 14px;
+}
+
+.AlbumStrip .enyo-menuitem-arrow {
+	height:24px;
+	background-position: 0 5px;
+}
+
+.AlbumStripThumb .video-symbol .bar-left .bar-left-icon {
+	-webkit-border-image: none;
+
+}
+
+.position-static {
+	position: static;
+}
+
+.AlbumStripScroller {
+	/* IMPORTANT!!!  The height must equal the total height of 
+	   an .AlbumStripThumb (height + top-padding + bottom-padding + 
+	   top-border + bottom-border), otherwise things won't look right.
+	   This is a workaround because the scroller isn't automatically
+	   resizing properly. */
+/*	height: 185px;
+}
+*/
+/*
+DEFINED IN NonCssParams.js
+.AlbumStripThumb img {
+	height: 140px;
+}
+/*#ui_libraryMode_bottomPanel {
+	height: 54px;
+}*/
+
+

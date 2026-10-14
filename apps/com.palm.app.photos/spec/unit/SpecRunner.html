@@ -1,0 +1,79 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+  "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+  <title>Jasmine Spec Runner</title>
+
+  <link rel="shortcut icon" type="image/png" href="lib/jasmine-1.1.0/jasmine_favicon.png">
+
+  <link rel="stylesheet" type="text/css" href="lib/jasmine-1.1.0/jasmine.css">
+  <script type="text/javascript" src="lib/jasmine-1.1.0/jasmine.js"></script>
+  <script type="text/javascript" src="lib/jasmine-1.1.0/jasmine-html.js"></script>
+
+  <!-- specific scripts for code coverage -->
+  <script type="text/javascript" src="http://localhost:8080?bunker=true"></script>
+  <script type="text/javascript" src="lib/socket.io.js"></script>
+  <script type="text/javascript" src="lib/cover.js"></script>
+
+  <!-- include source files here... -->
+  <script src="/usr/palm/frameworks/enyo/0.10/framework/enyo.js" launch="nodebug&nobridge" type="text/javascript"></script>
+  <script type="text/javascript" src="spec/PlayerSpec.js"></script>
+
+  <!-- include spec files here... -->
+  	<script type="text/javascript" src="source/Spec_Album.js"></script>
+	<script type="text/javascript" src="source/Spec_ModelViewer.js"></script>
+	<script type="text/javascript" src="source/Spec_MojoDbService.js"></script>
+	<script type="text/javascript" src="source/Spec_AlbumGridViewSelection.js"></script>
+	<script type="text/javascript" src="source/Spec_OrderedRegistry.js"></script>
+	<script type="text/javascript" src="source/Spec_CapabilitiesFetcher.js"></script>
+	<script type="text/javascript" src="source/Spec_DbImageView.js"></script>
+
+	<script type="text/javascript" src="source/Spec_SlideshowPlayList.js"></script>
+
+  <script type="text/javascript">
+    (function() {
+      // use socket.io to communicate with server
+      var socket = io.connect('http://localhost');
+      var jasmineEnv = jasmine.getEnv();
+      jasmineEnv.updateInterval = 1000;
+
+      var trivialReporter = new jasmine.TrivialReporter();
+
+      // pass the super function to a different method
+      trivialReporter.superReportRunnerResults = trivialReporter.reportRunnerResults;
+
+      // override the reportRunnerResults method so we can emit tests completed event back to node
+      trivialReporter.reportRunnerResults = function (runner) {
+        this.superReportRunnerResults(runner);
+
+        // emit the stack
+        socket.emit('tests completed', EventEmitter.stack);
+      };
+
+      jasmineEnv.addReporter(trivialReporter);
+
+      jasmineEnv.specFilter = function(spec) {
+        return trivialReporter.specFilter(spec);
+      };
+
+      var currentWindowOnload = window.onload;
+
+      window.onload = function() {
+        if (currentWindowOnload) {
+          currentWindowOnload();
+        }
+        execJasmine();
+      };
+
+      function execJasmine() {
+        jasmineEnv.execute();
+      }
+
+    })();
+  </script>
+
+</head>
+
+<body style="overflow:auto">
+</body>
+</html>

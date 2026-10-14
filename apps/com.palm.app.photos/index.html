@@ -1,0 +1,35 @@
+<!doctype html>
+<html>
+<head>
+    <title>PhotoAppLauncher</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="viewport" content="width=device-width initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="/usr/palm/frameworks/enyo/0.10/framework/enyo.js" launch="nodebug" type="text/javascript"></script> 
+    <script type="text/javascript">
+        // enyo does not release its resources when it is run on desktop browsers, which recalls
+        // the old window instances from the previous session on page refresh/reload.  The following
+        // piece of code clears out enyo's left-over windows before each page reload running Safari on
+        // desktop making sure that no left-over windows are recalled on page reload.
+        if (!window.PalmSystem) {
+            var windows = enyo.windows.getWindows(), w;
+            for (w in windows) if (windows.hasOwnProperty(w)) {
+                enyo.windows.manager.removeWindow(windows[w]);
+            }
+        };
+    </script>
+</head>
+<body>
+
+<script type="text/javascript">
+(function () {
+    var photoAppLauncher = new PhotoAppLauncher();
+    enyo.applicationRelaunchHandler = function (params) {      // attach relaunch handler
+        photoAppLauncher.applicationRelaunchHandler(params);
+    };
+    photoAppLauncher.startup();
+})();
+</script>
+
+</body>
+</html>
+

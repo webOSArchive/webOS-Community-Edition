@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+	<title>Slideshow</title>
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="viewport" content="width=device-width initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<script src="/usr/palm/frameworks/enyo/0.10/framework/enyo.js" launch="nodebug&nobridge" type="text/javascript"></script> 
+</head>
+<body>
+
+<script type="text/javascript">
+
+	var app = enyo.create({ name: "slideshow", kind: "SlideshowMode", exhibitionMode: true });
+	window.app = app;
+	app.renderInto(document.body);
+	app.enterSlideshowMode();
+	
+</script>
+</body>
+</html>
+

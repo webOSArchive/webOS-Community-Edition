@@ -1,0 +1,27 @@
+.PanelHeader {
+	margin: 0;
+	padding: 0;
+	height: 54px;
+	line-height: 55px;
+	font-size: 16px;
+	font-weight: normal;
+	color: #fff;
+	border-width:1px 0px;
+}
+
+.navPanel.PanelHeader {
+ 	-webkit-border-image: url(../images/header-tile.png) 5 repeat repeat;
+}
+ 
+.stripview-header-controls {
+
+	padding: 8px 23px 0 0;
+}
+
+.gridview-header-controls {
+	padding: 8px 23px 0 0;
+}
+
+.albumMode .gridview-header-controls {
+	width:10px;
+}

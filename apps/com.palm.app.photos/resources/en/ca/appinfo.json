@@ -1,0 +1,24 @@
+{
+	"dockMode": true,
+	"exhibitionMode": true,
+	"exhibitionModeOptions": {
+		"title": "Photos"
+	},
+	"icon": "../../../icon.png",
+	"id": "com.palm.app.photos",
+	"keywords": [
+		"pictures",
+		"photos",
+		"videos"
+	],
+	"main": "../../../index.html",
+	"noWindow": true,
+	"removable": false,
+	"splashicon": "../../../icon-256x256.png",
+	"title": "Photos & Videos",
+	"touchstoneMode": "enabled",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "HP",
+	"version": "3.0.8001"
+}

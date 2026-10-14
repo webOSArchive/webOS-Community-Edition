@@ -1,0 +1,60 @@
+/* bottom toolbar icon placement styling*/
+.image-view-button {
+	margin: -5px 18px -3px 18px;
+}
+/* full screen mode some images have some background color to set that to black this style is used*/
+.PictureMode {
+	background-color: #000;	
+}
+/*Picture mode bottom toolbar uses a transparent background*/
+.PictureModeTopControls {
+	background: transparent url(../images/media-toolbar.png) repeat-x;
+	height: 54px;
+	width: 100%;
+	padding: 5px 5px 5px 5px;
+	position: absolute;
+	left: 0;
+	bottom: 0px;
+	-webkit-transition: top 0.15s linear;
+}
+
+.PictureModeTopControls .enyo-button-dark {
+	padding-left:25px;
+	background: url(../images/dark-back-arrow.png) 5px 3px no-repeat;
+}
+.backButtonLabel{
+	margin:-3px 0 0 0;
+}
+.TopControlsHide {
+	bottom: -54px;
+}
+/*Menu list left most icon on picture mode*/
+.PictureMode .more-menu {
+	position: absolute;
+	border-radius: 4px;
+	background-color: rgba(255,255,250,0.95);
+	z-index: 1010;
+}
+
+.PictureMode .more-menu-item {
+	position: relative;
+	border-top: 1px solid #c0c0c0;
+	height: 16px;
+	padding: 10px 6px;
+	font-size: 16px;
+	color: #000000;
+	margin-left: 10px;
+	margin-right: 10px;
+}
+
+.PictureMode .more-menu-item:first-child {
+    border-top: none;
+}
+
+.PictureMode .show {
+    display: block;
+}
+
+.PictureMode .hide {
+    display: none;
+}
