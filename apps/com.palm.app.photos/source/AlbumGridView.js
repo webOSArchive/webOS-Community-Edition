@@ -95,7 +95,9 @@ enyo.kind({
 //			onCellMouseHold: 'gridCellMouseHold',
 //			onCellMouseRelease: 'gridCellMouseRelease',
 		},
-		{name: 'selection', kind: 'PhotoSelection', onChange: 'selectionChanged'}
+		{name: 'selection', kind: 'PhotoSelection', onChange: 'selectionChanged'},
+		{name: 'videosLauncher', kind: 'PalmService', service: 'palm://com.palm.applicationManager/',
+			method: 'launch', onFailure: 'videosLaunchFailed'}
 	],
 	create: function() {
 		this.inherited(arguments);
@@ -304,7 +306,8 @@ enyo.kind({
 			// other apps, so everything the player needs travels in the launch params.
 			if (dbEntry.mediaType === "video" && dbEntry.path) {
 				var tokens = dbEntry.path.split(/\//);
-				new enyo.PalmService({service: "palm://com.palm.applicationManager/", method: "launch"}).call({
+				this.pendingVideo = dbEntry;
+				this.$.videosLauncher.call({
 					id: "com.palm.app.videos",
 					params: {
 						target: dbEntry.path,
@@ -323,6 +326,16 @@ enyo.kind({
 			// So that we can update just the row containing the cell that we clicked on.
 			this.justSelectedCell = {row: row, column: column};
 			this.$.selection.toggle(dbEntry);
+		}
+	},
+	// Without the Videos app (a standalone Photos install), play the video in the
+	// carousel's own DbViewVideo, as stock did.
+	videosLaunchFailed: function(inSender, inResponse) {
+		var dbEntry = this.pendingVideo;
+		this.pendingVideo = null;
+		console.warn("could not launch com.palm.app.videos (" + (inResponse && inResponse.errorText) + "); using the built-in player");
+		if (dbEntry && !this.selecting) {
+			this.doPictureSelected(dbEntry.albumId, dbEntry._id, dbEntry.mediaType, dbEntry.type);
 		}
 	},
 	gridCellDragStart: function() {
