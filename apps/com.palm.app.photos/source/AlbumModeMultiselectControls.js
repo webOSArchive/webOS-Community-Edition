@@ -178,6 +178,14 @@ enyo.kind({
 			}
 			popupContent.setContent(localizedContent);
 		}
+		// webos-synergy-revival: a cloud album (has accountId) deletes from the account itself,
+		// not just the local copy - override with a clear permanent+remote warning.
+		var alb = this.doGetCurrentAlbum && this.doGetCurrentAlbum();
+		if (alb && alb.accountId) {
+			popupContent.setContent(totalCount === 1
+				? $L("This permanently deletes the selected photo from your cloud account. It can't be undone.")
+				: $L("This permanently deletes the selected photos from your cloud account. It can't be undone."));
+		}
 		popup.openAtCenter();
 	},
 	// User confirmed deletion operation.

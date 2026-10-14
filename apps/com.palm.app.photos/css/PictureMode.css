@@ -25,6 +25,17 @@
 .backButtonLabel{
 	margin:-3px 0 0 0;
 }
+/* filename shown in the toolbar's centre spacer. No text-shadow: it does not
+   render in this WebKit -- the dark toolbar background provides the contrast. */
+.pictureFileName {
+	text-align: center;
+	color: #ffffff;
+	font-size: 20px;
+	line-height: 44px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
 .TopControlsHide {
 	bottom: -54px;
 }

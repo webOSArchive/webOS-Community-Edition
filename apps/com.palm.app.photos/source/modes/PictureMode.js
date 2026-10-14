@@ -24,7 +24,12 @@ enyo.kind({
 				components:[{name:"backButtonLabel",className:"backButtonLabel enyo-text-ellipsis",kind:"enyo.Control"}],
 				onclick: 'leavePictureMode',
 			},
-			{ name: 'spacer', flex: 1},
+			// The spacer between the back button and the tool buttons is dead space;
+			// it is where the filename goes. Videos already show their own basename in
+			// the video control bar (DbViewVideo), so this stays empty for them.
+			{ name: 'spacer', flex: 1, components: [
+				{ name: 'fileNameLabel', className: 'pictureFileName enyo-text-ellipsis' }
+			]},
 			{ name: 'slideshowButton', kind: 'ToolButton', icon: "images/icn-slideshow.png",className: 'image-view-button',  onclick: 'clickSlideshow'
 			},
 			{ name: 'shareButton', kind: 'ToolButton',  icon: "images/icn-share-contact.png", className: 'image-view-button',  onclick: 'clickShare'
@@ -304,7 +309,14 @@ enyo.kind({
 		popup.validateComponents();
 
 		var popupContent = this.$.deletePhotosPopupContent;
-		if (dbEntry.mediaType === 'video') {
+		// webos-synergy-revival: a cloud photo (has accountId) is deleted from the account
+		// itself, not just the local copy - warn that it's permanent and remote.
+		if (dbEntry.accountId) {
+			popupContent.setContent(dbEntry.mediaType === 'video'
+				? $L("This permanently deletes the video from your cloud account. It can't be undone.")
+				: $L("This permanently deletes the photo from your cloud account. It can't be undone."));
+		}
+		else if (dbEntry.mediaType === 'video') {
 			popupContent.setContent($L("Are you sure you want to delete this video?"));
 		}
 		else {
@@ -394,6 +406,27 @@ enyo.kind({
 		if (im.center && im.center.dbEntry) {
 			this.updateShownControls(im.center.dbEntry.mediaType, im.center.dbEntry.type);
 		}
+		this.updateFileNameLabel(im.center && im.center.dbEntry);
+	},
+
+	/**
+	 * Shows the file's basename in the toolbar. Photo db records carry no display
+	 * name -- `name` on these records is the ALBUM name -- so it comes from `path`,
+	 * the same way DbViewVideo derives a video's title.
+	 *
+	 * @param dbEntry the record for the picture now shown, or a falsy value.
+	 */
+	updateFileNameLabel: function (dbEntry) {
+		if (!this.$.fileNameLabel) { return; }
+		// videos already show their basename in the video control bar
+		if (!dbEntry || !dbEntry.path || dbEntry.mediaType === "video") {
+			this.$.fileNameLabel.setContent("");
+			return;
+		}
+		var tokens = dbEntry.path.split(/\//);
+		// escaped: a filename is user-controlled text going into innerHTML
+		this.$.fileNameLabel.setContent(
+			enyo.string.escapeHtml(tokens[tokens.length - 1]));
 	},
 
 

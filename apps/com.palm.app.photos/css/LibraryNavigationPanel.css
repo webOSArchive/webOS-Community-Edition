@@ -180,3 +180,54 @@
 .enyo-sliding {
  	/* -webkit-box-shadow: #000 0px 0px 12px !important; */
 }
+
+/* webos-synergy-revival: normalized (equal-footprint) Library icons derived from the account
+   artwork - each trimmed + centered so every provider renders at the same size. */
+.library-navigation-icon-boxnet,
+.library-navigation-icon-dropbox,
+.library-navigation-icon-kdrive,
+.library-navigation-icon-onedrive,
+.library-navigation-icon-yandexdisk,
+.library-navigation-icon-mega,
+.library-navigation-icon-koofr,
+.library-navigation-icon-hidrive {
+	height: 40px;
+	width: 40px;
+}
+.library-navigation-icon-boxnet,
+.library-navigation-icon-20x20-boxnet,
+.library-navigation-icon-dropbox,
+.library-navigation-icon-20x20-dropbox,
+.library-navigation-icon-kdrive,
+.library-navigation-icon-20x20-kdrive,
+.library-navigation-icon-onedrive,
+.library-navigation-icon-20x20-onedrive,
+.library-navigation-icon-yandexdisk,
+.library-navigation-icon-20x20-yandexdisk,
+.library-navigation-icon-mega,
+.library-navigation-icon-20x20-mega,
+.library-navigation-icon-koofr,
+.library-navigation-icon-20x20-koofr,
+.library-navigation-icon-hidrive,
+.library-navigation-icon-20x20-hidrive {
+	background-repeat: no-repeat;
+	background-position: center;
+	-webkit-background-size: contain;
+	background-size: contain;
+}
+.library-navigation-icon-boxnet { background-image: url(../images/syn-boxnet.png); }
+.library-navigation-icon-20x20-boxnet { background-image: url(../images/syn-boxnet.png); }
+.library-navigation-icon-dropbox { background-image: url(../images/syn-dropbox.png); }
+.library-navigation-icon-20x20-dropbox { background-image: url(../images/syn-dropbox.png); }
+.library-navigation-icon-kdrive { background-image: url(../images/syn-kdrive.png); }
+.library-navigation-icon-20x20-kdrive { background-image: url(../images/syn-kdrive.png); }
+.library-navigation-icon-onedrive { background-image: url(../images/syn-onedrive.png); }
+.library-navigation-icon-20x20-onedrive { background-image: url(../images/syn-onedrive.png); }
+.library-navigation-icon-yandexdisk { background-image: url(../images/syn-yandexdisk.png); }
+.library-navigation-icon-20x20-yandexdisk { background-image: url(../images/syn-yandexdisk.png); }
+.library-navigation-icon-mega { background-image: url(../images/syn-mega.png); }
+.library-navigation-icon-20x20-mega { background-image: url(../images/syn-mega.png); }
+.library-navigation-icon-koofr { background-image: url(../images/syn-koofr.png); }
+.library-navigation-icon-20x20-koofr { background-image: url(../images/syn-koofr.png); }
+.library-navigation-icon-hidrive { background-image: url(../images/syn-hidrive.png); }
+.library-navigation-icon-20x20-hidrive { background-image: url(../images/syn-hidrive.png); }

@@ -299,6 +299,24 @@ enyo.kind({
 	},
 	gridCellClick: function(inGrid, inSender, row, column, dbEntry) {
 		if (!this.selecting) {
+			// webOS CE: videos play in the standalone Videos app (com.palm.app.videos),
+			// not in the carousel's DbViewVideo. The db8 media kinds are not readable by
+			// other apps, so everything the player needs travels in the launch params.
+			if (dbEntry.mediaType === "video" && dbEntry.path) {
+				var tokens = dbEntry.path.split(/\//);
+				new enyo.PalmService({service: "palm://com.palm.applicationManager/", method: "launch"}).call({
+					id: "com.palm.app.videos",
+					params: {
+						target: dbEntry.path,
+						videoTitle: tokens[tokens.length - 1],
+						initialPos: dbEntry.lastPlayTime || 0,
+						videoId: dbEntry._id,
+						duration: dbEntry.duration,
+						launchedFrom: "com.palm.app.photos"
+					}
+				});
+				return;
+			}
 			this.doPictureSelected(dbEntry.albumId, dbEntry._id, dbEntry.mediaType, dbEntry.type);
 		}
 		else {
