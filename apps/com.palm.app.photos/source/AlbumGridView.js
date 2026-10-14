@@ -301,7 +301,7 @@ enyo.kind({
 	},
 	gridCellClick: function(inGrid, inSender, row, column, dbEntry) {
 		if (!this.selecting) {
-			// webOS CE: videos play in the standalone Videos app (com.palm.app.videos),
+			// webOS CE: videos play in the standalone Video Player app (com.palm.app.videos),
 			// not in the carousel's DbViewVideo. The db8 media kinds are not readable by
 			// other apps, so everything the player needs travels in the launch params.
 			if (dbEntry.mediaType === "video" && dbEntry.path) {
@@ -328,7 +328,7 @@ enyo.kind({
 			this.$.selection.toggle(dbEntry);
 		}
 	},
-	// Without the Videos app (a standalone Photos install), play the video in the
+	// Without the Video Player app (a standalone Photos install), play the video in the
 	// carousel's own DbViewVideo, as stock did.
 	videosLaunchFailed: function(inSender, inResponse) {
 		var dbEntry = this.pendingVideo;
