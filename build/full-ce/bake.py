@@ -2029,20 +2029,35 @@ def main():
         # apps/com.palm.app.photos and reaches the build through its feed ipk in
         # PatchOrReplace (scripts/photos-app.sh release). It carries the Synergy
         # cloud-source integration, the exhibition slideshow clock, the filename in
-        # the single-photo toolbar and the hand-off to the CE Videos app -- all
-        # formerly patches applied here. Swap it in for the stock tree; it stays a
+        # the single-photo toolbar, the hand-off to the CE Videos app (formerly
+        # patches applied here) and rotate/crop. Swap it in for the stock tree; it stays a
         # staged PRELOAD like the Calendar, under the same bump_app_version() rule
         # (the staged ipk's filename, control Version and manifest.json stay
         # 3.0.8001; only appinfo says 3.2.0).
+        #
+        # The ipk also carries org.webosarchive.photos.service (the file writer behind
+        # the photo editor) and the packageinfo.json that names it. The preload install
+        # goes through com.palm.appinstaller, which registers a service from those two
+        # -- the QuickOffice preload's layout -- so they ride in the staged ipk as well.
         ph = ipk_extract_data(IPK["photos"], os.path.join(tmp, "photos"))
-        src = os.path.join(ph, "usr/palm/applications/com.palm.app.photos")
-        for need in ("appinfo.json", "index.html", "source/AlbumGridView.js"):
-            if not os.path.exists(os.path.join(src, need)):
+        palm = os.path.join(ph, "usr/palm")
+        src = os.path.join(palm, "applications/com.palm.app.photos")
+        for need in ("applications/com.palm.app.photos/appinfo.json",
+                     "applications/com.palm.app.photos/source/AlbumGridView.js",
+                     "services/org.webosarchive.photos.service/services.json",
+                     "packages/com.palm.app.photos/packageinfo.json"):
+            if not os.path.exists(os.path.join(palm, need)):
                 sys.exit(f"ERROR: {os.path.basename(IPK['photos'])}: payload has no "
-                         f"com.palm.app.photos/{need}")
+                         f"usr/palm/{need}")
         shutil.rmtree(approot)
         shutil.copytree(src, approot, symlinks=True)
-        log(f"  app tree replaced from {os.path.basename(IPK['photos'])}")
+        staged_palm = os.path.dirname(os.path.dirname(approot))
+        for sub in ("services/org.webosarchive.photos.service", "packages/com.palm.app.photos"):
+            dst = os.path.join(staged_palm, sub)
+            if os.path.exists(dst):
+                sys.exit(f"ERROR: stock Photos staged ipk already has usr/palm/{sub}")
+            shutil.copytree(os.path.join(palm, sub), dst, symlinks=True)
+        log(f"  app tree + photo-editor service from {os.path.basename(IPK['photos'])}")
 
     def edit_clock(approot):
         # The only CE change to the Clock ipk: its declared version. CE's clock

@@ -1,0 +1,9 @@
+{
+	"app": "com.palm.app.photos",
+	"id": "com.palm.app.photos",
+	"loc_name": "Photos & Videos",
+	"package_format_version": 2,
+	"services": ["org.webosarchive.photos.service"],
+	"vendor": "webOS Archive",
+	"version": "@VERSION@"
+}

@@ -14,7 +14,7 @@ enyo.kind({
 	isPictureModeActive: false,
 	components: [
 		{ name: 'imageView', kind: 'DbImageView', debugging: false, flex: 1, onclick: 'toggleControls',
-			onChangePicture: 'pictureChanged', onSwipe: 'onSwipeHandler', onLeave: 'leavePictureMode' },
+			onChangePicture: 'pictureChanged', onSwipe: 'onSwipeHandler', onLeave: 'imageViewLeave' },
 		{ name: 'topControls', kind: 'HFlexBox', className: 'PictureModeTopControls', components: [
 			{ name: 'backButton',
 				kind: 'Button',
@@ -37,6 +37,9 @@ enyo.kind({
 			{ name: 'commentsButton', kind: 'ToolButton', icon: "images/icn-comments.png", className: 'image-view-button',  onclick: 'toggleComments'
 			},
 			{ name: 'printButton', kind: 'ToolButton', icon: "images/icn-print.png", className: 'image-view-button', onclick: 'clickPrint'
+			},
+			// webOS CE: rotate and crop (PhotoEditor); only for pictures stored on the device
+			{ name: 'editButton', kind: 'ToolButton', icon: "images/icn-edit.png", className: 'image-view-button', onclick: 'clickEdit'
 			},
 			{ name: 'deleteButton', kind: 'ToolButton', icon: "images/icn-delete.png",className: 'image-view-button', onclick: 'openDeletePopup'
 			},
@@ -102,6 +105,7 @@ enyo.kind({
 			{ name: 'putCommentService', method: 'facebookAddPhotoComments', onSuccess: 'putCommentSuccess', onFailure: 'putCommentFailure'}
 		]},
 		{ name: "msgDialog", kind: "MessageDialog", message: $L("Please download more photos to play slideshow.") },
+		{ name: 'photoEditor', kind: 'PhotoEditor', onClose: 'editorClosed' },
 		{ name: 'showControlsGroup', kind: 'TaskGroup' },
 		{ name: 'hideControlsGroup', kind: 'TaskGroup' }
 	],
@@ -140,6 +144,7 @@ enyo.kind({
 	resize: function() {
 		this.$.imageView.resize();
 		this.alignMoreMenu();
+		this.$.photoEditor.resize();
 	},
 	viewPictureInAlbum: function(pictureId, albumId, mediaType, type) {
 		this.updateShownControls(mediaType, type);
@@ -202,6 +207,7 @@ enyo.kind({
 		this.$.slideshowButton.show();
 		this.$.printButton.show();
 		this.$.setWallpaperMenuItem.show();
+		this.$.editButton.setShowing(this.$.photoEditor.canEdit(this.currentPhotoEntry()));
 	},
 	showControlsApplicableToVideo: function (type) {
 		var fn = function(capabilities) {
@@ -212,6 +218,7 @@ enyo.kind({
 
 		this.$.slideshowButton.hide();
 		this.$.printButton.hide();
+		this.$.editButton.hide();
 		this.$.commentsButton.hide();
 		this.$.setWallpaperMenuItem.hide();
 	},
@@ -454,6 +461,39 @@ enyo.kind({
 		catch(err) {
 			console.log('Could not open print-dialog because: ' + err);
 		}
+	},
+	// ---------- Editing (webOS CE) -----------------------------------------------------
+
+	clickEdit: function() {
+		var dbEntry = this.currentPhotoEntry();
+		if (!this.$.photoEditor.canEdit(dbEntry)) { return; }
+		this.$.hideControlsGroup.cancel();
+		this.closeComments();
+		if (this.isMoreMenuShown) { this.toggleMoreMenu(); }
+		this.$.photoEditor.openEditor(dbEntry);
+	},
+	// The image view leaves full-screen when its picture's record disappears -- which
+	// replacing a photo does (the indexer drops the record and makes a new one). Hold
+	// that while the editor is open; editorClosed() decides once the save is done.
+	imageViewLeave: function() {
+		if (this.$.photoEditor.showing) {
+			this.leaveAfterEdit = true;
+			return;
+		}
+		this.leavePictureMode();
+	},
+	editorClosed: function(inSender, inResult) {
+		var leave = this.leaveAfterEdit;
+		this.leaveAfterEdit = false;
+		// Saving re-indexes the file under a new record: show it (the copy, or the
+		// replaced original) once the indexer has made it.
+		if (inResult && inResult.pictureId) {
+			this.$.imageView.viewPicture(inResult.pictureId);
+		} else if (leave) {
+			this.leavePictureMode();
+			return;
+		}
+		this.$.showControlsGroup.execute();
 	},
 	clickMore: function() {
 		this.$.hideControlsGroup.cancel();

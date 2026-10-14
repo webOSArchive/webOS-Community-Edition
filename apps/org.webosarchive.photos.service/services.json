@@ -1,0 +1,16 @@
+{
+	"id": "org.webosarchive.photos.service",
+	"description": "Saves photos edited in Photos & Videos (webOS CE)",
+	"commandTimeout": 60,
+	"engine": "node",
+	"services": [{
+		"name": "org.webosarchive.photos.service",
+		"description": "Saves photos edited in Photos & Videos",
+		"assistant": "PhotoEditService",
+		"commands": [
+			{ "name": "writeChunk", "assistant": "WriteChunkAssistant", "public": true },
+			{ "name": "commit", "assistant": "CommitAssistant", "public": true },
+			{ "name": "discard", "assistant": "DiscardAssistant", "public": true }
+		]
+	}]
+}

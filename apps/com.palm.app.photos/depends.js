@@ -49,6 +49,9 @@ enyo.depends(
 	"source/modes/LibraryMode.js", "css/LibraryMode.css",
 	"source/AlbumModeMultiselectControls.js",
 	"source/modes/AlbumMode.js", "css/AlbumMode.css",
+	"source/base/JpegExif.js",
+	"source/base/PhotoEditGeometry.js",
+	"source/widgets/PhotoEditor.js", "css/PhotoEditor.css",
 	"source/modes/PictureMode.js", "css/PictureMode.css",
 	"source/modes/SlideshowMode.js", "css/SlideshowMode.css",
 	

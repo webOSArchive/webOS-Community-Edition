@@ -1,0 +1,139 @@
+/* webOS CE photo editor (rotate and crop), over PictureMode */
+.PhotoEditor {
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #000;
+	/* above PictureMode, below enyo's popups (120 and up) so its menu and dialogs show */
+	z-index: 110;
+}
+.PhotoEditorStage {
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 64px;  /* the toolbar: 54px + its 5px padding top and bottom */
+	overflow: hidden;
+}
+.PhotoEditorCanvas {
+	position: absolute;
+}
+/* the toolbar is PictureMode's own (PictureModeTopControls), never auto-hidden here */
+.PhotoEditorToolbar {
+	z-index: 2;
+}
+.PhotoEditorTextButton {
+	min-width: 90px;
+	margin-top: 2px;
+}
+/* PictureMode's dark button draws a back arrow; these are plain */
+.PictureModeTopControls .PhotoEditorTextButton.enyo-button-dark {
+	padding-left: 10px;
+	background-image: none;
+}
+
+/* the picture outside the crop, dimmed */
+.PhotoEditorShade {
+	position: absolute;
+	background-color: rgba(0, 0, 0, 0.6);
+}
+.PhotoEditorFrame {
+	position: absolute;
+	border: 2px solid rgba(255, 255, 255, 0.9);
+	-webkit-box-sizing: border-box;
+	-webkit-box-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+}
+/* rule-of-thirds guides, only while the crop is being dragged */
+.PhotoEditorThird {
+	position: absolute;
+	display: none;
+	background-color: rgba(255, 255, 255, 0.45);
+}
+.PhotoEditorFrame.dragging .PhotoEditorThird {
+	display: block;
+}
+.PhotoEditorThird.v1, .PhotoEditorThird.v2 { top: 0; bottom: 0; width: 1px; }
+.PhotoEditorThird.v1 { left: 33.33%; }
+.PhotoEditorThird.v2 { left: 66.66%; }
+.PhotoEditorThird.h1, .PhotoEditorThird.h2 { left: 0; right: 0; height: 1px; }
+.PhotoEditorThird.h1 { top: 33.33%; }
+.PhotoEditorThird.h2 { top: 66.66%; }
+
+/* corner handles: a white L on each corner, inside a finger-sized hit area */
+.PhotoEditorHandle {
+	position: absolute;
+	width: 48px;
+	height: 48px;
+	z-index: 2;
+}
+.PhotoEditorHandle:after {
+	content: "";
+	position: absolute;
+	width: 22px;
+	height: 22px;
+	border: 0 solid #fff;
+}
+.PhotoEditorHandle.tl { left: -26px; top: -26px; }
+.PhotoEditorHandle.tr { right: -26px; top: -26px; }
+.PhotoEditorHandle.bl { left: -26px; bottom: -26px; }
+.PhotoEditorHandle.br { right: -26px; bottom: -26px; }
+.PhotoEditorHandle.tl:after { left: 22px; top: 22px; border-left-width: 5px; border-top-width: 5px; }
+.PhotoEditorHandle.tr:after { right: 22px; top: 22px; border-right-width: 5px; border-top-width: 5px; }
+.PhotoEditorHandle.bl:after { left: 22px; bottom: 22px; border-left-width: 5px; border-bottom-width: 5px; }
+.PhotoEditorHandle.br:after { right: 22px; bottom: 22px; border-right-width: 5px; border-bottom-width: 5px; }
+
+/* edge handles: the middle of each side, with a short bar */
+.PhotoEditorEdge {
+	position: absolute;
+	z-index: 1;
+}
+.PhotoEditorEdge:after {
+	content: "";
+	position: absolute;
+	background-color: #fff;
+}
+.PhotoEditorEdge.t, .PhotoEditorEdge.b { left: 30px; right: 30px; height: 40px; }
+.PhotoEditorEdge.t { top: -22px; }
+.PhotoEditorEdge.b { bottom: -22px; }
+.PhotoEditorEdge.l, .PhotoEditorEdge.r { top: 30px; bottom: 30px; width: 40px; }
+.PhotoEditorEdge.l { left: -22px; }
+.PhotoEditorEdge.r { right: -22px; }
+.PhotoEditorEdge.t:after, .PhotoEditorEdge.b:after { left: 50%; width: 28px; margin-left: -14px; height: 5px; }
+.PhotoEditorEdge.t:after { top: 20px; }
+.PhotoEditorEdge.b:after { bottom: 20px; }
+.PhotoEditorEdge.l:after, .PhotoEditorEdge.r:after { top: 50%; height: 28px; margin-top: -14px; width: 5px; }
+.PhotoEditorEdge.l:after { left: 20px; }
+.PhotoEditorEdge.r:after { right: 20px; }
+
+/* loading / saving */
+.PhotoEditorBusy {
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	z-index: 3;
+	text-align: center;
+}
+.PhotoEditorBusy .enyo-spinner-large {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	margin: -64px 0 0 -64px;
+}
+.PhotoEditorBusyText {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 50%;
+	margin-top: 72px;
+	color: #fff;
+	font-size: 20px;
+}
+.PhotoEditorDialogText {
+	font-size: 16px;
+	margin-bottom: 10px;
+}
