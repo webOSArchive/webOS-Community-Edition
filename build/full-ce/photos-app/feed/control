@@ -1,0 +1,8 @@
+Package: com.palm.app.photos
+Version: @VERSION@
+Depends:
+Section: Utilities
+Architecture: all
+Maintainer: webOS Archive
+Description: Photos & Videos (webOS CE)
+Source: { "Type":"Application", "Feed":"WOSA Modernize", "Category":"Modernize", "LastUpdated":"@EPOCH@", "Title":"Photos & Videos (webOS CE)", "FullDescription":"The built-in Photos & Videos app, updated for webOS CE.<br><br>Exhibition mode shows the time and date over the slideshow, with a toolbar button to hide it, and remembers your slide timing between sessions. The single-photo toolbar shows the file's name. Videos open in the new CE video player, and cloud photo sources from Synergy Revival appear in the library.<br><br>Replaces the stock Photos & Videos in place. Restart Luna after installing.", "Changelog":"3.2.0: First release outside the image: exhibition clock and slide timing, filename in the photo toolbar, CE video player hand-off, Synergy Revival cloud sources.", "MinWebOSVersion":"3.0.0", "DeviceCompatibility":["TouchPad","Touchpad Go"], "PostInstallFlags":"RestartLuna", "PostUpdateFlags":"RestartLuna", "Icon":"http://stacks.webosarchive.org/feeds/modernize/ipkgs/assets/icons/photos.png" }

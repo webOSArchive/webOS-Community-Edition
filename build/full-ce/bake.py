@@ -247,6 +247,10 @@ IPK = {
     # scripts/contacts-app.sh release): the community 3.0.6701 Contacts plus
     # CE's on-device first launch. Baked as a rootfs app, like the Calculator.
     "contacts":    ati_ipk(POR, "com.palm.app.contacts"),
+    # the CE Photos & Videos 3.2.0 (apps/com.palm.app.photos, packaged by
+    # scripts/photos-app.sh release). Like the Calendar, its app tree replaces
+    # the one inside the stock staged preload ipk (see edit_photos).
+    "photos":      ati_ipk(POR, "com.palm.app.photos"),
     # woce-backup: a working Backup/Restore that stores on the device.
     # PatchOrReplace, not NewApps -- it takes over the stock
     # com.palm.app.backup id (the stock app is a dead UI over Palm's
@@ -2016,49 +2020,29 @@ def main():
         shutil.copy(os.path.join(QOI, "assets/toolbar-icon-refresh.png"),
                     os.path.join(approot, "images/"))
 
+    # Synergy Revival's photos-integration payload. Its app-side patches now live
+    # in apps/com.palm.app.photos; the SERVICE patches below still come from here.
     PHI = os.path.join(DSDIR, "photos-integration")
-    # CE-authored Photos changes (exhibition clock) — kept in this repo rather than
-    # in the Synergy payload, since they are unrelated to Synergy.
-    PEX = os.path.join(HERE, "photos-exhibition")
 
     def edit_photos(approot):
-        run_patch(approot, os.path.join(PHI, "patches/LibraryNavigationPanel.css.patch"))
-        # these two patches carry junk header paths ("a/photos-src/base/...
-        # (app) modes/..." / bare filenames) — target the files directly
-        run_patch(os.path.join(approot, "source/modes"),
-                  os.path.join(PHI, "patches/PictureMode.js.patch"),
-                  target="PictureMode.js")
-        run_patch(os.path.join(approot, "source"),
-                  os.path.join(PHI, "patches/AlbumModeMultiselectControls.js.patch"),
-                  target="AlbumModeMultiselectControls.js")
-        # Exhibition-mode slideshow clock (CE 3.1): time+date drawn in the corner of the
-        # slideshow, a toolbar button to show/hide it, and the slide interval + that choice
-        # persisted between dock sessions (stock reset the interval to 10s every time).
-        # These live in the CE tree, NOT in PHI: PHI is unpacked from the Synergy Revival
-        # ipk payload, and this work has nothing to do with Synergy.
-        # Both carry clean a/ b/ headers, so plain -p1 from approot like the CSS patch above.
-        run_patch(approot, os.path.join(PEX, "patches/SlideshowMode.css.patch"))
-        run_patch(approot, os.path.join(PEX, "patches/SlideshowMode.js.patch"))
-        # icon for the slide-timing button — the clock glyph it used to carry now belongs to
-        # the new show/hide toggle
-        # Show the file's basename in the single-photo toolbar. Photo db records have
-        # no display name (`name` on them is the ALBUM name), so it comes from `path`,
-        # the same way DbViewVideo already derives a video's title. Applied AFTER the
-        # synergy PictureMode patch above -- it is generated against that result.
-        run_patch(approot, os.path.join(PEX, "patches/PictureMode-filename.js.patch"))
-        run_patch(approot, os.path.join(PEX, "patches/PictureMode-filename.css.patch"))
-        # Tapping a video in the album grid launches the CE Videos app
-        # (com.palm.app.videos) instead of the carousel's DbViewVideo. The
-        # launch params carry path/title/lastPlayTime because db8 denies other
-        # apps the media kinds. Generated against stock AlbumGridView.js, which
-        # no other patch touches.
-        run_patch(approot, os.path.join(HERE, "videos-app/patches/AlbumGridView-videos-handoff.js.patch"))
-        shutil.copy(os.path.join(PEX, "assets/icn-slidetiming.png"),
-                    os.path.join(approot, "images/"))
-        for png in sorted(glob.glob(os.path.join(PHI, "assets/syn-*.png"))):
-            shutil.copy(png, os.path.join(approot, "images/"))
-        # CE changed this app, so it should not still call itself a 3.0 build.
-        bump_app_version(approot, "3.0.8001", "3.1.8001")
+        # The CE Photos (3.2.0) is a whole app tree, not a patch set: it lives in
+        # apps/com.palm.app.photos and reaches the build through its feed ipk in
+        # PatchOrReplace (scripts/photos-app.sh release). It carries the Synergy
+        # cloud-source integration, the exhibition slideshow clock, the filename in
+        # the single-photo toolbar and the hand-off to the CE Videos app -- all
+        # formerly patches applied here. Swap it in for the stock tree; it stays a
+        # staged PRELOAD like the Calendar, under the same bump_app_version() rule
+        # (the staged ipk's filename, control Version and manifest.json stay
+        # 3.0.8001; only appinfo says 3.2.0).
+        ph = ipk_extract_data(IPK["photos"], os.path.join(tmp, "photos"))
+        src = os.path.join(ph, "usr/palm/applications/com.palm.app.photos")
+        for need in ("appinfo.json", "index.html", "source/AlbumGridView.js"):
+            if not os.path.exists(os.path.join(src, need)):
+                sys.exit(f"ERROR: {os.path.basename(IPK['photos'])}: payload has no "
+                         f"com.palm.app.photos/{need}")
+        shutil.rmtree(approot)
+        shutil.copytree(src, approot, symlinks=True)
+        log(f"  app tree replaced from {os.path.basename(IPK['photos'])}")
 
     def edit_clock(approot):
         # The only CE change to the Clock ipk: its declared version. CE's clock
