@@ -1,0 +1,18 @@
+.diag-intro {
+	padding: 12px 16px 4px 16px;
+	font-size: 16px;
+	color: #444;
+}
+.diag-status {
+	padding: 4px 16px;
+	font-size: 16px;
+	font-weight: bold;
+}
+.diag-report {
+	margin: 0;
+	padding: 8px 16px 24px 16px;
+	font-family: "Courier New", monospace;
+	font-size: 13px;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}

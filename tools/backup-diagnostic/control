@@ -1,0 +1,8 @@
+Package: org.webosarchive.backupdiag
+Version: @VERSION@
+Depends:
+Section: System Utilities
+Architecture: all
+Maintainer: webOS Archive
+Description: Backup Diagnostic
+Source: { "Type":"Application", "Category":"System Utilities", "LastUpdated":"@EPOCH@", "Title":"Backup Diagnostic", "FullDescription":"Works out why Backup's Restore does not offer a backup that should be there, and what the backup was doing if it never finished. Read-only: it changes nothing in your backups. The report is saved as backup-diagnosis.txt on the USB drive so it can be copied off and sent.", "MinWebOSVersion":"3.0.0", "DeviceCompatibility":["TouchPad","Touchpad Go"] }

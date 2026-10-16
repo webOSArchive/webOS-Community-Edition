@@ -1,0 +1,9 @@
+{
+	"app": "org.webosarchive.backupdiag",
+	"id": "org.webosarchive.backupdiag",
+	"loc_name": "Backup Diagnostic",
+	"package_format_version": 2,
+	"services": ["org.webosarchive.backupdiag.service"],
+	"vendor": "webOS Archive",
+	"version": "@VERSION@"
+}

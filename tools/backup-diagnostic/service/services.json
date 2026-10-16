@@ -1,0 +1,16 @@
+{
+	"id": "org.webosarchive.backupdiag.service",
+	"description": "Read-only diagnosis of a woce-backup store",
+	"commandTimeout": 60,
+	"engine": "node",
+	"services": [{
+		"name": "org.webosarchive.backupdiag.service",
+		"description": "Works out why Restore does or does not offer a backup",
+		"assistant": "BackupDiagService",
+		"commands": [
+			{ "name": "scan", "assistant": "ScanAssistant", "commandTimeout": 3600, "public": true },
+			{ "name": "status", "assistant": "StatusAssistant", "public": true },
+			{ "name": "append", "assistant": "AppendAssistant", "public": true }
+		]
+	}]
+}

@@ -1,0 +1,10 @@
+{
+	"id": "org.webosarchive.backupdiag",
+	"version": "1.0.0",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"title": "Backup Diagnostic",
+	"icon": "icon.png",
+	"uiRevision": 2
+}
