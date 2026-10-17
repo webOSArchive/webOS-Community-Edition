@@ -211,8 +211,10 @@ volumes the Doctor doesn't flash, or depend on the user's OOBE choices):
   ipks before the customization service can install them.
 - `ce-firstboot-tweaks` — seds the default-wallpaper entries in hp.tar's
   `customization.json`, and once per flash removes stale `/media/cryptofs`
-  copies of apps this image bakes (cryptofs **survives** Doctor flashes and a
-  stale copy shadows the baked app) — the app dir, and also the matching
+  copies of apps this image bakes (a healthy flash wipes the encrypted store —
+  Doctor log `AppDeletion: removed the appDirectory` — but a failed wipe,
+  KNOWN-ISSUES #10, leaves stale copies behind, e.g. Maps 3.0.1 seen shadowing
+  the baked 4.0.1, and a stale copy shadows the baked app) — the app dir, and also the matching
   `services/<id>.service` and `packages/<id>` dirs, since a leftover cryptofs
   JS service claims the same bus name the baked image now claims statically.
 - `ce-default-wallpaper` — the race-proof half of the wallpaper default: on
