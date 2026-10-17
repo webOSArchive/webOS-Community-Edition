@@ -182,8 +182,9 @@ The rootfs diff can't express these:
    Calendar. `ce-ota-finish` must lay the 3.2.0 app tree over
    `/media/cryptofs/apps/usr/palm/applications/com.palm.app.calendar/` (the
    tree in `apps/com.palm.app.calendar`, as in its feed ipk). Same shape as the
-   Photos hand-off (1). Note this also applies to a **reflash without erase**:
-   cryptofs survives a Doctor run.
+   Photos hand-off (1). A healthy **reflash** is not affected: the Doctor wipes
+   cryptofs, so first boot installs the staged ipk, which carries 3.2.0. Only a
+   failed wipe (KNOWN-ISSUES #10) would leave the stock copy in place.
 
 ### 2.3 Delivery tier: armed flash, on purpose
 

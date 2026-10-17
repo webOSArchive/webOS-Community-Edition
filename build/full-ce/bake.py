@@ -1337,8 +1337,8 @@ def main():
     if not os.path.isdir(RO) or not os.path.isdir(DSDIR):
         sys.exit("ERROR: synergy ipk missing rootfs-overwrite/device-setup staging")
     # everything under this rootfs dir is copied into /media/cryptofs/<top>/
-    # once per flash by /etc/event.d/ce-cryptofs-seed (cryptofs survives
-    # flashes but is not in the image; it mounts late — finish post-start)
+    # once per flash by /etc/event.d/ce-cryptofs-seed (cryptofs is not in the
+    # image and a healthy flash wipes it; it mounts late — finish post-start)
     SEED = "usr/palm/ce-seed/cryptofs"
     CRYPT_APP_PFX = "media/cryptofs/apps/usr/palm/applications/"
     syn_apps = []
@@ -3464,9 +3464,10 @@ def main():
     # race). Renaming our files can't work: sweatshop extracts its own 01-11.jpg
     # over the same copy_binaries tree AFTER the rootfs lands — which is also why
     # CE's wallpapers are numbered from 12 and never collide with either payload.
-    # (b) cryptofs de-shadow: /media/cryptofs SURVIVES Doctor flashes, so a
-    # device upgrading from stock/older CE can carry a stale cryptofs copy of an
-    # app we now bake (seen live: Maps 3.0.1 shadowing baked 4.0.1). Once per
+    # (b) cryptofs de-shadow: a healthy Doctor flash wipes /media/cryptofs, but a
+    # failed wipe (KNOWN-ISSUES #10) leaves it behind, and then a device upgrading
+    # from stock/older CE carries a stale cryptofs copy of an app we now bake
+    # (seen live: Maps 3.0.1 shadowing baked 4.0.1). Once per
     # flash (/var is wiped by the Doctor, so a /var flag = once), remove the
     # cryptofs copies of the baked ids — dirs, ipkg info files and status
     # stanzas. Plain rm, NEVER `ipkg remove`: those prerms delete shared
@@ -3560,8 +3561,8 @@ def main():
         "# ce-firstboot-tweaks — webOS CE: (a) point the default-wallpaper entries in\n"
         "# the customization payload's customization.json at a CE wallpaper before the\n"
         "# customization service runs them; (b) once per flash, drop stale /media/cryptofs copies of\n"
-        "# apps this image bakes into the rootfs (cryptofs survives Doctor flashes and\n"
-        "# a stale copy shadows the baked app).\n"
+        "# apps this image bakes into the rootfs (a healthy flash wipes cryptofs, but a\n"
+        "# failed wipe leaves stale copies, and a stale copy shadows the baked app).\n"
         "#\n"
         "# (a) must stay EARLY and has no cryptofs dependency — the customization\n"
         "# service reads that file on this same boot. (b) writes to cryptofs, which\n"
@@ -3854,7 +3855,7 @@ def main():
         "# into /usr/lib/luna/customization/apps and\n"
         "# installed to /media/cryptofs/apps on first boot by com.palm.service.customization.\n"
         "# Delete the staged ipks before that install runs; also clear any cryptofs copy\n"
-        "# already placed by an earlier flash/boot (cryptofs survives Doctor flashes).\n"
+        "# already placed by an earlier flash/boot (left behind if the flash's wipe failed).\n"
         "#\n"
         "# Two different timing needs, same shape ce-cryptofs-seed/ce-firstboot-tweaks\n"
         "# already had to learn the hard way. The staged-ipk removal must WIN A RACE\n"

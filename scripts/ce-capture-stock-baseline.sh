@@ -1,13 +1,15 @@
 #!/bin/sh
 # Capture the stock 3.0.5 cryptofs state BEFORE flashing a CE build over it.
 #
-# Why this matters: /media/cryptofs SURVIVES a Doctor flash. A stock-lineage
-# device therefore arrives at the CE flash already carrying App Catalog 5.0.2900
-# and Maps 3.0.1 -- installed, registered, with ipkg status stanzas. CE 600025+
-# ships both as PRELOAD ipks instead of baking them, so first boot must UPGRADE
-# those existing copies via plain `ipkg install` (LunaSysMgr passes no -force-*
-# flags: upgrade on higher version, refuse downgrade). That path has never been
-# tested, and once the CE flash happens this baseline is unrecoverable.
+# Why this matters: a stock-lineage device carries App Catalog 5.0.2900 and
+# Maps 3.0.1 in /media/cryptofs -- installed, registered, with ipkg status
+# stanzas. A healthy Doctor flash wipes cryptofs, so CE 600025+'s PRELOAD ipks
+# for both install fresh. Only a failed wipe (KNOWN-ISSUES #10) leaves the stock
+# copies behind, and then first boot must UPGRADE them via plain `ipkg install`
+# (LunaSysMgr passes no -force-* flags: upgrade on higher version, refuse
+# downgrade). That path has never been tested, and once the CE flash happens
+# this baseline is unrecoverable. Check the Doctor log for
+# "AppDeletion: removed the appDirectory" to know which case you are in.
 #
 # Run after stock OOBE completes, before flashing CE.
 I() { echo "[BASE] $*"; }
