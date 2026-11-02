@@ -36,10 +36,10 @@ enyo.kind({
 	   
 	    if (inResponse["mode-avail"]) {
 			this.isUSBConnected = true;
+			// webOS CE: a banner and the dashboard, not a popup that stays up until dismissed.
 			if (this.canUSBAlertDisplayed()) 
-				this.showStorageModeAlert();
-			else 
-				this.createUSBDashboard();
+				this.showUSBBanner();
+			this.createUSBDashboard();
 		}
 	    else {
 			this.isUSBConnected = false;
@@ -48,13 +48,10 @@ enyo.kind({
 	},
 	
 	/*
-	 * Show Storage Mode Alert
+	 * Show the USB banner. "Connected" is the popup's old title, so it is already translated.
 	 */
-	showStorageModeAlert: function() {
-		var wCard = enyo.windows.fetchWindow("StorageModeAlert");
-		var windowHeight =  (enyo.g11n.currentLocale().locale == "en_us") ? 200 : 220;
-		if(!wCard)
-			enyo.windows.openPopup("app/StoragedAlerts/storagedalerts.html", "StorageModeAlert", {}, undefined, windowHeight);
+	showUSBBanner: function() {
+		enyo.windows.addBannerMessage($L("Connected"), enyo.json.stringify({}), "/usr/lib/luna/system/luna-systemui/images/notification-small-usb.png");
 	},
 	
 	createUSBDashboard: function() {
@@ -104,11 +101,9 @@ enyo.kind({
 	handleHostIsConnected: function(inSender, inResponse) {
 		if(inResponse.result == true && inResponse.hostIsConnected) {
 			this.isUSBConnected = true;
+			// webOS CE: already plugged in when this started, so there is no news to announce.
 			if (!enyo.application.getTelephonyService().getOnActiveCall()) {
-						if (enyo.application.getSysUpdateService().getUpdateAvailable()) 
-							this.createUSBDashboard();
-						else 
-							this.showStorageModeAlert();
+				this.createUSBDashboard();
 			}			
 		}
 	},

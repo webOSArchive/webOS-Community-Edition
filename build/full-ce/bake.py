@@ -923,6 +923,7 @@ def main():
     # some sit in per-owner SUBDIRS, e.g. kinds/com.palm.app.phone/).
     log("scanning stock member names for the overwrite replays")
     stock_names = read_rootfs_names(ROOTFS_TGZ, [
+        "./usr/lib/luna/system/luna-systemui/data/",
         "./usr/palm/applications/com.palm.app.accounts/",
         "./usr/palm/applications/com.palm.app.phone/",
         "./usr/palm/applications/com.palm.app.enyo-findapps/",
@@ -2465,6 +2466,12 @@ def main():
         if mine == stock_icons[f"./{rel}"]["data"]:
             sys.exit(f"ERROR: system/{rel} is still the stock HP bag")
         w(rel, mine, 0o644)
+
+    # USB connection: a banner and the dashboard instead of the stock popup.
+    rel = "usr/lib/luna/system/luna-systemui/data/StoragedService.js"
+    if f"./{rel}" not in stock_names:
+        sys.exit(f"ERROR: {rel} is not in the stock image")
+    wcopy(rel, os.path.join(SYSTEM, rel), 0o644)
 
     # 12) rootcertsupdate : FULL build-time replay of the trust-store update.
     # postinst (3.x path): install scripts to /etc/ssl/scripts, then deploycerts:
