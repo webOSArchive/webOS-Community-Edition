@@ -77,9 +77,40 @@ new Date(date.getFullYear(),11,31);var weeksInYear=this.getWeekNumber(endOfYear)
 ord==negativeDayOfMonth){this.setTrueFlag(flags,flagPosition);break}}},byDayTest:function(rule,todayDate,flags){var flagPosition=this.flagPositions.byDay;this.setPresentFlag(flags,flagPosition);var positiveMonthPosition;var negativeMonthPosition;var monthPosition;var ruleLength=rule.ruleValue.length;for(var i=0;i<ruleLength;i++){var ord=rule.ruleValue[i].ord;var day=rule.ruleValue[i].day;if(ord){if(ord>0){if(!positiveMonthPosition)positiveMonthPosition=this.findMonthPosition(todayDate,true);monthPosition=
 positiveMonthPosition}else{if(!negativeMonthPosition)negativeMonthPosition=this.findMonthPosition(todayDate,false);monthPosition=negativeMonthPosition}if(ord==monthPosition&&day==todayDate.getDay()){this.setTrueFlag(flags,flagPosition);break}}else if(day==todayDate.getDay()){this.setTrueFlag(flags,flagPosition);break}}},byWeekNumberTest:function(rule,todayDate,flags){var flagPosition=this.flagPositions.byWeekNumber;this.setPresentFlag(flags,flagPosition);var weekNumber=this.getWeekNumber(todayDate);
 var negativeWeekNumber=this.getNegativeWeekNumber(todayDate);var ruleLength=rule.ruleValue.length;for(var i=0;i<ruleLength;i++){var ord=rule.ruleValue[i].ord;if(ord==weekNumber||ord==negativeWeekNumber){this.setTrueFlag(flags,flagPosition);break}}},byYearDayTest:function(rule,todayDate,flags){var flagPosition=this.flagPositions.byYearDay;this.setPresentFlag(flags,flagPosition);var yearDayNumber=this.utils.howManyDaysSinceJanuaryFirst(todayDate)+1;var negativeYearDayNumber=(this.utils.howManyDaysTillDecember31(todayDate)+
-1)*-1;var ruleLength=rule.ruleValue.length;for(var i=0;i<ruleLength;i++){var ord=rule.ruleValue[i].ord;if(ord==yearDayNumber||ord==negativeYearDayNumber){this.setTrueFlag(flags,flagPosition);break}}},dateComponentsEqual:function(date1,date2){return date1.getFullYear()===date2.getFullYear()&&date1.getMonth()===date2.getMonth()&&date1.getDate()===date2.getDate()},evaluateExceptions:function(date,exdates,eventStart,tzId){var exdateType;var exdatesLength=exdates.length;var exdate;var testDate=new Date(date);
-var startTime=new Date(eventStart);testDate.set({hour:startTime.getHours(),minute:startTime.getMinutes(),second:startTime.getSeconds(),millisecond:startTime.getMilliseconds()});if(exdates&&exdatesLength!==0)for(var i=0;i<exdatesLength;i++){switch(exdates[i].length){case 8:exdate=Date.parseExact(exdates[i],"yyyyMMdd");exdate.set({hour:testDate.getHours(),minute:testDate.getMinutes(),second:testDate.getSeconds(),millisecond:testDate.getMilliseconds()});break;case 15:exdate=Date.parseExact(exdates[i],
-"yyyyMMddTHHmmss");break;case 16:var substring=exdates[i].substr(0,15);exdate=Date.parseExact(substring,"yyyyMMddTHHmmss");var utcOffset=exdate.getTimezoneOffset();exdate.addMinutes(-utcOffset);break;default:return false}if(exdate.equals(testDate))return true}return false},evaluateRules:function(rules,todayDate,flags){for(var i=0;i<rules.length;i++){var rule=rules[i];switch(rule.ruleType){case "BYMONTH":this.byMonthTest(rule,todayDate,flags);break;case "BYWEEKNO":this.byWeekNumberTest(rule,todayDate,
+1)*-1;var ruleLength=rule.ruleValue.length;for(var i=0;i<ruleLength;i++){var ord=rule.ruleValue[i].ord;if(ord==yearDayNumber||ord==negativeYearDayNumber){this.setTrueFlag(flags,flagPosition);break}}},dateComponentsEqual:function(date1,date2){return date1.getFullYear()===date2.getFullYear()&&date1.getMonth()===date2.getMonth()&&date1.getDate()===date2.getDate()},evaluateExceptions: function(date, exdates, eventStart, tzId) {
+		var testDate = new Date(date);
+		var testYear = testDate.getFullYear();
+		var testMonth = testDate.getMonth() + 1;
+		var testDay = testDate.getDate();
+		var exdatesLength = exdates ? exdates.length : 0;
+
+		// webOS CE: an exception names a day of the event's zone, and date is that day's label, so
+		// only the calendar date is compared. The time in an exception adds nothing: a repeat
+		// happens at most once a day here. A UTC exception is first read in the event's zone.
+		for (var i = 0; i < exdatesLength; i++) {
+			var exdate = exdates[i];
+			var year = parseInt(exdate.substr(0, 4), 10);
+			var month = parseInt(exdate.substr(4, 2), 10);
+			var day = parseInt(exdate.substr(6, 2), 10);
+
+			if (exdate.length === 16) {
+				var timezoneManager = new TimezoneManager();
+				var instant = Date.UTC(year, month - 1, day, parseInt(exdate.substr(9, 2), 10), parseInt(exdate.substr(11, 2), 10), parseInt(exdate.substr(13, 2), 10));
+				var clock = new Date(instant + timezoneManager.getOffset(new Date(instant).getFullYear(), tzId, instant / 1000) * 1000);
+				year = clock.getUTCFullYear();
+				month = clock.getUTCMonth() + 1;
+				day = clock.getUTCDate();
+			}
+			else if (exdate.length !== 8 && exdate.length !== 15) {
+				continue;		//malformed. can't evaluate
+			}
+
+			if (year === testYear && month === testMonth && day === testDay) {
+				return true;
+			}
+		}
+		return false;
+	},evaluateRules:function(rules,todayDate,flags){for(var i=0;i<rules.length;i++){var rule=rules[i];switch(rule.ruleType){case "BYMONTH":this.byMonthTest(rule,todayDate,flags);break;case "BYWEEKNO":this.byWeekNumberTest(rule,todayDate,
 flags);break;case "BYMONTHDAY":this.byMonthDayTest(rule,todayDate,flags);break;case "BYDAY":this.byDayTest(rule,todayDate,flags);break;case "BYYEARDAY":this.byYearDayTest(rule,todayDate,flags);break}}},frequencyTypeDaily:function(today,eventStart,rrule){var flags={rulesPresent:0,rulesTrue:0};var todayDate=new Date(today);var eventStartDate=new Date(eventStart);if(!rrule.interval)rrule.interval=1;if(rrule.interval!==1){var days=this.utils.howManyDaysBetween(eventStartDate,todayDate);if(days%rrule.interval!==
 0)return false}if(rrule.rules&&rrule.rules.length>0)this.evaluateRules(rrule.rules,todayDate,flags);return flags.rulesPresent==flags.rulesTrue},frequencyTypeWeekly:function(today,eventStart,rrule){var flags={rulesPresent:0,rulesTrue:0};var todayDate=new Date(today);var eventStartDate=new Date(eventStart);var defaultRule={ruleType:"BYDAY",ruleValue:[{day:eventStartDate.getDay()}]};var hasByDayRule=false;if(!rrule.interval)rrule.interval=1;if(rrule.interval!==1){var weeks=this.utils.howManyWeeksBetween(eventStartDate,
 todayDate);if(weeks%rrule.interval!==0)return false}if(rrule.rules&&rrule.rules.length>0)for(var i=0;i<rrule.rules.length;i++)if(rrule.rules[i].ruleType=="BYDAY")hasByDayRule=true;if(rrule.rules&&!hasByDayRule)rrule.rules.push(defaultRule);else if(!rrule.rules)rrule.rules=[defaultRule];this.evaluateRules(rrule.rules,todayDate,flags);return flags.rulesPresent==flags.rulesTrue},frequencyTypeMonthly:function(today,eventStart,rrule){var flags={rulesPresent:0,rulesTrue:0};var hasByDayRule=false;var hasByMonthDayRule=
@@ -87,38 +118,421 @@ false;var todayDate=new Date(today);var eventStartDate=new Date(eventStart);var 
 true}if(rrule.rules&&!hasByDayRule&&!hasByMonthDayRule)rrule.rules.push(defaultRule);else if(!rrule.rules)rrule.rules=[defaultRule];this.evaluateRules(rrule.rules,todayDate,flags);return flags.rulesPresent==flags.rulesTrue},frequencyTypeYearly:function(today,eventStart,rrule){var flags={rulesPresent:0,rulesTrue:0};var todayDate=new Date(today);var eventStartDate=new Date(eventStart);if(!rrule.interval)rrule.interval=1;if(rrule.interval!==1){var years=todayDate.getFullYear()-eventStartDate.getFullYear();
 if(years%rrule.interval!==0)return false}if(!rrule.rules||rrule.rules.length===0)rrule.rules=[{ruleType:"BYMONTH",ruleValue:[{ord:eventStartDate.getMonth()+1}]},{ruleType:"BYMONTHDAY",ruleValue:[{ord:eventStartDate.getDate()}]}];for(var i=0;i<rrule.rules.length;i++){var rule=rrule.rules[i];if(rule.ruleType=="BYMONTH")this.setPresentFlag(flags,this.flagPositions.byMonth);else if(rule.ruleType=="BYMONTHDAY")this.setPresentFlag(flags,this.flagPositions.byMonthDay);else if(rule.ruleType=="BYDAY")this.setPresentFlag(flags,
 this.flagPositions.byDay);else if(rule.ruleType=="BYWEEKNO")this.setPresentFlag(flags,this.flagPositions.byWeekNumber);else if(rule.ruleType=="BYYEARDAY")this.setPresentFlag(flags,this.flagPositions.byYearDay)}if(flags.rulesPresent&this.hasRules.byMonth&&!(flags.rulesPresent&this.hasRules.byDay)&&!(flags.rulesPresent&this.hasRules.byMonthDay))rrule.rules.push({ruleType:"BYMONTHDAY",ruleValue:[{ord:eventStartDate.getDate()}]});if(!(flags.rulesPresent&this.hasRules.byMonth)&&flags.rulesPresent&this.hasRules.byMonthDay)rrule.rules.push({ruleType:"BYMONTH",
-ruleValue:[{ord:eventStartDate.getMonth()+1}]});if(flags.rulesPresent&this.hasRules.byWeekNumber&&!(flags.rulesPresent&this.hasRules.byDay))rrule.rules.push({ruleType:"BYDAY",ruleValue:[{day:eventStartDate.getDay()}]});this.evaluateRules(rrule.rules,todayDate,flags);return flags.rulesPresent==flags.rulesTrue},evaluateRRule:function(date,eventStart,eventOriginalStart,rrule,exdates,eventTzID,countInfo){if(rrule.until&&rrule.until<date)return false;else if(countInfo&&(countInfo.until&&countInfo.until<
-date||countInfo.estimateEnd&&countInfo.estimateEnd<date))return false;if(exdates&&this.evaluateExceptions(date,exdates,eventOriginalStart,eventTzID))return-1;var repeatsOnDate;switch(rrule.freq){case "DAILY":repeatsOnDate=this.frequencyTypeDaily(date,eventStart,rrule);break;case "WEEKLY":repeatsOnDate=this.frequencyTypeWeekly(date,eventStart,rrule);break;case "MONTHLY":repeatsOnDate=this.frequencyTypeMonthly(date,eventStart,rrule);break;case "YEARLY":repeatsOnDate=this.frequencyTypeYearly(date,eventStart,
-rrule);break;default:repeatsOnDate=false}return repeatsOnDate}};exports.RRuleManager=RRuleManager;var EventManagerUtils=Class.create({initialize:function(){this.timezoneManager=new TimezoneManager;this.rruleManager=new RRuleManager;this.noOccurrences=[]},logLevels:{repeatDetails:1,dateDetails:16,responses:256,singleEvents:4096,renderTimes:65536,tzLoading:1048576,getBusyDays:16777216,timeout:268435456,all:286331153},evlog:function(level,string){},getGEIRTimeLimit:function(){return this.GEIRTimeLimit},setGEIRTimeLimit:function(val){this.GEIRTimeLimit=val},sortByStartTime:function(a,b){return a.renderStartTime-
-b.renderStartTime},loadTimezones:function(eventSet){if(!eventSet||eventSet.length===0)return;var tzIds=this.getUniqueTzIdsInEventSet(eventSet);var future=this.timezoneManager.setup();future.then(this,function(){var result=future.result;future.result=this.timezoneManager.loadTimezones(tzIds)});return future},getYearsInRange:function(range){var timeMachine=new Date;if(!range){var currentYear=timeMachine.getFullYear();return[currentYear]}timeMachine.setTime(range.start);var rangeStartYear=timeMachine.getFullYear();
+ruleValue:[{ord:eventStartDate.getMonth()+1}]});if(flags.rulesPresent&this.hasRules.byWeekNumber&&!(flags.rulesPresent&this.hasRules.byDay))rrule.rules.push({ruleType:"BYDAY",ruleValue:[{day:eventStartDate.getDay()}]});this.evaluateRules(rrule.rules,todayDate,flags);return flags.rulesPresent==flags.rulesTrue},evaluateRRule: function(date, eventStart, eventOriginalStart, rrule, exdates, eventTzID, countInfo){
+		// webOS CE: date is a day label, and until is real time, so this can only rule out a date
+		// that's clearly past it. The caller tests the occurrence's real start against until.
+		var margin = 172800000;
+		if(rrule.until && rrule.until + margin < date){
+			return false;
+		}
+		else if(countInfo &&
+				((countInfo.until && countInfo.until + margin < date) ||
+				 (countInfo.estimateEnd && countInfo.estimateEnd + margin < date))
+			   ){
+			return false;
+		}
+
+		var repeatsOnDate;
+		switch (rrule.freq) {
+			case "DAILY":
+				repeatsOnDate = this.frequencyTypeDaily(date, eventStart, rrule);
+				break;
+			case "WEEKLY":
+				repeatsOnDate = this.frequencyTypeWeekly(date, eventStart, rrule);
+				break;
+			case "MONTHLY":
+				repeatsOnDate = this.frequencyTypeMonthly(date, eventStart, rrule);
+				break;
+			case "YEARLY":
+				repeatsOnDate = this.frequencyTypeYearly(date, eventStart, rrule);
+				break;
+			default:
+				repeatsOnDate = false;
+		}
+
+		// webOS CE: only an actual occurrence can be an exception. An exception on some other date
+		// mustn't use up a count, or hide anything.
+		if(repeatsOnDate && exdates && this.evaluateExceptions(date, exdates, eventOriginalStart, eventTzID)){
+			//An exception counts as an occurrence for count-based repeat, so don't return false.
+			//But don't return true either, because it shouldn't be shown.
+			return -1;
+		}
+
+		return repeatsOnDate;
+	}};exports.RRuleManager=RRuleManager;var EventManagerUtils=Class.create({initialize:function(){this.timezoneManager=new TimezoneManager;this.rruleManager=new RRuleManager;this.noOccurrences=[]},logLevels:{repeatDetails:1,dateDetails:16,responses:256,singleEvents:4096,renderTimes:65536,tzLoading:1048576,getBusyDays:16777216,timeout:268435456,all:286331153},evlog:function(level,string){},getGEIRTimeLimit:function(){return this.GEIRTimeLimit},setGEIRTimeLimit:function(val){this.GEIRTimeLimit=val},sortByStartTime:function(a,b){return a.renderStartTime-
+b.renderStartTime},loadTimezones:function(eventSet){if(!eventSet||eventSet.length===0)return;var tzIds=this.getUniqueTzIdsInEventSet(eventSet);var future=this.timezoneManager.setup();future.then(this,function(){var result=future.result;future.result=this.timezoneManager.loadTimezones(tzIds,this.getStartYears(eventSet))});return future},getYearsInRange:function(range){var timeMachine=new Date;if(!range){var currentYear=timeMachine.getFullYear();return[currentYear]}timeMachine.setTime(range.start);var rangeStartYear=timeMachine.getFullYear();
 timeMachine.setTime(range.end);var rangeEndYear=timeMachine.getFullYear();if(rangeStartYear===rangeEndYear)return[rangeStartYear];var years=[];for(var i=rangeStartYear;i<=rangeEndYear;i++)years.push(i);return years},getUniqueTzIdsInEventSet:function(eventSet){var temp=[];var tzIds=[];var eventsLength=eventSet.length;for(var i=0;i<eventsLength;i++){var event=eventSet[i];var tzId=event.tzId;if(tzId&&!temp[tzId]){tzIds.push(tzId);temp[tzId]=true}}return tzIds},occursInRange:function(event,range){var eventOccurs=
 false;var startRangeTz=range.start;var endRangeTz=range.end;event.currentLocalStart=event.dtstart;event.currentLocalEnd=event.dtend;var startTime=new Date(event.currentLocalStart);var endTime=new Date(event.currentLocalEnd);var isZeroTime=startTime.compareTo(endTime)===0;if(!isZeroTime&&endTime.getHours()===0&&endTime.getMinutes()===0&&endTime.getSeconds()===0)event.currentLocalEnd=event.currentLocalEnd-1E3;if(event.currentLocalEnd>=startRangeTz&&event.currentLocalStart<endRangeTz)eventOccurs=true;
 return eventOccurs},repeatEndedBeforeDate:function(rrule,countInfo,date){if(rrule&&rrule.until&&rrule.until<date||countInfo&&(countInfo.until&&countInfo.until<date||countInfo.estimateEnd&&countInfo.estimateEnd<date))return true;return false},estimateRepeatEnd:function(event){var freq=event.rrule.freq;var interval=parseInt(event.rrule.interval,10)||1;var count=parseInt(event.rrule.count,10);var bonusPadding=3;var base;var timeMachine=new Date(event.dtstart);switch(freq){case "DAILY":base=1;break;case "WEEKLY":base=
 7;break;case "MONTHLY":base=31;if(timeMachine.getDate()==31)base=base*2;break;case "YEARLY":base=366;if(timeMachine.getMonth()==1&&timeMachine.getDate()==29)base=base*4;break}var daysRepeatCycleSpans=base*interval*(count+bonusPadding);timeMachine.addDays(daysRepeatCycleSpans);return timeMachine.getTime()},countPrep:function countPrep(event){var countInfo=event.countInfo;if(!countInfo){event.countInfo={};countInfo=event.countInfo}if(!countInfo.estimateEnd)countInfo.estimateEnd=this.estimateRepeatEnd(event)},
 basicRangeTests:function basicRangeTests(event,range){if(event.dtstart>range.end+1728E5)return false;if(event.rrule&&event.rrule.count){if(!event.countInfo)this.countPrep(event);if(event.countInfo.estimateEnd<range.start)return false}else if(event.rrule&&event.rrule.until)if(event.rrule.until<range.start-1728E5)return false;return true},allDayAdjustment:function allDayAdjustment(start,end,timeMachine){if(!timeMachine)timeMachine=new Date;var startTime=timeMachine.setTime(start);var endTime=timeMachine.setTime(end);
-var endDate=timeMachine;var isZeroTime=startTime==endTime;if(!isZeroTime&&endDate.getHours()===0&&endDate.getMinutes()===0&&endDate.getSeconds()===0)end=end-1E3;return end},findRepeatsInRange:function(event,range,limit){var keepGoing=this.basicRangeTests(event,range);if(!keepGoing)return this.noOccurrences;var timeMachine=new Date;var tempStart=event.dtstart;var tempEnd=event.dtend;if(event.allDay)tempEnd=this.allDayAdjustment(tempStart,tempEnd,timeMachine);var datesInEvent=this.getDatesInRange({start:tempStart,
-end:tempEnd,tzId:event.tzId});var datesInEventSize=datesInEvent.length;var additionalRangeDaysNeeded=datesInEventSize-1;var searchRange=range;if(additionalRangeDaysNeeded){searchRange=Foundations.ObjectUtils.clone(range);timeMachine.setTime(range.start);timeMachine.addDays(-additionalRangeDaysNeeded);searchRange.start=timeMachine.getTime();searchRange.end=range.end;searchRange.datesInRange=undefined}var eventStartDate=this.timezoneManager.convertTime(event.dtstart,this.timezoneManager.getSystemTimezone(),
-event.tzId);eventStartDate=timeMachine.setTime(eventStartDate)&&timeMachine;var eventStartHours=eventStartDate.getHours();var eventStartMinutes=eventStartDate.getMinutes();var datesInRange;if(!searchRange.datesInRange)searchRange.datesInRange={};if(!searchRange.datesInRange[event.tzId])datesInRange=this.getDatesInRange({start:searchRange.start,end:searchRange.end,tzId:event.tzId});else datesInRange=searchRange.datesInRange[event.tzId];searchRange.datesInRange[event.tzId]=datesInRange;if(event.dtstart>
-searchRange.end||this.repeatEndedBeforeDate(event.rrule,event.countInfo,searchRange.start))return this.noOccurrences;var eventOccurrences=this.findRepeatsInRangeHelper(event,range,datesInRange,datesInEvent,eventStartHours,eventStartMinutes,limit,timeMachine);return eventOccurrences},findRepeatsInRangeCountVersion:function(event,range){var keepGoing=this.basicRangeTests(event,range);if(!keepGoing)return this.noOccurrences;var tempStart=event.dtstart;var tempEnd=event.dtend;var timeMachine=new Date;
-if(event.allDay)tempEnd=this.allDayAdjustment(tempStart,tempEnd,timeMachine);var datesInEvent=this.getDatesInRange({start:tempStart,end:tempEnd,tzId:event.tzId});var eventStartDate=this.timezoneManager.convertTime(event.dtstart,this.timezoneManager.getSystemTimezone(),event.tzId);eventStartDate=timeMachine.setTime(eventStartDate)&&timeMachine;var eventStartHours=eventStartDate.getHours();var eventStartMinutes=eventStartDate.getMinutes();var limit=parseInt(event.rrule.count,10)||1;var ci=event.countInfo;
-var found=ci&&ci.occurrences;var numFoundSoFar=found&&found.length;var inRangeOccurrences=[];if(numFoundSoFar){var lastFound=found[numFoundSoFar-1];var firstFound=found[0];if(lastFound<=range.end||firstFound>=range.start||firstFound<=range.start&&lastFound>=range.end)inRangeOccurrences=this.reconstructOccurrences(event,ci.occurrences,range);var exceptionDates=ci.exceptions?Object.keys(ci.exceptions):[];if(numFoundSoFar+exceptionDates.length>=limit||lastFound>range.end)return inRangeOccurrences;timeMachine.setTime(this.timezoneManager.convertTime(lastFound,this.timezoneManager.getSystemTimezone(),event.tzId));timeMachine.addDays(1);timeMachine.clearTime();var resumeDate=timeMachine.getTime();tempStart=
-this.timezoneManager.convertTime(resumeDate,event.tzId,this.timezoneManager.getSystemTimezone());limit=limit-numFoundSoFar-exceptionDates.filter(function(exceptionDate){return+exceptionDate<resumeDate}).length}if(!event.countInfo){console.error("===== Yikes, something is wrong, your countInfo disappeared for event: "+event._id);this.countPrep(event)}var searchRange={tzId:event.tzId,start:tempStart,end:Math.min(event.countInfo.estimateEnd,range.end),datesInRange:{}};var datesInRange=this.getDatesInRange({start:searchRange.start,end:searchRange.end,tzId:event.tzId});var eventOccurrences=this.findRepeatsInRangeHelper(event,null,datesInRange,datesInEvent,eventStartHours,
-eventStartMinutes,limit,timeMachine);var occurrencesLength=eventOccurrences.length;var countInfo=event.countInfo;var instance;var occurrences=countInfo.occurrences||[];for(var i=0;i<occurrencesLength;i++){instance=eventOccurrences[i];occurrences.push(instance.currentLocalStart);if(instance.currentLocalEnd>=range.start&&instance.currentLocalStart<range.end){delete instance.countInfo;inRangeOccurrences.push(instance)}}countInfo.occurrences=occurrences;return inRangeOccurrences},reconstructOccurrences:function reconstructOccurrences(event,
-occurrences,range){var occLength=occurrences.length;var duration=event.dtend-event.dtstart;var inRangeOccurrences=[];var tempEvent;for(var i=0;i<occLength;i++){var instanceStart=occurrences[i];if(instanceStart>=range.start&&instanceStart<=range.end){tempEvent=ObjectUtils.clone(event);tempEvent.currentLocalStart=instanceStart;tempEvent.currentLocalEnd=instanceStart+duration;inRangeOccurrences.push(tempEvent)}}return inRangeOccurrences},findRepeatsInRangeHelper:function findRepeatsInRangeHelper(event,
-range,datesInRange,datesInEvent,eventStartHours,eventStartMinutes,limit,timeMachine){var date;var nextMidnight;var eventStart;var repeatsOnDate;var dateOfOccurrence;var offset;var nextOccurrence;var occurrenceStartTimestamp;var occurrenceEndTimestamp;var start;var start12AM;var end;var end12AM;var occurrenceTracker={};var datesInRangeSize=datesInRange.length;var eventOccurrences=[];var numFound=0;if(isNaN(limit))limit=0;if(!timeMachine)timeMachine=new Date;for(var i=0;i<datesInRangeSize;i++){var timeLimit=
-this.getGEIRTimeLimit();if(timeLimit&&Date.now()>=timeLimit){console.error("Exceeded process time limit on event: "+event._id+" at date: "+i+" of "+datesInRangeSize);break}date=datesInRange[i];if(this.repeatEndedBeforeDate(event.rrule,event.countInfo,date))continue;if(i+1!=datesInRangeSize)nextMidnight=datesInRange[i+1];else{timeMachine.setTime(date);timeMachine.addDays(1);nextMidnight=timeMachine.getTime()}if(datesInEvent[0]>=nextMidnight)continue;eventStart=datesInEvent[0];if(date<eventStart)continue;
-repeatsOnDate=this.rruleManager.evaluateRRule(date,eventStart,event.dtstart,event.rrule,event.exdates,event.tzId,event.countInfo);if(!repeatsOnDate)continue;if(repeatsOnDate===-1){numFound++;if(event.countInfo){event.countInfo.exceptions=event.countInfo.exceptions||{};event.countInfo.exceptions[date]=true}if(numFound===limit)return eventOccurrences;continue}timeMachine.setTime(datesInRange[i]);dateOfOccurrence=timeMachine;dateOfOccurrence.setHours(eventStartHours);dateOfOccurrence.setMinutes(eventStartMinutes);dateOfOccurrence.setSeconds(0);dateOfOccurrence.setMilliseconds(0);offset=this.findOffset(datesInRange[i],
-event.tzId);dateOfOccurrence=dateOfOccurrence.addMinutes(-offset);occurrenceStartTimestamp=dateOfOccurrence.getTime();occurrenceEndTimestamp=occurrenceStartTimestamp+(event.dtend-event.dtstart);if(range&&!(occurrenceEndTimestamp>=range.start&&occurrenceStartTimestamp<range.end))continue;nextOccurrence=ObjectUtils.clone(event);nextOccurrence.currentLocalStart=occurrenceStartTimestamp;nextOccurrence.currentLocalEnd=occurrenceEndTimestamp;if(nextOccurrence.allDay){start=timeMachine.setTime(nextOccurrence.currentLocalStart);
-start12AM=timeMachine.clearTime().getTime();end=timeMachine.setTime(nextOccurrence.currentLocalEnd);end12AM=timeMachine.clearTime().getTime();if(start!==end&&end===end12AM&&start===start12AM)nextOccurrence.currentLocalEnd-=1E3}if(this.repeatEndedBeforeDate(nextOccurrence.rrule,nextOccurrence.countInfo,nextOccurrence.currentLocalStart))continue;if(occurrenceTracker[nextOccurrence.currentLocalStart]&&occurrenceTracker[nextOccurrence.currentLocalStart]===nextOccurrence.currentLocalEnd)continue;else occurrenceTracker[nextOccurrence.currentLocalStart]=
-nextOccurrence.currentLocalEnd;eventOccurrences.push(nextOccurrence);numFound++;if(numFound===limit)return eventOccurrences}return eventOccurrences},getEventRenderTimes:function(eventArray,dates){var eventsByDay=[];if(!(eventArray&&eventArray.length&&dates&&dates.length))return eventsByDay;var eventsLength=eventArray.length;var datesLength=dates.length;var lastDate=(new Date(dates[dates.length-1])).addDays(1).getTime();var date=new Date;for(var j=0;j<eventsLength;j++){var event=eventArray[j];var start=
+var endDate=timeMachine;var isZeroTime=startTime==endTime;if(!isZeroTime&&endDate.getHours()===0&&endDate.getMinutes()===0&&endDate.getSeconds()===0)end=end-1E3;return end},/*
+	 * webOS CE: repeats are worked out as dates in the event's zone. Three kinds of value are in
+	 * play here, and nothing below converts between them except these functions:
+	 *   instant: real time, a timestamp. dtstart, dtend and the occurrences are these.
+	 *   wall:    a clock reading in a zone, held in UTC fields so that it can't be read as local
+	 *            time by mistake. Only ever made by wallClockOf and undone by wallToInstant.
+	 *   date:    a day label, midnight of that calendar date on the device's clock. It says which
+	 *            day, as RRuleManager expects, and is never a moment.
+	 * Offsets come only from TimezoneManager.getOffset.
+	 */
+	getStartYears: function getStartYears(eventSet){
+		// webOS CE: an old repeat needs the rules of the year it started in, which the range doesn't.
+		var years = [], seen = {}, year;
+		for(var i = 0; i < eventSet.length; i++){
+			if(eventSet[i].rrule && isFinite(eventSet[i].dtstart)){
+				year = new Date(eventSet[i].dtstart).getFullYear();
+				if(!seen[year]){
+					seen[year] = true;
+					years.push(year);
+				}
+			}
+		}
+		return years;
+	},
+
+	offsetAt: function offsetAt(instant, tzId){
+		var timezoneManager = this.timezoneManager;
+		return timezoneManager.getOffset(new Date(instant).getFullYear(), tzId || timezoneManager.getSystemTimezone(), instant / 1000) * 1000;
+	},
+
+	wallClockOf: function wallClockOf(instant, tzId){
+		return instant + this.offsetAt(instant, tzId);
+	},
+
+	/*
+	 * A clock reading the zone skips, in a spring change, takes the offset from before the change.
+	 * One it repeats, in an autumn change, means the first time round. Both as in RFC 5545.
+	 */
+	wallToInstant: function wallToInstant(wall, tzId){
+		var before = this.offsetAt(wall - 86400000, tzId)
+		,	after = this.offsetAt(wall + 86400000, tzId)
+		,	first = wall - before
+		,	second = wall - after
+		,	firstValid
+		,	secondValid
+		;
+		if(before === after){
+			return first;
+		}
+		firstValid = (this.offsetAt(first, tzId) === before);
+		secondValid = (this.offsetAt(second, tzId) === after);
+		if(firstValid && secondValid){
+			return Math.min(first, second);
+		}
+		return (secondValid && !firstValid) ? second : first;
+	},
+
+	dateOfWall: function dateOfWall(wall){
+		var clock = new Date(wall);
+		return new Date(clock.getUTCFullYear(), clock.getUTCMonth(), clock.getUTCDate()).getTime();
+	},
+
+	nextDate: function nextDate(date){
+		var day = new Date(date);
+		return new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1).getTime();
+	},
+
+	timeOfDay: function timeOfDay(wall){
+		var clock = new Date(wall);
+		return Date.UTC(1970, 0, 1, clock.getUTCHours(), clock.getUTCMinutes(), clock.getUTCSeconds());
+	},
+
+	occurrenceStart: function occurrenceStart(date, timeOfDay, tzId){
+		var day = new Date(date);
+		return this.wallToInstant(Date.UTC(day.getFullYear(), day.getMonth(), day.getDate()) + timeOfDay, tzId);
+	},
+
+	/*
+	 * until has two forms. 23:59:59 on the device's clock is the whole of a date in the event's
+	 * zone, which is what an all-day repeat and an import store. Anything else is a real moment,
+	 * and the last occurrence is the last to start by then.
+	 */
+	untilPassed: function untilPassed(until, date, start){
+		var limit = new Date(until);
+		if(limit.getHours() === 23 && limit.getMinutes() === 59 && limit.getSeconds() === 59){
+			return date > until;
+		}
+		return start > until;
+	},
+
+	makeOccurrence: function makeOccurrence(event, start, end){
+		var countInfo = event.countInfo
+		,	occurrence
+		,	timeMachine = new Date()
+		,	first
+		,	start12AM
+		,	last
+		,	end12AM
+		;
+		delete event.countInfo;
+		occurrence = ObjectUtils.clone (event);
+		countInfo && (event.countInfo = countInfo);
+
+		occurrence.currentLocalStart = start;
+		occurrence.currentLocalEnd = end;
+		// If this is a non-zero length allday event, and it ends at midnight, back it up to 23:59:59:
+		if(occurrence.allDay) {
+			first		= timeMachine.setTime	(start);
+			start12AM	= timeMachine.clearTime	().getTime();
+			last		= timeMachine.setTime	(end);
+			end12AM		= timeMachine.clearTime	().getTime();
+
+			if ((first !== last) && (last === end12AM) && (first === start12AM)) {
+				occurrence.currentLocalEnd -= 1000;
+			}
+		}
+		return occurrence;
+	},
+
+	findRepeatsInRange: function(event, range, limit){
+		//Broad view of what's going on here:
+		//RRULE evaluation works by whole dates in the event's timezone, so we turn the local range into
+		//the dates it covers there. For each date, test if the event repeats on it. When it does, the
+		//occurrence's start is that date at the event's clock time, converted to real time.
+		//If the event spans across days, it's possible it started earlier and spans into the range,
+		//so scoot the beginning of the search back by the number of days the event spans.
+
+		//Test against the range. Maybe we don't repeat anywhere near this range, and don't have to do any work
+		var keepGoing = this.basicRangeTests(event, range);
+		if(!keepGoing){
+			return this.noOccurrences;
+		}
+
+		// Single Date object to be reused for calculating multiple time (ms)
+		// instances rather than expensively creating multiple Date instances.
+		var timeMachine = new Date();
+
+		//Start and end timestamps we can adjust without altering the original event
+		var tempStart = event.dtstart;
+		var tempEnd = event.dtend;
+
+		//All-day events that are midnight-to-midnight need some adjustment
+		if(event.allDay){
+			tempEnd = this.allDayAdjustment(tempStart, tempEnd, timeMachine);
+		}
+
+		//If the event spans across at least one midnight, we need to back up the beginning of the search range by
+		//the number of days spanned
+		var datesInEvent = this.getDatesInRange({start: tempStart, end: tempEnd, tzId: event.tzId});
+		var additionalRangeDaysNeeded = (datesInEvent.length - 1);
+		var searchRange = range;
+		if(additionalRangeDaysNeeded){
+			searchRange = Foundations.ObjectUtils.clone(range);
+			timeMachine.setTime(range.start);
+			timeMachine.addDays(-additionalRangeDaysNeeded);
+			searchRange.start = timeMachine.getTime();
+			searchRange.end = range.end;
+			//remove any existing datesInRange on this range, since we just changed its value
+			searchRange.datesInRange = undefined;
+		}
+
+		//datesInRange holds dates in the event's zone. We calculate this once for each range/tzId and cache it on the searchRange
+		var datesInRange;
+		if(!searchRange.datesInRange){
+			searchRange.datesInRange = {};
+		}
+
+		if(!searchRange.datesInRange[event.tzId]){
+			datesInRange = this.getDatesInRange({start: searchRange.start, end: searchRange.end, tzId: event.tzId});
+		}
+		else{
+			datesInRange = searchRange.datesInRange[event.tzId];
+		}
+		searchRange.datesInRange[event.tzId] = datesInRange;
+
+		//Now that we know more about the search range, test again:
+		//Has the event's repeat cycle even started yet?  Did its repeat cycle already end?
+		if(event.dtstart > searchRange.end || this.repeatEndedBeforeDate(event.rrule, event.countInfo, searchRange.start)){
+			return this.noOccurrences;
+		}
+
+		return this.findRepeatsInRangeHelper(event, range, datesInRange, datesInEvent, limit);
+	},findRepeatsInRangeCountVersion: function(event, range){
+		//See findRepeatsInRange for a full explanation of the process.
+
+		//A count has to be worked from the first occurrence, as the count includes every one before
+		//the range. The countInfo object keeps that work so each search carries on where the last stopped.
+		//It only lives on the local copy of the event, not in the database:
+		// countInfo: {
+		//		estimateEnd: timestamp - estimate of when the repeat cycle for this event will end
+		//		occurrences: [start1, start2, ...] - the real start of each occurrence found so far.
+		//		nextDate: the next date to test, a date in the event's zone
+		//		used: how much of the count has gone. Exceptions use it up, but aren't occurrences.
+		// }
+
+		//Test against the range. Maybe we don't repeat anywhere near this range, and don't have to do any work
+		var keepGoing = this.basicRangeTests(event, range);
+		if(!keepGoing){
+			return this.noOccurrences;
+		}
+
+		var tempEnd = event.dtend;
+
+		// Single Date object to be reused for calculating multiple time (ms)
+		// instances rather than expensively creating multiple Date instances.
+		var timeMachine = new Date();
+
+		//All-day events that are midnight-to-midnight need some adjustment
+		if(event.allDay){
+			tempEnd = this.allDayAdjustment(event.dtstart, tempEnd, timeMachine);
+		}
+
+		var datesInEvent = this.getDatesInRange({start: event.dtstart, end: tempEnd, tzId: event.tzId});
+
+		if(!event.countInfo){
+			console.error("===== Yikes, something is wrong, your countInfo disappeared for event: "+event._id);
+			this.countPrep(event);
+		}
+		var countInfo = event.countInfo;
+		if(!countInfo.occurrences){
+			countInfo.occurrences = [];
+			countInfo.nextDate = datesInEvent[0];
+			countInfo.used = 0;
+		}
+
+		var count = parseInt(event.rrule.count, 10) || 1;
+		var lastDate = this.dateOfWall(this.wallClockOf(range.end, event.tzId));
+		var startClock = this.timeOfDay(this.wallClockOf(event.dtstart, event.tzId));
+		var date;
+		var repeats;
+		while(countInfo.used < count && countInfo.nextDate <= lastDate){
+			var timeLimit = this.getGEIRTimeLimit();
+			if(timeLimit && Date.now() >= timeLimit){
+				console.error("Exceeded process time limit on event: "+event._id);
+				break;
+			}
+			date = countInfo.nextDate;
+			repeats = this.rruleManager.evaluateRRule(date, datesInEvent[0], event.dtstart, event.rrule, event.exdates, event.tzId, countInfo);
+			if(repeats){
+				countInfo.used++;
+				if(repeats !== -1){
+					countInfo.occurrences.push(this.occurrenceStart(date, startClock, event.tzId));
+				}
+			}
+			countInfo.nextDate = this.nextDate(date);
+		}
+
+		return this.reconstructOccurrences(event, countInfo.occurrences, range);
+	},reconstructOccurrences: function reconstructOccurrences(event, occurrences, range){
+		var occLength = occurrences.length;
+		var duration = event.dtend - event.dtstart;
+		var inRangeOccurrences = [];
+		for(var i = 0; i < occLength; i++){
+			var instanceStart = occurrences[i];
+			if(instanceStart + duration >= range.start && instanceStart < range.end){
+				inRangeOccurrences.push(this.makeOccurrence(event, instanceStart, instanceStart + duration));
+			}
+		}
+		return inRangeOccurrences;
+	},findRepeatsInRangeHelper: function findRepeatsInRangeHelper(event, range, datesInRange, datesInEvent, limit){
+		var date;
+		var repeatsOnDate;
+		var start;
+		var end;
+		var duration = event.dtend - event.dtstart;
+		var rrule = event.rrule;
+		var firstDate = datesInEvent[0];
+		var startClock = this.timeOfDay(this.wallClockOf(event.dtstart, event.tzId));
+		var datesInRangeSize = datesInRange.length;
+		var eventOccurrences = [];
+		var numFound = 0;
+
+		if (isNaN (limit)) {
+			limit = 0;
+		}
+
+		//evaluate each date in the range.
+		//NOTE: There's no way events could happen 2x in one day here, because we are in the event's timezone.
+		for (var i = 0; i < datesInRangeSize; i++){
+			var timeLimit = this.getGEIRTimeLimit();
+			if(timeLimit && Date.now() >= timeLimit){
+				console.error("Exceeded process time limit on event: "+event._id+" at date: "+i + " of "+datesInRangeSize);
+				break;
+			}
+			date = datesInRange[i];
+
+			//Has the event's repeat cycle even started yet?
+			if(date < firstDate){
+				continue;
+			}
+
+			repeatsOnDate = this.rruleManager.evaluateRRule(date, firstDate, event.dtstart, rrule, event.exdates, event.tzId, event.countInfo);
+			if (!repeatsOnDate) {
+				continue;
+			}
+			//If repeatsOnDate == -1, that means it repeated on that date, but it was an EXDATE.
+			//So it counts as an occurrence, but we shouldn't return it to the caller
+			if(repeatsOnDate === -1){
+				numFound++;
+				if (numFound === limit) {
+					return eventOccurrences;
+				}
+				continue;
+			}
+
+			start = this.occurrenceStart(date, startClock, event.tzId);
+			end = start + duration;
+
+			//Did the event's repeat cycle already end?
+			if(rrule.until && this.untilPassed(rrule.until, date, start)){
+				continue;
+			}
+
+			//Are the times within the original search range? (not the expanded search range)
+			if(!(end >= range.start && start < range.end)){
+				continue;
+			}
+
+			eventOccurrences.push (this.makeOccurrence(event, start, end));
+			numFound++;
+			if (numFound === limit) {
+				return eventOccurrences;
+			}
+		}
+
+		return eventOccurrences;
+	},getEventRenderTimes:function(eventArray,dates){var eventsByDay=[];if(!(eventArray&&eventArray.length&&dates&&dates.length))return eventsByDay;var eventsLength=eventArray.length;var datesLength=dates.length;var lastDate=(new Date(dates[dates.length-1])).addDays(1).getTime();var date=new Date;for(var j=0;j<eventsLength;j++){var event=eventArray[j];var start=
 event.currentLocalStart<dates[0]?dates[0]:event.currentLocalStart;var end=event.currentLocalEnd>lastDate?lastDate:event.currentLocalEnd;var midnights=[start];for(var i=0;i<datesLength;i++)if(dates[i]>start&&dates[i]<end)midnights.push(dates[i]);midnights.push(end);var days=midnights.length-1;for(i=0;i<days;i++){var nextOccurrence=ObjectUtils.clone(event);if(event.allDay){nextOccurrence.renderStartTime=date.setTime(midnights[i])&&date.clearTime().getTime();nextOccurrence.renderEndTime=date.setTime(nextOccurrence.renderStartTime+
 86399E3)}else{nextOccurrence.renderStartTime=midnights[i];nextOccurrence.renderEndTime=midnights[i+1]}eventsByDay.push(nextOccurrence)}}return eventsByDay},formatResponse:function(events,dates,calendarId,excludedCalendars){var allDayEvents=[],datesLength=dates.length,day,days=[],eventsLength=events.length,hiddenAllDay=[],hiddenEvents=[],i,regularEvents=[];if(!datesLength)return;var useExcluded=excludedCalendars&&!(calendarId&&excludedCalendars[calendarId]);var event,isHidden;for(i=0;i<eventsLength;i++){event=
 events[i];isHidden=calendarId&&calendarId!=event.calendarId||useExcluded&&excludedCalendars[event.calendarId];if(event.allDay)(isHidden?hiddenAllDay:allDayEvents).push(event);else(isHidden?hiddenEvents:regularEvents).push(event)}if(datesLength==1){days.push({date:dates[0],events:regularEvents,allDayEvents:allDayEvents,freeTimes:[],busyTimes:[],hiddenEvents:hiddenEvents,hiddenAllDay:hiddenAllDay});return days}if(eventsLength===0){for(i=0;i<datesLength;i++)days.push({date:dates[i],events:[],allDayEvents:[],
 freeTimes:[],busyTimes:[],hiddenEvents:[],hiddenAllDay:[]});return days}var allDayEventsByDay=this.splitByDays(allDayEvents,dates),eventsByDay=this.splitByDays(regularEvents,dates),hiddenByDay=this.splitByDays(hiddenEvents,dates),hiddenAllDayByDay=this.splitByDays(hiddenAllDay,dates);for(i=0;i<datesLength;i++)days.push({date:dates[i],events:eventsByDay[i],allDayEvents:allDayEventsByDay[i],freeTimes:[],busyTimes:[],hiddenEvents:hiddenByDay[i],hiddenAllDay:hiddenAllDayByDay[i]});return days},splitByDays:function(eventsToSplit,
 dates){var datesLength=dates.length;var eventsToSplitLength=eventsToSplit.length;var sliceStartIndex=0;var sliceEndIndex=0;var eventIndex=0;var dateIndex=1;var eventsByDay=[];var events;while(dateIndex<datesLength&&eventIndex<eventsToSplitLength){var event=eventsToSplit[eventIndex];if(event&&event.renderStartTime>=dates[dateIndex]){if(eventIndex-1<0)events=[];else events=eventsToSplit.slice(sliceStartIndex,eventIndex);eventsByDay.push(events);sliceStartIndex=eventIndex;dateIndex++}else eventIndex++}if(eventIndex<=
 eventsToSplitLength){events=eventsToSplit.slice(sliceStartIndex);eventsByDay.push(events);dateIndex++}while(dateIndex<=datesLength){eventsByDay.push([]);dateIndex++}return eventsByDay},findOffset:function(timestamp,tzId){var year=(new Date(timestamp)).getFullYear();var localTzId=this.timezoneManager.getSystemTimezone();var timeNoMillis=timestamp/1E3;var localOffsetFromUTCInSeconds=this.timezoneManager.getOffset(year,localTzId,timeNoMillis);var rangeOffsetFromUTCInSeconds=this.timezoneManager.getOffset(year,
-tzId,timeNoMillis);var offsetFromLocalInSeconds=rangeOffsetFromUTCInSeconds-localOffsetFromUTCInSeconds;var offsetMinutes=offsetFromLocalInSeconds/60;return offsetMinutes},getDatesInRange:function(range){var dates=[],startTimestamp=range.start,endTimestamp=range.end,localTzId=this.timezoneManager.getSystemTimezone();if(range.tzId!=localTzId){var startOffset=this.findOffset(startTimestamp,range.tzId),start=new Date(startTimestamp);start.setMilliseconds(0);startTimestamp=start.addMinutes(startOffset);
-var endOffset=this.findOffset(endTimestamp,range.tzId),end=new Date(endTimestamp);end.setMilliseconds(0);endTimestamp=end.addMinutes(endOffset)}var midnight=(new Date(startTimestamp)).set({hour:0,minute:0,second:0,millisecond:0});var time;do{dates.push(time||(time=midnight.getTime()));midnight.addDays(1);time=midnight.getTime()}while(time<endTimestamp);return dates},findBusyBlocksInDays:function(days,calendarId){var MORNING_ENDS=12;var MIDDAY_ENDS=17;var eventDays=[];var daysLength=days.length;var timeMachine=
+tzId,timeNoMillis);var offsetFromLocalInSeconds=rangeOffsetFromUTCInSeconds-localOffsetFromUTCInSeconds;var offsetMinutes=offsetFromLocalInSeconds/60;return offsetMinutes},getDatesInRange: function (range){
+		var	dates			= []
+		,	startTimestamp	= range.start
+		,	endTimestamp	= range.end
+		,	localTzId		= this.timezoneManager.getSystemTimezone()
+		;
+
+		// webOS CE: read the range off the clock in the range's zone, then hold that reading on the
+		// device's clock, where Date can say which calendar days it covers.
+		if (range.tzId != localTzId) {
+			var	startClock	= new Date (this.wallClockOf (startTimestamp, range.tzId))
+			,	endClock	= new Date (this.wallClockOf (endTimestamp, range.tzId))
+			;
+			startTimestamp = new Date (startClock.getUTCFullYear(), startClock.getUTCMonth(), startClock.getUTCDate()).getTime();
+			endTimestamp = new Date (endClock.getUTCFullYear(), endClock.getUTCMonth(), endClock.getUTCDate(), endClock.getUTCHours(), endClock.getUTCMinutes(), endClock.getUTCSeconds()).getTime();
+		}
+
+		var midnight = ((new Date (startTimestamp)).set
+		({	hour		: 0
+		,	minute		: 0
+		,	second		: 0
+		,	millisecond	: 0
+		}));
+
+		var time;
+		do
+		{	dates.push (time || (time = midnight.getTime()));							// Save current midnight
+			midnight.addDays(1);
+			time = midnight.getTime();
+		}
+		while (time < endTimestamp);
+
+		return dates;
+	},findBusyBlocksInDays:function(days,calendarId){var MORNING_ENDS=12;var MIDDAY_ENDS=17;var eventDays=[];var daysLength=days.length;var timeMachine=
 new Date;for(var i=0;i<daysLength;i++){var midnight=days[i].date;var oneAm=midnight+36E5;var eventDay={allDay:false,beg:false,mid:false,end:false,calAllDay:false,calBeg:false,calMid:false,calEnd:false};var allEvents=days[i].allDayEvents.concat(days[i].hiddenAllDay,days[i].events,days[i].hiddenEvents);var eventsLength=allEvents.length;var maxTrue=8;var numTrue=0;for(var j=0;j<eventsLength;j++){var event=allEvents[j];timeMachine.setTime(event.renderStartTime);var eventStart=timeMachine.getHours();var eventEndTime=
 timeMachine.setTime(event.renderEndTime);var eventEnd=timeMachine.getHours();if(eventEnd===0){eventEnd=24;if(eventEndTime<oneAm)eventEnd=1}if(event.allDay){if(!eventDay.allDay){eventDay.allDay=true;numTrue++;if(calendarId!=-1&&!eventDay.calAllDay&&event.calendarId==calendarId){eventDay.calAllDay=true;numTrue++}}}else{if(!eventDay.beg&&eventEnd>0&&eventStart<MORNING_ENDS){eventDay.beg=true;numTrue++;if(calendarId!=-1&&!eventDay.calBeg&&event.calendarId==calendarId){eventDay.calBeg=true;numTrue++}}if(!eventDay.mid&&
 eventEnd>MORNING_ENDS&&eventStart<MIDDAY_ENDS){eventDay.mid=true;numTrue++;if(calendarId!=-1&&!eventDay.calMid&&event.calendarId==calendarId){eventDay.calMid=true;numTrue++}}if(!eventDay.end&&eventEnd>MIDDAY_ENDS&&eventStart<24){eventDay.end=true;numTrue++;if(calendarId!=-1&&!eventDay.calEnd&&event.calendarId==calendarId){eventDay.calEnd=true;numTrue++}}}if(numTrue===maxTrue)break}eventDays.push(eventDay)}return eventDays},busyDaysToString:function(days){var STATE_TO_TOKEN="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+-";
@@ -130,13 +544,13 @@ function watchEvents(){if(thi$.watchRequest)PalmCall.cancel(thi$.watchRequest);d
 if(response&&response.fired){queryEvents();return true}};queryEvents=function queryEvents(){delete thi$.dbRequest;thi$.dbRequest=DB.execute("batch",operations);thi$.dbRequest.then(handleEvents)};function getRevsetNumber(response){var revsetNumber=0;if(response){var result=response.results;if(result&&result.length)revsetNumber=result[0].eventDisplayRevset}return revsetNumber}handleEvents=function handleEvents(future){var result=future.result;var responses=result&&result.responses;if(!responses){console.error("Event Manager: batch query failed");
 return false}var revsetResponse1=responses[0],revsetResponse2=responses[1],queryResponse=responses[2];thi$.queryResults=query.page?thi$.queryResults.concat(queryResponse.results):queryResponse.results;if(queryResponse.next){query.page=queryResponse.next;queryEvents();return true}delete query.page;var revsetNum1=getRevsetNumber(revsetResponse1)||0;var revsetNum2=getRevsetNumber(revsetResponse2)||0;thi$.lastRevsetNumber=Math.max(revsetNum1,revsetNum2);thi$.utils.loadTimezones(thi$.queryResults);thi$.notifyObservers();
 watchEvents();return true};queryEvents()},cancelGetEventsInRange:function cancelGetEventsInRange(stopTimestamp){if(isNaN(stopTimestamp)){stopTimestamp=parseInt(stopTimestamp,10);if(isNaN(stopTimestamp))stopTimestamp=Date.now()}var utils=this.utils;if(stopTimestamp<utils.getGEIRTimeLimit())utils.setGEIRTimeLimit(stopTimestamp)},getEventsInRange:function(range,callback,eventSet,limit){if(!eventSet)eventSet=this.queryResults;var event,events,eventSetSize=eventSet.length,i,chunkInterval,occurrences=[],
-thi$=this;var timeoutLength=7E3;var tempRange=Foundations.ObjectUtils.clone(range);var future=new Future(null);future.tzIds=this.utils.getUniqueTzIdsInEventSet(eventSet);future.years=this.utils.getYearsInRange(tempRange);future.then(this.timezoneManager,this.timezoneManager.setup);future.then(this.timezoneManager,this.timezoneManager.getTimezones);future.then(this,function(future){var result=future.result;i=0;var chunkLimit=50;function findOccurrences(){var okEvent;for(var j=0;i<eventSetSize&&j<chunkLimit;i++,
+thi$=this;var timeoutLength=7E3;var tempRange=Foundations.ObjectUtils.clone(range);var future=new Future(null);future.tzIds=this.utils.getUniqueTzIdsInEventSet(eventSet);future.years=this.utils.getYearsInRange(tempRange).concat(this.utils.getStartYears(eventSet));future.then(this.timezoneManager,this.timezoneManager.setup);future.then(this.timezoneManager,this.timezoneManager.getTimezones);future.then(this,function(future){var result=future.result;i=0;var chunkLimit=50;function findOccurrences(){var okEvent;for(var j=0;i<eventSetSize&&j<chunkLimit;i++,
 j++){var timeLimit=this.utils.getGEIRTimeLimit();if(timeLimit&&Date.now()>=timeLimit)break;event=eventSet[i];okEvent="dtstart"in event&&"dtend"in event&&isFinite(event.dtstart)&&isFinite(event.dtend);if(!okEvent){console.error("===== Skipping malformed calendar event: "+event._id);continue}if(!event.rrule){if(this.utils.occursInRange(event,tempRange))occurrences.push(event)}else{if(event.rrule.count)events=this.utils.findRepeatsInRangeCountVersion(event,tempRange);else events=this.utils.findRepeatsInRange(event,
 tempRange,limit);if(events.length>0)occurrences=occurrences.concat(events)}}if(i<eventSetSize)return;var dates;if(tempRange.datesInRange&&tempRange.datesInRange[tempRange.tzId])dates=tempRange.datesInRange[tempRange.tzId];else dates=this.utils.getDatesInRange(tempRange);var eventsWithRenderTimes=[],occurrencesLength=occurrences.length;eventsWithRenderTimes=this.utils.getEventRenderTimes(occurrences,dates);if(eventsWithRenderTimes.length>0)eventsWithRenderTimes.sort(this.utils.sortByStartTime);var response=
 {days:this.utils.formatResponse(eventsWithRenderTimes,dates,tempRange.calendarId,tempRange.excludeList)};clearInterval(chunkInterval);setTimeout(function(){thi$.utils.setGEIRTimeLimit(undefined);callback(response)},15.625);future.result=response}function processEventChunk(){thi$.utils.setGEIRTimeLimit(Date.now()+timeoutLength);findOccurrences.apply(thi$)}chunkInterval=setInterval(processEventChunk,31.625)})},findNumOccurrencesInRange:function(event,range,countLimit){var occurrences;if(event.rrule.count)occurrences=
 this.utils.findRepeatsInRangeCountVersion(event,range);else occurrences=this.utils.findRepeatsInRange(event,range,countLimit);return occurrences.length},getBusyDays:function(range,callback,eventSet){if(!eventSet)eventSet=this.queryResults;var busyCallBack=_.bind(this.getBusyDaysCallback,this,callback,range.calendarId);this.getEventsInRange(range,busyCallBack,eventSet)},getBusyDaysCallback:function(callback,calendarId,response){var days=response.days,busyBlocks=this.utils.findBusyBlocksInDays(days,
 calendarId),busyStrings=this.utils.busyDaysToString(busyBlocks);var results={date:days[0].date,days:busyStrings.regular,allDay:busyStrings.allDay};callback(results)},findNextOccurrenceTimezonePrep:function(eventSet){if(!eventSet||eventSet.length===0)return new Foundations.Control.Future({returnValue:true});var years=[];for(var i=(new Date).getFullYear();i<2051;i++)years.push(i);var future=this.timezoneManager.setup();future.then(this,function(){var result=future.result;future.tzIds=this.utils.getUniqueTzIdsInEventSet(eventSet);
-future.years=years;future.result=result});future.then(this.timezoneManager,this.timezoneManager.getTimezones);return future},findNextOccurrence:function(event,date){if(!event.rrule||!event.rrule.freq)return false;var until;if(event.rrule.until!==null&&event.rrule.until!==undefined)until=event.rrule.until;else until=2524608E6;if(date>until)return false;var jumpDuration=0;var interval=1;if(event.rrule.interval)interval=parseInt(event.rrule.interval,10)||1;switch(event.rrule.freq){case "DAILY":jumpDuration=
+future.years=years.concat(this.utils.getStartYears(eventSet));future.result=result});future.then(this.timezoneManager,this.timezoneManager.getTimezones);return future},findNextOccurrence:function(event,date){if(!event.rrule||!event.rrule.freq)return false;var until;if(event.rrule.until!==null&&event.rrule.until!==undefined)until=event.rrule.until;else until=2524608E6;if(date>until)return false;var jumpDuration=0;var interval=1;if(event.rrule.interval)interval=parseInt(event.rrule.interval,10)||1;switch(event.rrule.freq){case "DAILY":jumpDuration=
 interval*864E5;break;case "WEEKLY":jumpDuration=interval*6048E5;break;case "MONTHLY":case "YEARLY":jumpDuration=interval*26784E5;break;default:return false}var repeatCycleContinues=true,start=date,end=date,baseOccurrence,nextOccurrence,tzId=this.timezoneManager.getSystemTimezone(),i,nEvents,endDate,timeMachine=new Date;var datesInEvent=this.utils.getDatesInRange({start:event.dtstart,end:event.dtend,tzId:event.tzId});var datesInEventSize=datesInEvent.length;while(repeatCycleContinues){start=end;end=
 end+jumpDuration;var range={start:start,end:end,tzId:tzId};var events;if(event.rrule.count){events=this.utils.findRepeatsInRangeCountVersion(event,range);if(event.rrule.count&&event.countInfo&&event.rrule.count==event.countInfo.length)repeatCycleContinues=false}else events=this.utils.findRepeatsInRange(event,range,datesInEventSize);nEvents=events&&events.length||0;for(i=0;i<nEvents;i++)if(events[i].currentLocalStart>date){nextOccurrence=events[i].currentLocalStart;break}if(nextOccurrence)return nextOccurrence;
 if(nEvents>0&&events[nEvents-1].currentLocalStart<=date){if(!baseOccurrence||baseOccurrence.getTime()<events[nEvents-1].currentLocalStart){timeMachine.setTime(events[nEvents-1].currentLocalStart);baseOccurrence=timeMachine}end=baseOccurrence.addDays(1).getTime()}if(end>until)repeatCycleContinues=false}return false}});(function(){var singleton=new EventManager;EventManager=function EventManager(){return singleton}})();exports.EventManager=EventManager;

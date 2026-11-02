@@ -14,6 +14,7 @@ var Time = (function () {
 		//there is a timezone property that could be set.
 		//it could also be a comma seperated list of dates / date times. But we don't support that, yet.. ;)
 		//used to try timeZone correction...
+		DAY = 86400000,
 		TZManager = Calendar.TimezoneManager(),
 		TZManagerInitialized = false,
 		shiftAllDay = true,
@@ -177,6 +178,8 @@ var Time = (function () {
 							Log.log_icalDebug("Adding year ", event[field].year, " from ", field, " which was object: ", event[field]);
 							years.push(event[field].year);
 						}
+						event.clockTexts = event.clockTexts || {};
+						event.clockTexts[field] = event[field].value;
 						event[field] = iCalTimeToWebOsTime(event[field].value); //overwrite objects with ts here.
 					} else {
 						var date = new Date(event[field]);
@@ -347,13 +350,13 @@ var Time = (function () {
 		return Date.UTC(year, month - 1, day, parseInt(start[4], 10), parseInt(start[5], 10));
 	}
 
-	// A file's own VTIMEZONE, read from its changeover rules. The timestamp holds the clock
-	// reading as device local time, so the local getters give the reading back.
+	// A file's own VTIMEZONE at a real moment, from its changeover rules. Each changeover is a
+	// clock reading in the offset in force before it.
 	function inlineOffset(inlineTz, timestampNoMillis) {
-		var date = new Date(timestampNoMillis * 1000),
-			clock = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes()),
+		var instant = timestampNoMillis * 1000,
 			standard = inlineTz.standard || {},
 			daylight = inlineTz.daylight || {},
+			year,
 			toDaylight,
 			toStandard,
 			inDaylight;
@@ -363,15 +366,18 @@ var Time = (function () {
 		if (standard.offset === undefined) {
 			return daylight.offset * 3600;
 		}
-		toDaylight = inlineChangeover(daylight, date.getFullYear());
-		toStandard = inlineChangeover(standard, date.getFullYear());
+		year = new Date(instant + standard.offset * 3600000).getUTCFullYear();
+		toDaylight = inlineChangeover(daylight, year);
+		toStandard = inlineChangeover(standard, year);
 		if (toDaylight === null || toStandard === null) {
 			return standard.offset * 3600;
 		}
+		toDaylight -= standard.offset * 3600000;
+		toStandard -= daylight.offset * 3600000;
 		if (toDaylight < toStandard) {
-			inDaylight = clock >= toDaylight && clock < toStandard;
+			inDaylight = instant >= toDaylight && instant < toStandard;
 		} else {
-			inDaylight = clock >= toDaylight || clock < toStandard; //south of the equator
+			inDaylight = instant >= toDaylight || instant < toStandard; //south of the equator
 		}
 		return (inDaylight ? daylight.offset : standard.offset) * 3600;
 	}
@@ -407,39 +413,119 @@ var Time = (function () {
 		}
 		return offSet;
 	}
-	function convertTime (timestamp, srcTz, destTz) { 
-        var defaultTz = TZManager.timezone;
-        var source = srcTz || defaultTz; 
-        var dest = destTz || defaultTz; 
-        if (source == dest) 
-            return timestamp; 
+	// Three kinds of value pass through here. A timestamp in the device's zone is real time. One
+	// in another zone is that zone's clock reading held on the device's clock, which is how a
+	// parsed time arrives. A wall is a clock reading held in UTC fields, so offsets can be
+	// applied to it without Date getting involved.
+	function wallOfHeldTime(timestamp) {
+		var d = new Date(timestamp);
+		return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes(), d.getSeconds());
+	}
 
-        var year = (new Date(timestamp)).getFullYear(); 
-        var timestampNoMillis = timestamp / 1E3; 
-		var destOffset = getOffsetWithMapping(year, dest, timestampNoMillis);
-        var sourceOffset = getOffsetWithMapping(year, source, timestampNoMillis); 
-		// A name nothing recognises can't be converted. Keep the clock reading the file gave,
-		// which is right whenever the event is in this zone, and let the caller report it.
-		if (sourceOffset === undefined || destOffset === undefined) {
-			unknownTimezones[sourceOffset === undefined ? source : dest] = true;
+	function heldTimeOfWall(wall) {
+		var d = new Date(wall);
+		return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()).getTime();
+	}
+
+	function offsetAt(tzId, instant) {
+		var offset = getOffsetWithMapping(new Date(instant).getFullYear(), tzId, instant / 1000);
+		return offset === undefined ? undefined : offset * 1000;
+	}
+
+	// A skipped clock reading takes the offset from before the change, and a repeated one means
+	// the first time round, as RFC 5545 says. Undefined for a zone nothing recognises.
+	function wallToInstant(wall, tzId) {
+		var before = offsetAt(tzId, wall - 86400000),
+			after = offsetAt(tzId, wall + 86400000),
+			first,
+			second,
+			firstValid,
+			secondValid;
+		if (before === undefined) {
+			before = after;
+		}
+		if (after === undefined) {
+			after = before;
+		}
+		if (before === undefined) {
+			return undefined;
+		}
+		first = wall - before;
+		second = wall - after;
+		if (before === after) {
+			return first;
+		}
+		firstValid = offsetAt(tzId, first) === before;
+		secondValid = offsetAt(tzId, second) === after;
+		if (firstValid && secondValid) {
+			return Math.min(first, second);
+		}
+		return (secondValid && !firstValid) ? second : first;
+	}
+
+	function wallOfText(text) {
+		var parts = DATETIME.exec(text);
+		return parts && !parts[7] ? Date.UTC(parts[1], parts[2] - 1, parts[3], parts[4], parts[5], parts[6]) : undefined;
+	}
+
+	// A time from the file, converted from its text. Its parsed timestamp was held on the device's
+	// clock, which moves a reading inside the device's own skipped hour.
+	function convertFileTime(event, field, source, target) {
+		var wall = event.clockTexts && wallOfText(event.clockTexts[field] || ""),
+			instant;
+		if (wall !== undefined && source && source !== TZManager.timezone && target === TZManager.timezone) {
+			instant = wallToInstant(wall, source);
+			if (instant !== undefined) {
+				return instant;
+			}
+		}
+		return convertTime(event[field], source, target);
+	}
+
+	function convertTime (timestamp, srcTz, destTz) {
+		var defaultTz = TZManager.timezone,
+			source = srcTz || defaultTz,
+			dest = destTz || defaultTz,
+			instant,
+			offset;
+		if (source === dest) {
 			return timestamp;
 		}
-		Log.log_icalDebug("** getOffsetWithMapping thinks offset of ", source, " is ", sourceOffset);
-		Log.log_icalDebug("** getOffsetWithMapping thinks offset of ", dest, " is ", destOffset);
-        var convertedTime = (timestampNoMillis + destOffset - sourceOffset) * 1E3; 
-        return convertedTime 
-    }
+		instant = source === defaultTz ? timestamp : wallToInstant(wallOfHeldTime(timestamp), source);
+		// A name nothing recognises can't be converted. Keep the clock reading the file gave,
+		// which is right whenever the event is in this zone, and let the caller report it.
+		if (instant === undefined) {
+			unknownTimezones[source] = true;
+			return timestamp;
+		}
+		if (dest === defaultTz) {
+			return instant;
+		}
+		offset = offsetAt(dest, instant);
+		if (offset === undefined) {
+			unknownTimezones[dest] = true;
+			return timestamp;
+		}
+		return heldTimeOfWall(instant + offset);
+	}
 	/* End support for Windows timezones */
 
-	// The calendar tests an exception against the occurrence's date in the event's zone, plus
-	// the clock time of dtstart in the device's zone. A date and time only matches when both
-	// zones agree on the day and on daylight time. A plain date is compared as a date, so that
-	// is what it gets: the day this occurrence falls on in the event's zone.
-	function exdateInEventZone(value, tzId) {
-		if (DATE.test(value)) {
-			return value;
+	function wallAt(instant, tzId) {
+		return instant + (offsetAt(tzId || TZManager.timezone, instant) || 0);
+	}
+
+	function dayOfWall(wall) {
+		var d = new Date(wall), month = d.getUTCMonth() + 1, day = d.getUTCDate();
+		return d.getUTCFullYear() + (month < 10 ? "0" : "") + month + (day < 10 ? "0" : "") + day;
+	}
+
+	// The calendar compares an exception by its day in the event's zone. A clock reading in that
+	// zone already says which day. Only a UTC time has to be worked out.
+	function exceptionDay(value, tzId) {
+		if (value.charAt(value.length - 1) !== "Z" && value.charAt(value.length - 1) !== "z") {
+			return value.substr(0, 8);
 		}
-		return webOsTimeToICal(convertTime(iCalTimeToWebOsTime(value), TZManager.timezone, tzId), true, false);
+		return dayOfWall(wallAt(iCalTimeToWebOsTime(value), tzId));
 	}
 
 	// The calendar stops a repeat with until < date, where date is midnight on the device's clock
@@ -455,6 +541,7 @@ var Time = (function () {
 			instant,
 			clock,
 			start,
+			lastDay,
 			last,
 			lastEnd,
 			endOfDay,
@@ -467,28 +554,24 @@ var Time = (function () {
 			return;
 		}
 
-		instant = text.charAt(text.length - 1) === "Z" ? rrule.until : convertTime(rrule.until, source, device);
-		clock = new Date(convertTime(instant, device, event.tzId));
-		start = new Date(convertTime(event.dtstart, device, event.tzId));
-		last = new Date(clock.getFullYear(), clock.getMonth(), clock.getDate());
+		instant = text.charAt(text.length - 1) === "Z" ? rrule.until : convertFileTime({until: rrule.until, clockTexts: {until: text}}, "until", source, device);
+		clock = wallAt(instant, event.tzId);
+		start = wallAt(event.dtstart, event.tzId);
+		lastDay = Math.floor(clock / DAY);
 		// UNTIL before that day's start time means the day before was the last.
-		if (clock.getHours() * 3600 + clock.getMinutes() * 60 + clock.getSeconds() <
-				start.getHours() * 3600 + start.getMinutes() * 60 + start.getSeconds()) {
-			last.setDate(last.getDate() - 1);
+		if (clock - lastDay * DAY < start - Math.floor(start / DAY) * DAY) {
+			lastDay -= 1;
 		}
 
-		endOfDay = new Date(last.getFullYear(), last.getMonth(), last.getDate(), 23, 59, 59).getTime();
-		lastEnd = convertTime(new Date(last.getFullYear(), last.getMonth(), last.getDate(),
-			start.getHours(), start.getMinutes(), start.getSeconds()).getTime(), event.tzId, device) +
+		last = new Date(lastDay * DAY);
+		endOfDay = new Date(last.getUTCFullYear(), last.getUTCMonth(), last.getUTCDate(), 23, 59, 59).getTime();
+		lastEnd = wallToInstant(lastDay * DAY + (start - Math.floor(start / DAY) * DAY), event.tzId) +
 			(event.dtend - event.dtstart);
 		rrule.until = Math.max(endOfDay, lastEnd);
 
-		next = new Date(last);
-		next.setDate(next.getDate() + 1);
-		while (next.getTime() <= rrule.until) {
-			event.exdates = event.exdates || [];
-			event.exdates.push(webOsTimeToICal(next.getTime(), true, false));
-			next.setDate(next.getDate() + 1);
+		for (next = lastDay + 1; new Date(new Date(next * DAY).getUTCFullYear(), new Date(next * DAY).getUTCMonth(),
+				new Date(next * DAY).getUTCDate()).getTime() <= rrule.until; next += 1) {
+			event.exceptionDays.push(dayOfWall(next * DAY));
 		}
 	}
 
@@ -501,7 +584,8 @@ var Time = (function () {
 			Log.log_icalDebug("Processing ", events.length, " events.", events);
 			events.forEach(function (event) {
 				Log.log_icalDebug("normalizeTo", direction, "Timezone(): ");
-				var newDtend, oldVal, dt, source = event.tzId, target = TZManager.timezone;
+				var newDtend, oldVal, dt, source = event.tzId, target = TZManager.timezone,
+					exceptions = (event.exdates || []).concat(event.recurrenceId ? [event.recurrenceId] : []);
 				if (direction === "event") {
 					target = event.tzId;
 					source = TZManager.timezone;
@@ -511,14 +595,14 @@ var Time = (function () {
 					Log.log_icalDebug("----CONVERTING TZ from ", source, " to ", target);
 					oldVal = event.dtstart;
 					if (!event.allDay) {
-						event.dtstart = convertTime(event.dtstart, source, target);
+						event.dtstart = convertFileTime(event, "dtstart", source, target);
 					}
 					Log.log_icalDebug("    ", (new Date(oldVal).toDateString() + " " + new Date(oldVal).toLocaleTimeString()), " -> ", (new Date(event.dtstart).toDateString() + " " + new Date(event.dtstart).toLocaleTimeString()));
 				}
 
 				if (event.dtend) {
 					if (!event.allDay) {
-						newDtend = convertTime(event.dtend, source, target);
+						newDtend = convertFileTime(event, "dtend", source, target);
 					} else {
 						newDtend = event.dtend;
 					}
@@ -569,11 +653,15 @@ var Time = (function () {
 					);
 				}
 
+				delete event.clockTexts;
 				normalizeToLocalTimezoneArray(event, "exdates", direction);
 				normalizeToLocalTimezoneArray(event, "rdates", direction);
 
 				if (direction !== "event") {
 					event.tzId = usableTimezone(event.tzId, new Date(event.dtstart).getFullYear());
+					event.exceptionDays = exceptions.map(function (value) {
+						return exceptionDay(value, event.tzId);
+					});
 					if (event.rrule && event.rrule.untilText) {
 						setCalendarUntil(event, source);
 					}
@@ -627,7 +715,6 @@ var Time = (function () {
 			return Object.keys(unknownTimezones);
 		},
 
-		exdateInEventZone: exdateInEventZone,
 		convertDurationIntoMicroseconds: convertDurationIntoMicroseconds,
 		iCalTimeToWebOsTime: iCalTimeToWebOsTime,
 		webOsTimeToICal: webOsTimeToICal,

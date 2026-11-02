@@ -81,9 +81,12 @@ for name in ZONES:
     for h, mi in TIMES:
         for base in dates:
             start = base.replace(hour=h, minute=mi, second=0, microsecond=0)
+            # A start inside a skipped hour can't be stored: dtstart is real time, so the clock
+            # reading is lost.
+            if start.replace(tzinfo=tz).astimezone(timezone.utc).astimezone(tz).replace(tzinfo=None) != start:
+                continue
             hours = 30 if (start.day + h) % 7 == 0 else 1
             for kind, rule in rules(start):
-                occ = list(rrulestr("RRULE:" + rule, dtstart=start)[:40]) if False else None
                 it = rrulestr("RRULE:" + rule, dtstart=start)
                 occ = []
                 for o in it:

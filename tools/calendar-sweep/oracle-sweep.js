@@ -53,7 +53,7 @@ for (let i = 0; i < all.length; i += SAMPLE) {
             const k = c.kind, how = g.length < e.length ? "lost" : g.length > e.length ? "gained" : "moved";
             const t = tally[k] = tally[k] || {wrong: 0, lost: 0, gained: 0, moved: 0};
             t.wrong++; t[how]++;
-            if (ex.length < show) ex.push({tz: c.tz, kind: c.kind, end: c.end, cancel: c.cancel, mode, l: c.lines.slice(0, 1).concat(c.lines.slice(2)), missing: e.filter(x => !got.has(x)).slice(0, 3).map(x => new Date(x).toISOString().slice(0, 16)), extra: g.filter(x => !expect.has(x)).slice(0, 3).map(x => new Date(x).toISOString().slice(0, 16))});
+            if (ex.length < show && !(process.env.SKIP||"").split(",").includes(c.kind)) ex.push({tz: c.tz, kind: c.kind, end: c.end, cancel: c.cancel, mode, l: c.lines.slice(0, 1).concat(c.lines.slice(2)), missing: e.filter(x => !got.has(x)).slice(0, 3).map(x => new Date(x).toISOString().slice(0, 16)), extra: g.filter(x => !expect.has(x)).slice(0, 3).map(x => new Date(x).toISOString().slice(0, 16))});
         }
     }
 }

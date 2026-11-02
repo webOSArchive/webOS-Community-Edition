@@ -2474,12 +2474,12 @@ def main():
         sys.exit(f"ERROR: {rel} is not in the stock image")
     wcopy(rel, os.path.join(SYSTEM, rel), 0o644)
 
-    # Calendar framework: repeat fixes, for the first occurrence, COUNT paging
-    # across zones, exceptions in a COUNT total, and southern daylight time.
-    # Every copy a loader can reach: source, the app's concatenated.js, the
-    # services' minified.
+    # Calendar framework: repeat expansion rewritten around wall-clock times,
+    # and southern daylight time (tools/calendar-sweep tests it). Every copy a
+    # loader can reach: source, the app's concatenated.js, the services' minified.
     for rel in ("usr/palm/frameworks/calendar/submission/42/javascript/event-manager.js",
                 "usr/palm/frameworks/calendar/submission/42/javascript/timezone-manager.js",
+                "usr/palm/frameworks/calendar/submission/42/javascript/rrule-manager.js",
                 "usr/palm/frameworks/calendar/submission/42/concatenated.js",
                 "usr/palm/frameworks/calendar/submission/42calendar.js"):
         if f"./{rel}" not in stock_names:

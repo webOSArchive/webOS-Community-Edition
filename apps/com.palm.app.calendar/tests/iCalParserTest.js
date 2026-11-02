@@ -37,7 +37,7 @@ function info(tz, year, utcOffset, dstOffset, dstStart, dstEnd) {
 var tzManager = {
     timezone: "UTC",
     timezones: {2027: {
-        "America/New_York": info("America/New_York", 2027, -18000, -14400, 1805000400, 1825560000),
+        "America/New_York": info("America/New_York", 2027, -18000, -14400, 1805007600, 1825567200),
         "Australia/Sydney": info("Australia/Sydney", 2027, 36000, 39600, 1822492800, 1806768000)
     }},
     hasTimezoneInfo: function (tz, year) { return !!(this.timezones[year] && this.timezones[year][tz]); },
@@ -172,6 +172,17 @@ test("the stored zone is one the calendar can look up", function () {
     assert.equal(parse(timed("1", "Eastern Standard Time")).events[0].result.tzId, "America/New_York");
     assert.equal(parse(timed("2", "America/New_York")).events[0].result.tzId, "America/New_York");
     assert.equal(parse(timed("3", "Foo/Bar")).events[0].result.tzId, "UTC");
+});
+
+test("a clock change day uses the offset in force at that moment", function () {
+    var at = function (zone, time) {
+        return iso(parse(vevent(["UID:1", "DTSTART;TZID=" + zone + ":" + time])).events[0].result.dtstart);
+    };
+    assert.equal(at("Australia/Sydney", "20270404T003000"), "2027-04-03T13:30");    // still daylight time
+    assert.equal(at("Australia/Sydney", "20270404T033000"), "2027-04-03T17:30");    // after the change
+    assert.equal(at("America/New_York", "20271107T003000"), "2027-11-07T04:30");
+    assert.equal(at("America/New_York", "20271107T013000"), "2027-11-07T05:30");    // a repeated hour's first pass
+    assert.equal(at("America/New_York", "20271107T023000"), "2027-11-07T07:30");
 });
 
 test("daylight time south of the equator, from the service's rules", function () {

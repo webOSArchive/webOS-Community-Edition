@@ -352,62 +352,38 @@ RRuleManager.prototype = {
 	 * returns: true if todayDate is in the exception list
 	 */
 	evaluateExceptions: function(date, exdates, eventStart, tzId) {
-		var exdateType;
-		var exdatesLength = exdates.length;
-		var exdate;
 		var testDate = new Date(date);
-		
-		//TODO: We're fudging a little here.  We're passing in midnights for date, but exceptions are usually set to be the event start time.
-		//So if we want to match, we need to set the time on our test date.  
-		//Alternately, we could clear the time from any exdate we receive. This might get funny with regards to UTC exdates.		
-		var startTime = new Date(eventStart);		
-		testDate.set({hour: startTime.getHours(), minute: startTime.getMinutes(), second: startTime.getSeconds(), millisecond: startTime.getMilliseconds()});
-		
-		//this.rlog("evaluateExceptions: testDate: "+testDate+", exdates: "+JSON.stringify(exdates));
-		
-		if (exdates && exdatesLength !== 0) {
-			for (var i = 0; i < exdatesLength; i++) {
-				
-				//Figure out the format of the exdate based on the length of the string
-				switch (exdates[i].length) {
-					//date type
-					case 8:
-						exdate = Date.parseExact(exdates[i], "yyyyMMdd");
-						exdate.set({hour: testDate.getHours(), minute: testDate.getMinutes(), second: testDate.getSeconds(), millisecond: testDate.getMilliseconds()});
-						break;
-						
-					//date time type	
-					case 15:
-						exdate = Date.parseExact(exdates[i], "yyyyMMddTHHmmss");
-						break;
-					
-					//UTC date time type	
-					case 16:						
-						//TODO: adjust from UTC to the event's timezone!!!
-						//We have to trim the Z, since parseExact doesn't seem able to parse it.
-						var substring = exdates[i].substr(0, 15);
-						exdate = Date.parseExact(substring, "yyyyMMddTHHmmss");
-						var utcOffset = exdate.getTimezoneOffset();
-						exdate.addMinutes(-utcOffset);
-						break;
-					
-					//malformed. can't evaluate	
-					default:
-						return false;
-				}
-				//this.rlog("evaluateExceptions: after adjustment, exdate: "+exdate+" vs. testDate: "+testDate);					
-				//Found an exception
+		var testYear = testDate.getFullYear();
+		var testMonth = testDate.getMonth() + 1;
+		var testDay = testDate.getDate();
+		var exdatesLength = exdates ? exdates.length : 0;
 
-				//if we want to test exception dates by date component only, use this line
-				//if(this.dateComponentsEqual(exdate, testDate)){	
-				//otherwise if we want to test exception dates by date and time, use this line
-				if (exdate.equals(testDate)) {				
-					//this.rlog("evaluateExceptions: IS AN EXCEPTION");
-					return true;
-				}	
+		// webOS CE: an exception names a day of the event's zone, and date is that day's label, so
+		// only the calendar date is compared. The time in an exception adds nothing: a repeat
+		// happens at most once a day here. A UTC exception is first read in the event's zone.
+		for (var i = 0; i < exdatesLength; i++) {
+			var exdate = exdates[i];
+			var year = parseInt(exdate.substr(0, 4), 10);
+			var month = parseInt(exdate.substr(4, 2), 10);
+			var day = parseInt(exdate.substr(6, 2), 10);
+
+			if (exdate.length === 16) {
+				var timezoneManager = new TimezoneManager();
+				var instant = Date.UTC(year, month - 1, day, parseInt(exdate.substr(9, 2), 10), parseInt(exdate.substr(11, 2), 10), parseInt(exdate.substr(13, 2), 10));
+				var clock = new Date(instant + timezoneManager.getOffset(new Date(instant).getFullYear(), tzId, instant / 1000) * 1000);
+				year = clock.getUTCFullYear();
+				month = clock.getUTCMonth() + 1;
+				day = clock.getUTCDate();
 			}
-		}					
-		return false;	
+			else if (exdate.length !== 8 && exdate.length !== 15) {
+				continue;		//malformed. can't evaluate
+			}
+
+			if (year === testYear && month === testMonth && day === testDay) {
+				return true;
+			}
+		}
+		return false;
 	},
 
 	/*
@@ -702,57 +678,46 @@ RRuleManager.prototype = {
 	 *			-1 if the date is an EXDATE
 	 */	
 	evaluateRRule: function(date, eventStart, eventOriginalStart, rrule, exdates, eventTzID, countInfo){
-		//this.rlog("evaluateRRule: Testing date: "+new Date(date));
-		//TODO:UNTIL might be specified in UTC.  Date is in the event's timezone. Figure out how to reconcile that.
-		//For now, assume everything is in localtime and a simple comparison is enough.
-		if(rrule.until && rrule.until < date){
-			//this.rlog("evaluateRRule: failed until test");
+		// webOS CE: date is a day label, and until is real time, so this can only rule out a date
+		// that's clearly past it. The caller tests the occurrence's real start against until.
+		var margin = 172800000;
+		if(rrule.until && rrule.until + margin < date){
 			return false;
 		}
-		
-		else if(countInfo && 
-				((countInfo.until && countInfo.until < date) || 
-				 (countInfo.estimateEnd && countInfo.estimateEnd < date))
+		else if(countInfo &&
+				((countInfo.until && countInfo.until + margin < date) ||
+				 (countInfo.estimateEnd && countInfo.estimateEnd + margin < date))
 			   ){
-			//this.rlog("evaluateRRule: failed until test");
 			return false;
 		}
-		
-		//TODO: How will we handle events with COUNT instead of UNTIL???
-	
-		//Is this better done here or in the freq. tests?		
-		if(exdates && this.evaluateExceptions(date, exdates, eventOriginalStart, eventTzID)){
-			//this.rlog("evaluateRRule: failed exdates test");
+
+		var repeatsOnDate;
+		switch (rrule.freq) {
+			case "DAILY":
+				repeatsOnDate = this.frequencyTypeDaily(date, eventStart, rrule);
+				break;
+			case "WEEKLY":
+				repeatsOnDate = this.frequencyTypeWeekly(date, eventStart, rrule);
+				break;
+			case "MONTHLY":
+				repeatsOnDate = this.frequencyTypeMonthly(date, eventStart, rrule);
+				break;
+			case "YEARLY":
+				repeatsOnDate = this.frequencyTypeYearly(date, eventStart, rrule);
+				break;
+			default:
+				repeatsOnDate = false;
+		}
+
+		// webOS CE: only an actual occurrence can be an exception. An exception on some other date
+		// mustn't use up a count, or hide anything.
+		if(repeatsOnDate && exdates && this.evaluateExceptions(date, exdates, eventOriginalStart, eventTzID)){
 			//An exception counts as an occurrence for count-based repeat, so don't return false.
 			//But don't return true either, because it shouldn't be shown.
 			return -1;
 		}
-		
-		var repeatsOnDate;
-		switch (rrule.freq) {
-			case "DAILY":
-				//event.dtstart should be in the event's timezone!
-				repeatsOnDate = this.frequencyTypeDaily(date, eventStart, rrule);
-				break;
-			case "WEEKLY":
-				//event.dtstart should be in the event's timezone!
-				repeatsOnDate = this.frequencyTypeWeekly(date, eventStart, rrule);
-				break;
-			case "MONTHLY":
-				//event.dtstart should be in the event's timezone!
-				repeatsOnDate = this.frequencyTypeMonthly(date, eventStart, rrule);
-				break;
-			case "YEARLY":
-				//event.dtstart should be in the event's timezone!
-				repeatsOnDate = this.frequencyTypeYearly(date, eventStart, rrule);
-				break;
-			default:
-				//this.rlog("evaluateRRule: bad frequency value");
-				repeatsOnDate = false;
-		}
-		
-		//this.rlog("evaluateRRule: "+repeatsOnDate);
-		return repeatsOnDate;	
+
+		return repeatsOnDate;
 	}
 
 };

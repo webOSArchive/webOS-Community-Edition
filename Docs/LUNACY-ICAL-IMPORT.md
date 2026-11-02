@@ -4,7 +4,8 @@ For the agent adding webOS CE's Import Calendar to Lunacy. App Menu > Import Cal
 `.ics` file's events to the on-device calendar. Importing again adds only new events.
 
 **Status:** it works on a TouchPad, including a real tap through the picker and a repeat import
-with no duplicates. It has not run on Lunacy.
+with no duplicates. The expansion rewrite passes `tools/calendar-sweep`, and has been seen on a
+TouchPad's Calendar with test events added to db8.
 
 ## What to take
 
@@ -34,28 +35,19 @@ repo, so a parser fix goes in both, with the shared `tests/iCalParserTest.js`.
 
 ## Rules worth keeping
 
-- **`until` is not a plain instant.** `rrule-manager.js` tests `until < date`, where `date` is
-  midnight on the device's clock of the occurrence's day in the event's zone. `setCalendarUntil`
-  in `iCalTimeHandling.js` therefore writes the end of that day, or the real end of the last
-  occurrence if that is later, which it can be when the event's zone is behind the device. Then
-  any day it reaches into becomes an exception. Lunacy's Android mirror may want the same rule.
-- **A repeat keeps its first occurrence.** Stock `event-manager.js` compared `event.dtstart`, which
-  is real time, with `nextMidnight`, which is in the event's zone. So it skipped the first
-  occurrence when that fell on the next day on the device's clock. It now compares
-  `datesInEvent[0]`. The finished framework files are in
-  `system/usr/palm/frameworks/calendar/submission/`. It isn't an import fault: any repeat in another
-  zone had it.
-- **A COUNT repeat keeps all its occurrences.** Stock `findRepeatsInRangeCountVersion` resumed its
-  search one day after the last occurrence on the device's clock. Ahead of the device, that is
-  still the same occurrence's day, so it counted twice and the repeat ran out early. It now resumes
-  a day later in the event's zone. A wide range hid this; the day view's small ranges showed it.
-- **Exceptions stay in a COUNT total.** `countInfo.occurrences` leaves out exceptions, so paging a
-  COUNT repeat with a cancelled date added an extra occurrence at the end. The helper now records
-  them in `countInfo.exceptions`, by date, and the paging counts them.
-- **Southern daylight time.** Stock `TimezoneManager.getOffset` never applied it, because `dstStart`
-  comes after `dstEnd` in that hemisphere. `timezone-manager.js` now handles both orders. Lunacy's
-  `getTimeZoneRules` needs to answer with the same order: `dstStart` is the changeover into
-  daylight time, even when that falls later in the year than `dstEnd`.
+- **Repeat expansion is rewritten.** `event-manager.js` works in dates in the event's zone. `wall`
+  values are clock readings held in UTC fields, day labels are midnights on the device's clock used
+  only as dates, and `wallToInstant` is the one conversion to real time. Every offset comes from
+  `TimezoneManager.getOffset`. The stored format is unchanged, but `countInfo` has new internal
+  fields. See `tools/calendar-sweep/README.md`.
+- **`until` has two forms.** 23:59:59 on the device's clock is the whole of a date in the event's
+  zone, as imports and all-day repeats store it. Anything else is a real moment, and the last
+  occurrence is the last to start by then.
+- **Exceptions are compared by calendar date** in the event's zone, and only on a date the repeat
+  really falls on, so a stray exception can't use up a COUNT.
+- **The parser converts from the file's own text.** Holding a clock reading on the device's clock
+  moved it inside the device's skipped hour, and offsets were looked up at the wrong moment on a
+  clock-change day.
 - **Time zone data is CE only.** CE replaced 2011 data with tzdata 2026f. Lunacy gets its rules from
   Android, so it doesn't need those files.
 - **On-device only.** `ICalEvents.target` accepts only `syncSource: "Local"` on the

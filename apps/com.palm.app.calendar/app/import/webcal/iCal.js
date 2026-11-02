@@ -1415,6 +1415,7 @@ var iCal = (function () {
 					group = uidGroups[uid];
 					if (!isOneSeries(group)) {
 						splitGroup(group).forEach(function (ev) {
+							delete ev.exceptionDays;
 							applyHacks(ev);
 							grouped.push({result: ev, exceptions: [], hasExceptions: false});
 						});
@@ -1425,13 +1426,16 @@ var iCal = (function () {
 					if (revent) {
 						applyHacks(revent, exceptions);
 						exceptions.forEach(function (e) { applyHacks(e); });
-						if (revent.exdates) {
-							revent.exdates = revent.exdates.map(function (exdate) {
-								return Time.exdateInEventZone(exdate, revent.tzId);
-							}).filter(function (exdate, index, all) {
-								return all.indexOf(exdate) === index;
-							});
+						revent.exdates = exceptions.reduce(function (days, e) {
+							return days.concat(e.exceptionDays);
+						}, revent.exceptionDays).filter(function (day, index, all) {
+							return all.indexOf(day) === index;
+						});
+						if (!revent.exdates.length) {
+							delete revent.exdates;
 						}
+						delete revent.exceptionDays;
+						exceptions.forEach(function (e) { delete e.exceptionDays; });
 						grouped.push({
 							result: revent,
 							exceptions: exceptions,
