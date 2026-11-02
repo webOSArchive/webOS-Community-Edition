@@ -4,8 +4,9 @@ For the agent adding webOS CE's Import Calendar to Lunacy. App Menu > Import Cal
 `.ics` file's events to the on-device calendar. Importing again adds only new events.
 
 **Status:** it works on a TouchPad, including a real tap through the picker and a repeat import
-with no duplicates. The expansion rewrite passes `tools/calendar-sweep`, and has been seen on a
-TouchPad's Calendar with test events added to db8.
+with no duplicates. Lunacy has taken it. The framework's repeat expansion was then rewritten, and it
+passes `tools/calendar-sweep` on both built forms, with Calendar's screens checked on a TouchPad and
+a real Zoho Exchange sync. Take the framework from `8284a49` or later.
 
 ## What to take
 
@@ -48,6 +49,9 @@ repo, so a parser fix goes in both, with the shared `tests/iCalParserTest.js`.
 - **The parser converts from the file's own text.** Holding a clock reading on the device's clock
   moved it inside the device's skipped hour, and offsets were looked up at the wrong moment on a
   clock-change day.
+- **A cancelled date doesn't count towards `limit`.** `findNextOccurrence` passes a limit to
+  `findRepeatsInRangeHelper`, and counting an exception could end the search before the next real
+  occurrence, so that reminder never fired. Lunacy found this one.
 - **Time zone data is CE only.** CE replaced 2011 data with tzdata 2026f. Lunacy gets its rules from
   Android, so it doesn't need those files.
 - **On-device only.** `ICalEvents.target` accepts only `syncSource: "Local"` on the
