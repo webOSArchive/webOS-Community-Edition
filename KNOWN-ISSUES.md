@@ -882,6 +882,36 @@ is documented so a stack trace in the log is not mistaken for a real failure.
 
 ---
 
+## 14. Editing a recurring Zoho event leaves duplicates on the TouchPad — Zoho and stock `mojomail-eas`
+
+**What the user sees.** After a recurring event in a Zoho Exchange account is edited, for example by moving
+one occurrence in Zoho's web calendar, Calendar shows duplicate occurrences on the affected dates. A
+cancelled occurrence can stay visible. Sync Now doesn't help. Zoho's own calendar is correct.
+
+**What is known.** Reproduced on a TouchPad on 2026-11-02, with a single edit after a clean sync.
+
+- Zoho's ServerId for the event changed on all 3 edits logged. A clean first sync stores the event correctly.
+- `mojomail-eas` treats the edit as an update, can't find that ServerId, and logs
+  `failed to find database ID for item`. It carries on anyway: it writes the moved occurrences unlinked, with
+  `parentId: null`, doesn't update the old repeat, and reports sync success.
+- In one case it stored the repeat's new version with `_id: null`. Later syncs report 0 changes, so nothing
+  repairs this.
+- The binary is stock, dated 2011. CE only changes the TLS library and launcher around it. The fault is
+  upstream of Calendar, and the expansion rewrite neither causes nor can correct it.
+
+The raw protocol messages weren't captured, so "a Change with a new ServerId" is read from the client's log.
+Whether a Delete was sent too isn't known, nor whether non-recurring events are affected or whether any other
+Exchange server does this. No other Exchange account has been tested.
+
+**Workaround.** Remove the account and add it again. That only clears the TouchPad's copy. If a "No Subject"
+ghost remains afterwards, close Calendar fully: the database is already clean, and the app is holding the
+event in memory.
+
+**What a fix would have to do.** The real fix is on Zoho's side: keep the ServerId stable, or send a Delete and
+an Add. A bug report has been written for Zoho. On the TouchPad, `mojomail-eas` would need patching, or a
+background job would have to detect unlinked occurrences and force a resync. Neither is planned: both are
+fragile work against one provider's behaviour.
+
 ## Carried over from earlier builds
 
 - **LunaDownloadMgr SIGSEGV** (`curl_multi_remove_handle`). The 1.1.0 patch
