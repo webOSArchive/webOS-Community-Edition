@@ -8,6 +8,7 @@ enyo.kind({
 	},
 	
 	components: [
+		{kind:"ApplicationEvents", onApplicationRelaunch:"handleRelaunch"},
 		{kind:"PalmService", name:"msmAvail", service:"palm://com.palm.bus/signal/", method:"addmatch", subscribe:true, onResponse:"storageHandleNotifications"},
 		{kind:"PalmService", name:"partitionAvail", service:"palm://com.palm.bus/signal/", method:"addmatch", subscribe:true, onResponse:"storageHandleErrorNotifications"},
 		{
@@ -48,10 +49,25 @@ enyo.kind({
 	},
 	
 	/*
-	 * Show the USB banner. "Connected" is the popup's old title, so it is already translated.
+	 * Show the USB banner. Tapping it relaunches this app with these params.
 	 */
 	showUSBBanner: function() {
-		enyo.windows.addBannerMessage($L("Connected"), enyo.json.stringify({}), "/usr/lib/luna/system/luna-systemui/images/notification-small-usb.png");
+		enyo.windows.addBannerMessage($L("USB Connected, tap for options"), enyo.json.stringify({action:"usbOptions"}), "/usr/lib/luna/system/luna-systemui/images/notification-small-usb.png");
+	},
+	
+	handleRelaunch: function(inSender, inEvent) {
+		if (inEvent.params && inEvent.params.action == "usbOptions" && this.isUSBConnected)
+			this.showStorageModeAlert();
+	},
+	
+	/*
+	 * Show Storage Mode Alert. webOS CE: only when the banner is tapped.
+	 */
+	showStorageModeAlert: function() {
+		var wCard = enyo.windows.fetchWindow("StorageModeAlert");
+		var windowHeight =  (enyo.g11n.currentLocale().locale == "en_us") ? 200 : 220;
+		if(!wCard)
+			enyo.windows.openPopup("app/StoragedAlerts/storagedalerts.html", "StorageModeAlert", {}, undefined, windowHeight);
 	},
 	
 	createUSBDashboard: function() {
