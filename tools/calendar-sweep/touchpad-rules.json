@@ -1,0 +1,2025 @@
+{
+"2014": {
+"America/Los_Angeles": {
+"dstEnd": 1414918800,
+"dstOffset": -25200,
+"dstStart": 1394359200,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2014
+},
+"America/New_York": {
+"dstEnd": 1414908000,
+"dstOffset": -14400,
+"dstStart": 1394348400,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2014
+},
+"America/Sao_Paulo": {
+"dstEnd": 1392516000,
+"dstOffset": -7200,
+"dstStart": 1413687600,
+"hasDstChange": true,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2014
+},
+"America/St_Johns": {
+"dstEnd": 1414902600,
+"dstOffset": -9000,
+"dstStart": 1394343000,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2014
+},
+"America/Toronto": {
+"dstEnd": 1414908000,
+"dstOffset": -14400,
+"dstStart": 1394348400,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2014
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2014
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2014
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1396710000,
+"dstOffset": 39600,
+"dstStart": 1412436600,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2014
+},
+"Australia/Sydney": {
+"dstEnd": 1396713600,
+"dstOffset": 39600,
+"dstStart": 1412438400,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2014
+},
+"Europe/London": {
+"dstEnd": 1414285200,
+"dstOffset": 3600,
+"dstStart": 1396141200,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2014
+},
+"Pacific/Auckland": {
+"dstEnd": 1396706400,
+"dstOffset": 46800,
+"dstStart": 1411826400,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2014
+},
+"Pacific/Chatham": {
+"dstEnd": 1396706400,
+"dstOffset": 49500,
+"dstStart": 1411826400,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2014
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2014
+}
+},
+"2015": {
+"America/Los_Angeles": {
+"dstEnd": 1446368400,
+"dstOffset": -25200,
+"dstStart": 1425808800,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2015
+},
+"America/New_York": {
+"dstEnd": 1446357600,
+"dstOffset": -14400,
+"dstStart": 1425798000,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2015
+},
+"America/Sao_Paulo": {
+"dstEnd": 1424570400,
+"dstOffset": -7200,
+"dstStart": 1445137200,
+"hasDstChange": true,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2015
+},
+"America/St_Johns": {
+"dstEnd": 1446352200,
+"dstOffset": -9000,
+"dstStart": 1425792600,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2015
+},
+"America/Toronto": {
+"dstEnd": 1446357600,
+"dstOffset": -14400,
+"dstStart": 1425798000,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2015
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2015
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2015
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1428159600,
+"dstOffset": 39600,
+"dstStart": 1443886200,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2015
+},
+"Australia/Sydney": {
+"dstEnd": 1428163200,
+"dstOffset": 39600,
+"dstStart": 1443888000,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2015
+},
+"Europe/London": {
+"dstEnd": 1445734800,
+"dstOffset": 3600,
+"dstStart": 1427590800,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2015
+},
+"Pacific/Auckland": {
+"dstEnd": 1428156000,
+"dstOffset": 46800,
+"dstStart": 1443276000,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2015
+},
+"Pacific/Chatham": {
+"dstEnd": 1428156000,
+"dstOffset": 49500,
+"dstStart": 1443276000,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2015
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2015
+}
+},
+"2016": {
+"America/Los_Angeles": {
+"dstEnd": 1478422800,
+"dstOffset": -25200,
+"dstStart": 1457863200,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2016
+},
+"America/New_York": {
+"dstEnd": 1478412000,
+"dstOffset": -14400,
+"dstStart": 1457852400,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2016
+},
+"America/Sao_Paulo": {
+"dstEnd": 1456020000,
+"dstOffset": -7200,
+"dstStart": 1476586800,
+"hasDstChange": true,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2016
+},
+"America/St_Johns": {
+"dstEnd": 1478406600,
+"dstOffset": -9000,
+"dstStart": 1457847000,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2016
+},
+"America/Toronto": {
+"dstEnd": 1478412000,
+"dstOffset": -14400,
+"dstStart": 1457852400,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2016
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2016
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2016
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1459609200,
+"dstOffset": 39600,
+"dstStart": 1475335800,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2016
+},
+"Australia/Sydney": {
+"dstEnd": 1459612800,
+"dstOffset": 39600,
+"dstStart": 1475337600,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2016
+},
+"Europe/London": {
+"dstEnd": 1477789200,
+"dstOffset": 3600,
+"dstStart": 1459040400,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2016
+},
+"Pacific/Auckland": {
+"dstEnd": 1459605600,
+"dstOffset": 46800,
+"dstStart": 1474725600,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2016
+},
+"Pacific/Chatham": {
+"dstEnd": 1459605600,
+"dstOffset": 49500,
+"dstStart": 1474725600,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2016
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2016
+}
+},
+"2017": {
+"America/Los_Angeles": {
+"dstEnd": 1509872400,
+"dstOffset": -25200,
+"dstStart": 1489312800,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2017
+},
+"America/New_York": {
+"dstEnd": 1509861600,
+"dstOffset": -14400,
+"dstStart": 1489302000,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2017
+},
+"America/Sao_Paulo": {
+"dstEnd": 1487469600,
+"dstOffset": -7200,
+"dstStart": 1508036400,
+"hasDstChange": true,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2017
+},
+"America/St_Johns": {
+"dstEnd": 1509856200,
+"dstOffset": -9000,
+"dstStart": 1489296600,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2017
+},
+"America/Toronto": {
+"dstEnd": 1509861600,
+"dstOffset": -14400,
+"dstStart": 1489302000,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2017
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2017
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2017
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1491058800,
+"dstOffset": 39600,
+"dstStart": 1506785400,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2017
+},
+"Australia/Sydney": {
+"dstEnd": 1491062400,
+"dstOffset": 39600,
+"dstStart": 1506787200,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2017
+},
+"Europe/London": {
+"dstEnd": 1509238800,
+"dstOffset": 3600,
+"dstStart": 1490490000,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2017
+},
+"Pacific/Auckland": {
+"dstEnd": 1491055200,
+"dstOffset": 46800,
+"dstStart": 1506175200,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2017
+},
+"Pacific/Chatham": {
+"dstEnd": 1491055200,
+"dstOffset": 49500,
+"dstStart": 1506175200,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2017
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2017
+}
+},
+"2018": {
+"America/Los_Angeles": {
+"dstEnd": 1541322000,
+"dstOffset": -25200,
+"dstStart": 1520762400,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2018
+},
+"America/New_York": {
+"dstEnd": 1541311200,
+"dstOffset": -14400,
+"dstStart": 1520751600,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2018
+},
+"America/Sao_Paulo": {
+"dstEnd": 1518919200,
+"dstOffset": -7200,
+"dstStart": 1541300400,
+"hasDstChange": true,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2018
+},
+"America/St_Johns": {
+"dstEnd": 1541305800,
+"dstOffset": -9000,
+"dstStart": 1520746200,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2018
+},
+"America/Toronto": {
+"dstEnd": 1541311200,
+"dstOffset": -14400,
+"dstStart": 1520751600,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2018
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2018
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2018
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1522508400,
+"dstOffset": 39600,
+"dstStart": 1538839800,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2018
+},
+"Australia/Sydney": {
+"dstEnd": 1522512000,
+"dstOffset": 39600,
+"dstStart": 1538841600,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2018
+},
+"Europe/London": {
+"dstEnd": 1540688400,
+"dstOffset": 3600,
+"dstStart": 1521939600,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2018
+},
+"Pacific/Auckland": {
+"dstEnd": 1522504800,
+"dstOffset": 46800,
+"dstStart": 1538229600,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2018
+},
+"Pacific/Chatham": {
+"dstEnd": 1522504800,
+"dstOffset": 49500,
+"dstStart": 1538229600,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2018
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2018
+}
+},
+"2019": {
+"America/Los_Angeles": {
+"dstEnd": 1572771600,
+"dstOffset": -25200,
+"dstStart": 1552212000,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2019
+},
+"America/New_York": {
+"dstEnd": 1572760800,
+"dstOffset": -14400,
+"dstStart": 1552201200,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2019
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2019
+},
+"America/St_Johns": {
+"dstEnd": 1572755400,
+"dstOffset": -9000,
+"dstStart": 1552195800,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2019
+},
+"America/Toronto": {
+"dstEnd": 1572760800,
+"dstOffset": -14400,
+"dstStart": 1552201200,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2019
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2019
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2019
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1554562800,
+"dstOffset": 39600,
+"dstStart": 1570289400,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2019
+},
+"Australia/Sydney": {
+"dstEnd": 1554566400,
+"dstOffset": 39600,
+"dstStart": 1570291200,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2019
+},
+"Europe/London": {
+"dstEnd": 1572138000,
+"dstOffset": 3600,
+"dstStart": 1553994000,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2019
+},
+"Pacific/Auckland": {
+"dstEnd": 1554559200,
+"dstOffset": 46800,
+"dstStart": 1569679200,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2019
+},
+"Pacific/Chatham": {
+"dstEnd": 1554559200,
+"dstOffset": 49500,
+"dstStart": 1569679200,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2019
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2019
+}
+},
+"2020": {
+"America/Los_Angeles": {
+"dstEnd": 1604221200,
+"dstOffset": -25200,
+"dstStart": 1583661600,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2020
+},
+"America/New_York": {
+"dstEnd": 1604210400,
+"dstOffset": -14400,
+"dstStart": 1583650800,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2020
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2020
+},
+"America/St_Johns": {
+"dstEnd": 1604205000,
+"dstOffset": -9000,
+"dstStart": 1583645400,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2020
+},
+"America/Toronto": {
+"dstEnd": 1604210400,
+"dstOffset": -14400,
+"dstStart": 1583650800,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2020
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2020
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2020
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1586012400,
+"dstOffset": 39600,
+"dstStart": 1601739000,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2020
+},
+"Australia/Sydney": {
+"dstEnd": 1586016000,
+"dstOffset": 39600,
+"dstStart": 1601740800,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2020
+},
+"Europe/London": {
+"dstEnd": 1603587600,
+"dstOffset": 3600,
+"dstStart": 1585443600,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2020
+},
+"Pacific/Auckland": {
+"dstEnd": 1586008800,
+"dstOffset": 46800,
+"dstStart": 1601128800,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2020
+},
+"Pacific/Chatham": {
+"dstEnd": 1586008800,
+"dstOffset": 49500,
+"dstStart": 1601128800,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2020
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2020
+}
+},
+"2021": {
+"America/Los_Angeles": {
+"dstEnd": 1636275600,
+"dstOffset": -25200,
+"dstStart": 1615716000,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2021
+},
+"America/New_York": {
+"dstEnd": 1636264800,
+"dstOffset": -14400,
+"dstStart": 1615705200,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2021
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2021
+},
+"America/St_Johns": {
+"dstEnd": 1636259400,
+"dstOffset": -9000,
+"dstStart": 1615699800,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2021
+},
+"America/Toronto": {
+"dstEnd": 1636264800,
+"dstOffset": -14400,
+"dstStart": 1615705200,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2021
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2021
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2021
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1617462000,
+"dstOffset": 39600,
+"dstStart": 1633188600,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2021
+},
+"Australia/Sydney": {
+"dstEnd": 1617465600,
+"dstOffset": 39600,
+"dstStart": 1633190400,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2021
+},
+"Europe/London": {
+"dstEnd": 1635642000,
+"dstOffset": 3600,
+"dstStart": 1616893200,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2021
+},
+"Pacific/Auckland": {
+"dstEnd": 1617458400,
+"dstOffset": 46800,
+"dstStart": 1632578400,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2021
+},
+"Pacific/Chatham": {
+"dstEnd": 1617458400,
+"dstOffset": 49500,
+"dstStart": 1632578400,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2021
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2021
+}
+},
+"2022": {
+"America/Los_Angeles": {
+"dstEnd": 1667725200,
+"dstOffset": -25200,
+"dstStart": 1647165600,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2022
+},
+"America/New_York": {
+"dstEnd": 1667714400,
+"dstOffset": -14400,
+"dstStart": 1647154800,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2022
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2022
+},
+"America/St_Johns": {
+"dstEnd": 1667709000,
+"dstOffset": -9000,
+"dstStart": 1647149400,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2022
+},
+"America/Toronto": {
+"dstEnd": 1667714400,
+"dstOffset": -14400,
+"dstStart": 1647154800,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2022
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2022
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2022
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1648911600,
+"dstOffset": 39600,
+"dstStart": 1664638200,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2022
+},
+"Australia/Sydney": {
+"dstEnd": 1648915200,
+"dstOffset": 39600,
+"dstStart": 1664640000,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2022
+},
+"Europe/London": {
+"dstEnd": 1667091600,
+"dstOffset": 3600,
+"dstStart": 1648342800,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2022
+},
+"Pacific/Auckland": {
+"dstEnd": 1648908000,
+"dstOffset": 46800,
+"dstStart": 1664028000,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2022
+},
+"Pacific/Chatham": {
+"dstEnd": 1648908000,
+"dstOffset": 49500,
+"dstStart": 1664028000,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2022
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2022
+}
+},
+"2023": {
+"America/Los_Angeles": {
+"dstEnd": 1699174800,
+"dstOffset": -25200,
+"dstStart": 1678615200,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2023
+},
+"America/New_York": {
+"dstEnd": 1699164000,
+"dstOffset": -14400,
+"dstStart": 1678604400,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2023
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2023
+},
+"America/St_Johns": {
+"dstEnd": 1699158600,
+"dstOffset": -9000,
+"dstStart": 1678599000,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2023
+},
+"America/Toronto": {
+"dstEnd": 1699164000,
+"dstOffset": -14400,
+"dstStart": 1678604400,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2023
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2023
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2023
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1680361200,
+"dstOffset": 39600,
+"dstStart": 1696087800,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2023
+},
+"Australia/Sydney": {
+"dstEnd": 1680364800,
+"dstOffset": 39600,
+"dstStart": 1696089600,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2023
+},
+"Europe/London": {
+"dstEnd": 1698541200,
+"dstOffset": 3600,
+"dstStart": 1679792400,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2023
+},
+"Pacific/Auckland": {
+"dstEnd": 1680357600,
+"dstOffset": 46800,
+"dstStart": 1695477600,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2023
+},
+"Pacific/Chatham": {
+"dstEnd": 1680357600,
+"dstOffset": 49500,
+"dstStart": 1695477600,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2023
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2023
+}
+},
+"2024": {
+"America/Los_Angeles": {
+"dstEnd": 1730624400,
+"dstOffset": -25200,
+"dstStart": 1710064800,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2024
+},
+"America/New_York": {
+"dstEnd": 1730613600,
+"dstOffset": -14400,
+"dstStart": 1710054000,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2024
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2024
+},
+"America/St_Johns": {
+"dstEnd": 1730608200,
+"dstOffset": -9000,
+"dstStart": 1710048600,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2024
+},
+"America/Toronto": {
+"dstEnd": 1730613600,
+"dstOffset": -14400,
+"dstStart": 1710054000,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2024
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2024
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2024
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1712415600,
+"dstOffset": 39600,
+"dstStart": 1728142200,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2024
+},
+"Australia/Sydney": {
+"dstEnd": 1712419200,
+"dstOffset": 39600,
+"dstStart": 1728144000,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2024
+},
+"Europe/London": {
+"dstEnd": 1729990800,
+"dstOffset": 3600,
+"dstStart": 1711846800,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2024
+},
+"Pacific/Auckland": {
+"dstEnd": 1712412000,
+"dstOffset": 46800,
+"dstStart": 1727532000,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2024
+},
+"Pacific/Chatham": {
+"dstEnd": 1712412000,
+"dstOffset": 49500,
+"dstStart": 1727532000,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2024
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2024
+}
+},
+"2025": {
+"America/Los_Angeles": {
+"dstEnd": 1762074000,
+"dstOffset": -25200,
+"dstStart": 1741514400,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2025
+},
+"America/New_York": {
+"dstEnd": 1762063200,
+"dstOffset": -14400,
+"dstStart": 1741503600,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2025
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2025
+},
+"America/St_Johns": {
+"dstEnd": 1762057800,
+"dstOffset": -9000,
+"dstStart": 1741498200,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2025
+},
+"America/Toronto": {
+"dstEnd": 1762063200,
+"dstOffset": -14400,
+"dstStart": 1741503600,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2025
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2025
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2025
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1743865200,
+"dstOffset": 39600,
+"dstStart": 1759591800,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2025
+},
+"Australia/Sydney": {
+"dstEnd": 1743868800,
+"dstOffset": 39600,
+"dstStart": 1759593600,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2025
+},
+"Europe/London": {
+"dstEnd": 1761440400,
+"dstOffset": 3600,
+"dstStart": 1743296400,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2025
+},
+"Pacific/Auckland": {
+"dstEnd": 1743861600,
+"dstOffset": 46800,
+"dstStart": 1758981600,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2025
+},
+"Pacific/Chatham": {
+"dstEnd": 1743861600,
+"dstOffset": 49500,
+"dstStart": 1758981600,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2025
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2025
+}
+},
+"2026": {
+"America/Los_Angeles": {
+"dstEnd": 1793523600,
+"dstOffset": -25200,
+"dstStart": 1772964000,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2026
+},
+"America/New_York": {
+"dstEnd": 1793512800,
+"dstOffset": -14400,
+"dstStart": 1772953200,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2026
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2026
+},
+"America/St_Johns": {
+"dstEnd": 1793507400,
+"dstOffset": -9000,
+"dstStart": 1772947800,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2026
+},
+"America/Toronto": {
+"dstEnd": 1793512800,
+"dstOffset": -14400,
+"dstStart": 1772953200,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2026
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2026
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2026
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1775314800,
+"dstOffset": 39600,
+"dstStart": 1791041400,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2026
+},
+"Australia/Sydney": {
+"dstEnd": 1775318400,
+"dstOffset": 39600,
+"dstStart": 1791043200,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2026
+},
+"Europe/London": {
+"dstEnd": 1792890000,
+"dstOffset": 3600,
+"dstStart": 1774746000,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2026
+},
+"Pacific/Auckland": {
+"dstEnd": 1775311200,
+"dstOffset": 46800,
+"dstStart": 1790431200,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2026
+},
+"Pacific/Chatham": {
+"dstEnd": 1775311200,
+"dstOffset": 49500,
+"dstStart": 1790431200,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2026
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2026
+}
+},
+"2027": {
+"America/Los_Angeles": {
+"dstEnd": 1825578000,
+"dstOffset": -25200,
+"dstStart": 1805018400,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2027
+},
+"America/New_York": {
+"dstEnd": 1825567200,
+"dstOffset": -14400,
+"dstStart": 1805007600,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2027
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2027
+},
+"America/St_Johns": {
+"dstEnd": 1825561800,
+"dstOffset": -9000,
+"dstStart": 1805002200,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2027
+},
+"America/Toronto": {
+"dstEnd": 1825567200,
+"dstOffset": -14400,
+"dstStart": 1805007600,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2027
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2027
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2027
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1806764400,
+"dstOffset": 39600,
+"dstStart": 1822491000,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2027
+},
+"Australia/Sydney": {
+"dstEnd": 1806768000,
+"dstOffset": 39600,
+"dstStart": 1822492800,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2027
+},
+"Europe/London": {
+"dstEnd": 1824944400,
+"dstOffset": 3600,
+"dstStart": 1806195600,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2027
+},
+"Pacific/Auckland": {
+"dstEnd": 1806760800,
+"dstOffset": 46800,
+"dstStart": 1821880800,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2027
+},
+"Pacific/Chatham": {
+"dstEnd": 1806760800,
+"dstOffset": 49500,
+"dstStart": 1821880800,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2027
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2027
+}
+},
+"2028": {
+"America/Los_Angeles": {
+"dstEnd": 1857027600,
+"dstOffset": -25200,
+"dstStart": 1836468000,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2028
+},
+"America/New_York": {
+"dstEnd": 1857016800,
+"dstOffset": -14400,
+"dstStart": 1836457200,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2028
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2028
+},
+"America/St_Johns": {
+"dstEnd": 1857011400,
+"dstOffset": -9000,
+"dstStart": 1836451800,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2028
+},
+"America/Toronto": {
+"dstEnd": 1857016800,
+"dstOffset": -14400,
+"dstStart": 1836457200,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2028
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2028
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2028
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1838214000,
+"dstOffset": 39600,
+"dstStart": 1853940600,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2028
+},
+"Australia/Sydney": {
+"dstEnd": 1838217600,
+"dstOffset": 39600,
+"dstStart": 1853942400,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2028
+},
+"Europe/London": {
+"dstEnd": 1856394000,
+"dstOffset": 3600,
+"dstStart": 1837645200,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2028
+},
+"Pacific/Auckland": {
+"dstEnd": 1838210400,
+"dstOffset": 46800,
+"dstStart": 1853330400,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2028
+},
+"Pacific/Chatham": {
+"dstEnd": 1838210400,
+"dstOffset": 49500,
+"dstStart": 1853330400,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2028
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2028
+}
+},
+"2029": {
+"America/Los_Angeles": {
+"dstEnd": 1888477200,
+"dstOffset": -25200,
+"dstStart": 1867917600,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2029
+},
+"America/New_York": {
+"dstEnd": 1888466400,
+"dstOffset": -14400,
+"dstStart": 1867906800,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2029
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2029
+},
+"America/St_Johns": {
+"dstEnd": 1888461000,
+"dstOffset": -9000,
+"dstStart": 1867901400,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2029
+},
+"America/Toronto": {
+"dstEnd": 1888466400,
+"dstOffset": -14400,
+"dstStart": 1867906800,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2029
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2029
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2029
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1869663600,
+"dstOffset": 39600,
+"dstStart": 1885995000,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2029
+},
+"Australia/Sydney": {
+"dstEnd": 1869667200,
+"dstOffset": 39600,
+"dstStart": 1885996800,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2029
+},
+"Europe/London": {
+"dstEnd": 1887843600,
+"dstOffset": 3600,
+"dstStart": 1869094800,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2029
+},
+"Pacific/Auckland": {
+"dstEnd": 1869660000,
+"dstOffset": 46800,
+"dstStart": 1885384800,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2029
+},
+"Pacific/Chatham": {
+"dstEnd": 1869660000,
+"dstOffset": 49500,
+"dstStart": 1885384800,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2029
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2029
+}
+},
+"2030": {
+"America/Los_Angeles": {
+"dstEnd": 1919926800,
+"dstOffset": -25200,
+"dstStart": 1899367200,
+"hasDstChange": true,
+"tz": "America/Los_Angeles",
+"utcOffset": -28800,
+"year": 2030
+},
+"America/New_York": {
+"dstEnd": 1919916000,
+"dstOffset": -14400,
+"dstStart": 1899356400,
+"hasDstChange": true,
+"tz": "America/New_York",
+"utcOffset": -18000,
+"year": 2030
+},
+"America/Sao_Paulo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "America/Sao_Paulo",
+"utcOffset": -10800,
+"year": 2030
+},
+"America/St_Johns": {
+"dstEnd": 1919910600,
+"dstOffset": -9000,
+"dstStart": 1899351000,
+"hasDstChange": true,
+"tz": "America/St_Johns",
+"utcOffset": -12600,
+"year": 2030
+},
+"America/Toronto": {
+"dstEnd": 1919916000,
+"dstOffset": -14400,
+"dstStart": 1899356400,
+"hasDstChange": true,
+"tz": "America/Toronto",
+"utcOffset": -18000,
+"year": 2030
+},
+"Asia/Kolkata": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Kolkata",
+"utcOffset": 19800,
+"year": 2030
+},
+"Asia/Tokyo": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Asia/Tokyo",
+"utcOffset": 32400,
+"year": 2030
+},
+"Australia/Lord_Howe": {
+"dstEnd": 1901718000,
+"dstOffset": 39600,
+"dstStart": 1917444600,
+"hasDstChange": true,
+"tz": "Australia/Lord_Howe",
+"utcOffset": 37800,
+"year": 2030
+},
+"Australia/Sydney": {
+"dstEnd": 1901721600,
+"dstOffset": 39600,
+"dstStart": 1917446400,
+"hasDstChange": true,
+"tz": "Australia/Sydney",
+"utcOffset": 36000,
+"year": 2030
+},
+"Europe/London": {
+"dstEnd": 1919293200,
+"dstOffset": 3600,
+"dstStart": 1901149200,
+"hasDstChange": true,
+"tz": "Europe/London",
+"utcOffset": 0,
+"year": 2030
+},
+"Pacific/Auckland": {
+"dstEnd": 1901714400,
+"dstOffset": 46800,
+"dstStart": 1916834400,
+"hasDstChange": true,
+"tz": "Pacific/Auckland",
+"utcOffset": 43200,
+"year": 2030
+},
+"Pacific/Chatham": {
+"dstEnd": 1901714400,
+"dstOffset": 49500,
+"dstStart": 1916834400,
+"hasDstChange": true,
+"tz": "Pacific/Chatham",
+"utcOffset": 45900,
+"year": 2030
+},
+"Pacific/Honolulu": {
+"dstEnd": -1,
+"dstOffset": -1,
+"dstStart": -1,
+"hasDstChange": false,
+"tz": "Pacific/Honolulu",
+"utcOffset": -36000,
+"year": 2030
+}
+}
+}
