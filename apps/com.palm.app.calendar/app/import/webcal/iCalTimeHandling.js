@@ -206,6 +206,7 @@ var Time = (function () {
 			if (event.rrule && event.rrule.until) {
 				Log.log_icalDebug("fetchTimezones(): rrule: ", event.rrule);
 				if (typeof event.rrule.until === "string") {
+					event.rrule.untilText = event.rrule.until;
 					until = parseInt(event.rrule.until.substr(0, 4), 10);
 					event.rrule.until = iCalTimeToWebOsTime(event.rrule.until); //overwrite objects with ts here.
 
@@ -441,6 +442,56 @@ var Time = (function () {
 		return webOsTimeToICal(convertTime(iCalTimeToWebOsTime(value), TZManager.timezone, tzId), true, false);
 	}
 
+	// The calendar stops a repeat with until < date, where date is midnight on the device's clock
+	// of the occurrence's day in the event's zone. It also skips the whole repeat when until is
+	// before the range on screen, and that range is real time. So until has to reach the end of
+	// the last day as the event's zone counts it, and also the real end of the last occurrence,
+	// which can be later when the event's zone is behind the device. That can reach the next day,
+	// so any day it takes in is an exception, or it would gain an occurrence.
+	function setCalendarUntil(event, source) {
+		var rrule = event.rrule,
+			text = rrule.untilText,
+			device = TZManager.timezone,
+			instant,
+			clock,
+			start,
+			last,
+			lastEnd,
+			endOfDay,
+			next;
+
+		delete rrule.untilText;
+		if (event.allDay) {
+			rrule.until = new Date(parseInt(text.substr(0, 4), 10), parseInt(text.substr(4, 2), 10) - 1,
+				parseInt(text.substr(6, 2), 10), 23, 59, 59).getTime();
+			return;
+		}
+
+		instant = text.charAt(text.length - 1) === "Z" ? rrule.until : convertTime(rrule.until, source, device);
+		clock = new Date(convertTime(instant, device, event.tzId));
+		start = new Date(convertTime(event.dtstart, device, event.tzId));
+		last = new Date(clock.getFullYear(), clock.getMonth(), clock.getDate());
+		// UNTIL before that day's start time means the day before was the last.
+		if (clock.getHours() * 3600 + clock.getMinutes() * 60 + clock.getSeconds() <
+				start.getHours() * 3600 + start.getMinutes() * 60 + start.getSeconds()) {
+			last.setDate(last.getDate() - 1);
+		}
+
+		endOfDay = new Date(last.getFullYear(), last.getMonth(), last.getDate(), 23, 59, 59).getTime();
+		lastEnd = convertTime(new Date(last.getFullYear(), last.getMonth(), last.getDate(),
+			start.getHours(), start.getMinutes(), start.getSeconds()).getTime(), event.tzId, device) +
+			(event.dtend - event.dtstart);
+		rrule.until = Math.max(endOfDay, lastEnd);
+
+		next = new Date(last);
+		next.setDate(next.getDate() + 1);
+		while (next.getTime() <= rrule.until) {
+			event.exdates = event.exdates || [];
+			event.exdates.push(webOsTimeToICal(next.getTime(), true, false));
+			next.setDate(next.getDate() + 1);
+		}
+	}
+
 	function normalizeToTimezone(events, direction) {
 		var future = fetchTimezones(events),
 			tsFields = ["dtstamp", "created", "lastModified"];
@@ -510,7 +561,7 @@ var Time = (function () {
 					}
 				});
 
-				if (event.rrule && event.rrule.until && !event.allDay) {
+				if (event.rrule && event.rrule.until && !event.allDay && direction === "event") {
 					event.rrule.until = convertTime(
 						event.rrule.until,
 						source,
@@ -523,6 +574,9 @@ var Time = (function () {
 
 				if (direction !== "event") {
 					event.tzId = usableTimezone(event.tzId, new Date(event.dtstart).getFullYear());
+					if (event.rrule && event.rrule.untilText) {
+						setCalendarUntil(event, source);
+					}
 				}
 			});
 

@@ -187,6 +187,17 @@ test("exceptions are plain dates, in the event's zone", function () {
         vevent(["UID:s", "RECURRENCE-ID;TZID=Australia/Sydney:20270118T090000", "DTSTART;TZID=Australia/Sydney:20270119T090000"]))).events[0].result.exdates, ["20270118"]);
 });
 
+test("until reaches the end of the last day in the event's zone", function () {
+    var rrule = function (lines) { return parse(vevent(lines)).events[0].result.rrule; },
+        sydney = ["UID:s", "DTSTART;TZID=Australia/Sydney:20270111T090000", "DTEND;TZID=Australia/Sydney:20270111T100000"],
+        local = ["UID:l", "DTSTART:20270111T090000", "DTEND:20270111T100000"];
+    assert.equal(iso(rrule(sydney.concat(["RRULE:FREQ=WEEKLY;UNTIL=20270125T220000Z"])).until), "2027-01-26T23:59");
+    assert.equal(iso(rrule(sydney.concat(["RRULE:FREQ=WEEKLY;UNTIL=20270125T215900Z"])).until), "2027-01-25T23:59");
+    assert.equal(iso(rrule(local.concat(["RRULE:FREQ=WEEKLY;UNTIL=20270125T090000"])).until), "2027-01-25T23:59");
+    assert.equal(iso(rrule(["UID:a", "DTSTART;VALUE=DATE:20270111", "RRULE:FREQ=WEEKLY;UNTIL=20270125"]).until), "2027-01-25T23:59");
+    assert.equal(rrule(sydney.concat(["RRULE:FREQ=WEEKLY;UNTIL=20270125T220000Z"])).untilText, undefined);
+});
+
 var usVtimezone = ["BEGIN:VTIMEZONE", "TZID:(UTC-05:00) Eastern Time (US & Canada)",
     "BEGIN:STANDARD", "DTSTART:16010101T020000", "TZOFFSETFROM:-0400", "TZOFFSETTO:-0500", "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=1SU;BYMONTH=11", "END:STANDARD",
     "BEGIN:DAYLIGHT", "DTSTART:16010101T020000", "TZOFFSETFROM:-0500", "TZOFFSETTO:-0400", "RRULE:FREQ=YEARLY;INTERVAL=1;BYDAY=2SU;BYMONTH=3", "END:DAYLIGHT", "END:VTIMEZONE"];

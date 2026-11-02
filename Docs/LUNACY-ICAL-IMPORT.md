@@ -34,6 +34,16 @@ repo, so a parser fix goes in both, with the shared `tests/iCalParserTest.js`.
 
 ## Rules worth keeping
 
+- **`until` is not a plain instant.** `rrule-manager.js` tests `until < date`, where `date` is
+  midnight on the device's clock of the occurrence's day in the event's zone. `setCalendarUntil`
+  in `iCalTimeHandling.js` therefore writes the end of that day, or the real end of the last
+  occurrence if that is later, which it can be when the event's zone is behind the device. Then
+  any day it reaches into becomes an exception. Lunacy's Android mirror may want the same rule.
+- **Known, not fixed: a repeat can lose its first occurrence.** When an event's first occurrence
+  falls on the next day on the device's clock, `event-manager.js` skips it, because it compares
+  `event.dtstart`, which is real time, with `nextMidnight`, which is the event's zone. It happens
+  with or without `UNTIL`, and it is Palm's framework, not the importer.
+
 - **Exceptions are plain dates.** `rrule-manager.js` tests an exception against the occurrence's
   date in the event's zone plus dtstart's clock time in the device's zone. A date and time misses
   when the two zones differ by a day or in daylight time, and the cancelled occurrence still shows.
