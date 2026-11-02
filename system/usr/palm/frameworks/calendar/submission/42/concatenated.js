@@ -2059,7 +2059,8 @@ var EventManagerUtils = Class.create ({
 			
 			//If we already found them all, we're done
 			//If we've already searched past the end of the search range, we're done
-			if (numFoundSoFar == limit || lastFound > range.end) {
+			var exceptionDates = ci.exceptions ? Object.keys(ci.exceptions) : [];
+			if (numFoundSoFar + exceptionDates.length >= limit || lastFound > range.end) {
 				//this.evlog(this.logLevels.repeatDetails, "findRepeatsInRangeCountVersion: found everything for this range already");
 				return inRangeOccurrences;
 			}
@@ -2070,8 +2071,12 @@ var EventManagerUtils = Class.create ({
 			timeMachine.setTime(this.timezoneManager.convertTime(lastFound, this.timezoneManager.getSystemTimezone(), event.tzId));
 			timeMachine.addDays(1);  //+1 day to skip past this occurrence and start looking for the next
 			timeMachine.clearTime();
-			tempStart = this.timezoneManager.convertTime(timeMachine.getTime(), event.tzId, this.timezoneManager.getSystemTimezone());
-			limit = limit - numFoundSoFar;
+			var resumeDate = timeMachine.getTime();
+			tempStart = this.timezoneManager.convertTime(resumeDate, event.tzId, this.timezoneManager.getSystemTimezone());
+			//webOS CE: exceptions from resumeDate on are met again by this search, so they aren't taken off.
+			limit = limit - numFoundSoFar - exceptionDates.filter(function (exceptionDate) {
+				return +exceptionDate < resumeDate;
+			}).length;
 		}
 		
 		if(!event.countInfo){			
@@ -2219,6 +2224,12 @@ var EventManagerUtils = Class.create ({
 			//So it counts as an occurrence, but we shouldn't return it to the caller
 			if(repeatsOnDate === -1){
 				numFound++;
+				//webOS CE: a later search resumes from countInfo.occurrences, which has no exceptions.
+				//Keep them, by date, or they stop counting towards the repeat's total.
+				if (event.countInfo) {
+					event.countInfo.exceptions = event.countInfo.exceptions || {};
+					event.countInfo.exceptions[date] = true;
+				}
 				if (numFound === limit) {
 					//this.evlog(this.logLevels.repeatDetails, "findRepeatsInRange: hit limit");
 					return eventOccurrences;

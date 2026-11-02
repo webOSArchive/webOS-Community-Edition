@@ -49,9 +49,13 @@ repo, so a parser fix goes in both, with the shared `tests/iCalParserTest.js`.
   search one day after the last occurrence on the device's clock. Ahead of the device, that is
   still the same occurrence's day, so it counted twice and the repeat ran out early. It now resumes
   a day later in the event's zone. A wide range hid this; the day view's small ranges showed it.
-- **Known, not fixed: an exception can add an occurrence at the end.** The cached list of found
-  occurrences leaves out exceptions, so paging a COUNT repeat with a cancelled date can show one
-  extra occurrence after the end. It happens in any zone, and it is Palm's framework.
+- **Exceptions stay in a COUNT total.** `countInfo.occurrences` leaves out exceptions, so paging a
+  COUNT repeat with a cancelled date added an extra occurrence at the end. The helper now records
+  them in `countInfo.exceptions`, by date, and the paging counts them.
+- **Known, not fixed: southern daylight time.** Stock `TimezoneManager.getOffset` never applies it,
+  because `dstStart` comes after `dstEnd` in that hemisphere. The parser has its own correct lookup,
+  but the calendar doesn't. An event starting in the first hour after midnight during Sydney's
+  daylight time therefore lands a day early in the calendar's own working, and its exception misses.
 - **On-device only.** `ICalEvents.target` accepts only `syncSource: "Local"` on the
   `com.palm.calendar:1` kind, and events use the `com.palm.calendarevent:1` kind. Otherwise the
   import stops. It must never use the default calendar, because a synced calendar uploads what

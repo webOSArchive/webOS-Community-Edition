@@ -2474,9 +2474,9 @@ def main():
         sys.exit(f"ERROR: {rel} is not in the stock image")
     wcopy(rel, os.path.join(SYSTEM, rel), 0o644)
 
-    # Calendar framework: two fixes for repeats in another zone, the first
-    # occurrence and COUNT paging. Every copy a loader can reach: source, the
-    # app's concatenated.js, the services' minified.
+    # Calendar framework: repeat fixes, for the first occurrence, COUNT paging
+    # across zones, and exceptions in a COUNT total. Every copy a loader can
+    # reach: source, the app's concatenated.js, the services' minified.
     for rel in ("usr/palm/frameworks/calendar/submission/42/javascript/event-manager.js",
                 "usr/palm/frameworks/calendar/submission/42/concatenated.js",
                 "usr/palm/frameworks/calendar/submission/42calendar.js"):
