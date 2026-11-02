@@ -1,8 +1,9 @@
 # Import vCards: notes for Lunacy
 
-For the agent adding webOS CE's Import vCards to Lunacy. The feature is in this repo at
-commit `7bd5641` (Contacts 3.2.0). It works on a TouchPad, including a real tap through the
-file picker. It has not been run on Lunacy. The Lunacy findings below come from reading its
+For the agent adding webOS CE's Import vCards to Lunacy. The feature first landed in this repo at
+commit `7bd5641` (Contacts 3.2.0). **Take it from `6eae747` or later:** a copy from before then
+imports into the default account, which can be Exchange, and has the garbled progress text. It
+works on a TouchPad, including a real tap through the file picker. It has not been run on Lunacy. The Lunacy findings below come from reading its
 source on 2026-11-02 (Lunacy commit `dbd305a`).
 
 **One thing must change in Lunacy first: the picker will come up empty for `.vcf` files**
@@ -20,8 +21,9 @@ Take finished files, as usual. Nothing here needs re-applying as a patch.
 Take both. The service still works for Photos as before. `services.json` matters as much as
 `service.js`, because `remove` is declared there.
 
-Contacts stays at version 3.2.0, so nothing will show that the tree changed: check for
-`app/utils/VCardBatchImport.js`. The `contacts` framework and the system files are unchanged.
+Contacts stays at version 3.2.0, so the version won't show which copy you have. In
+`app/utils/VCardBatchImport.js`, `getAccountsByTemplateId` means the on-device fix is in, and
+`The label is set once` means the progress fix is in. Both must be there. The `contacts` framework and the system files are unchanged.
 
 ## Required change: `.vcf` is filtered out of the picker
 
@@ -55,6 +57,14 @@ The linker can still merge an imported contact with an Exchange contact into one
 link is only in `com.palm.person:1`, and neither contact moves. Editing or deleting such a
 merged person hasn't been tested, and it may reach the Exchange contact. That is the app's
 existing behaviour for linked contacts, not something the import adds.
+
+## The progress label is set once
+
+Changing the label while the dialog is up left the top half of the text frozen on a TouchPad:
+WebKit repainted only the bottom half. It showed in both this import and Import Calendar. So the
+label says "Importing N contacts..." once and only the bar moves. Don't put a running count back
+without checking it on a TouchPad. The same label fix hasn't been seen running in Contacts on the
+device yet; it was confirmed in Calendar's matching dialog.
 
 ## Checked, and fine as it stands
 
