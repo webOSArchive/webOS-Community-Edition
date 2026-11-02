@@ -10,7 +10,8 @@
 		"commands": [
 			{ "name": "writeChunk", "assistant": "WriteChunkAssistant", "public": true },
 			{ "name": "commit", "assistant": "CommitAssistant", "public": true },
-			{ "name": "discard", "assistant": "DiscardAssistant", "public": true }
+			{ "name": "discard", "assistant": "DiscardAssistant", "public": true },
+			{ "name": "remove", "assistant": "RemoveAssistant", "public": true }
 		]
 	}]
 }

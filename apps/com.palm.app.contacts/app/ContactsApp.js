@@ -36,6 +36,7 @@ enyo.kind({
         {kind: "Accounts.getAccounts", name: "getAccounts", onGetAccounts_AccountsAvailable: "onAccountsAvailable"},
         {kind: "TransactionManager", name: "transactionMgr", onBeginTransaction: "onBeginTransaction", onEndTransaction: "onEndTransaction"},
         {name: "vCardHelper", kind: "VCardHelper", onGotVCardContact: "onGotVCardContact"},
+        {name: "vCardBatchImport", kind: "VCardBatchImport"},
         {name: "pane", kind: "Pane", flex: 1, transitionKind: "enyo.transitions.Simple", onCreateView: "paneAddView", components: [
             {name: "splitPane", kind: "SplitPane", flex: 1, onListAddClick: "addClick", onDetailsEdit: "editClick",
                 onDetailsLinkProfilesTap: "linkProfilesTap", onDetailsDoneCreatingPersonObject: "continueCrossLaunch", onAddFavoriteClick: "showFavoriteList"},
@@ -50,6 +51,7 @@ enyo.kind({
             {name: "AccountsView", kind: "AccountsUI", capability: "CONTACTS", onAccountsUI_Done: "preferencesClick", lazy: true}
         ]},
         {name: "appMenu", kind: "AppMenu", components: [
+            {caption: $L("Import vCards"), onclick: "importVCardsClick"},
             {caption: $L("Preferences & Accounts"), onclick: "preferencesClick"},
             {kind: enyo.HelpMenu, target: 'http://help.palm.com/contacts/index.json'}
         ]},
@@ -397,6 +399,9 @@ enyo.kind({
     preferencesClick     : function () {
         this.$.pane.selectViewByName("prefs");
         this.$.prefs.setupGlobals(AccountsList, AppPrefs);
+    },
+    importVCardsClick    : function () {
+        this.$.vCardBatchImport.pickFile();
     },
     searchCriteriaUpdated: function (inSender) {
         this.$.splitPane.setPersonId("");

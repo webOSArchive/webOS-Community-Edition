@@ -53,6 +53,8 @@ var pathsToImport = [
     "app/utils/TransactionManager.js",
     "app/utils/GALHelper.js",
     "app/utils/VCardHelper.js",
+    "app/utils/VCardParser.js",
+    "app/utils/VCardBatchImport.js",
 
     "css/contacts.css"
 ];

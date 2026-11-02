@@ -11,14 +11,18 @@
  *                                       copy:    at `path`, or `name-2.ext`, `name-3.ext`...
  *                                       if that exists. Answers {path} it used.
  *   discard    {path}                -> removes the temp file
+ *   remove     {path}                -> removes a file (Contacts only)
  *
- * Only Photos may call it, and only for .jpg/.jpeg/.png files under /media/internal.
+ * Only Photos may call it, for .jpg/.jpeg/.png files under /media/internal. Contacts also
+ * may, for its folder of contact photos alone: it writes the photos in an imported vCard.
  */
 var fs = IMPORTS.require('fs');
 var pathLib = IMPORTS.require('path');
 
 var ROOT = "/media/internal/";
-var CALLER = "com.palm.app.photos";
+var CONTACT_PHOTOS = ROOT + ".contactphotos/";
+var PHOTOS_APP = "com.palm.app.photos";
+var CONTACTS_APP = "com.palm.app.contacts";
 
 function PhotoEditService() {}
 
@@ -41,13 +45,15 @@ function callerOf(controller) {
 	}
 }
 
-// The picture's path, validated, or null.
-function checkPath(p) {
+// The picture's path, validated for this caller, or null.
+function checkPath(p, who) {
 	if (typeof p !== "string") { return null; }
 	p = pathLib.normalize(p);
-	if (p.indexOf(ROOT) !== 0 || p.indexOf("/.") !== -1) { return null; }
 	if (!/\.(jpe?g|png)$/i.test(p)) { return null; }
-	return p;
+	if (who === CONTACTS_APP) {
+		return (p.indexOf(CONTACT_PHOTOS) === 0 && p.indexOf("/", CONTACT_PHOTOS.length) === -1) ? p : null;
+	}
+	return (p.indexOf(ROOT) === 0 && p.indexOf("/.") === -1) ? p : null;
 }
 
 function tempOf(p) {
@@ -61,11 +67,12 @@ function exists(p) {
 // Common gate: answers the validated path, or null after failing the call.
 function gate(assistant, future) {
 	var who = callerOf(assistant.controller).split(" ")[0];
-	if (who !== CALLER) {
+	if (who !== PHOTOS_APP && who !== CONTACTS_APP) {
 		fail(future, "caller not allowed: " + who);
 		return null;
 	}
-	var p = checkPath(assistant.controller.args.path);
+	assistant.caller = who;
+	var p = checkPath(assistant.controller.args.path, who);
 	if (!p) {
 		fail(future, "bad path: " + assistant.controller.args.path);
 		return null;
@@ -81,6 +88,9 @@ WriteChunkAssistant.prototype.run = function (future) {
 	if (typeof args.data !== "string") { return fail(future, "no data"); }
 	var tmp = tempOf(p), fd;
 	try {
+		if (p.indexOf(CONTACT_PHOTOS) === 0 && !exists(CONTACT_PHOTOS)) {
+			fs.mkdirSync(CONTACT_PHOTOS, 493);
+		}
 		fd = fs.openSync(tmp, args.append ? "a" : "w", 420);
 		var buf = new Buffer(args.data, "base64");
 		fs.writeSync(fd, buf, 0, buf.length, null);
@@ -121,5 +131,14 @@ DiscardAssistant.prototype.run = function (future) {
 	var p = gate(this, future);
 	if (!p) { return; }
 	try { fs.unlinkSync(tempOf(p)); } catch (e) {}
+	future.result = { returnValue: true };
+};
+
+function RemoveAssistant() {}
+RemoveAssistant.prototype.run = function (future) {
+	var p = gate(this, future);
+	if (!p) { return; }
+	if (this.caller !== CONTACTS_APP) { return fail(future, "caller not allowed: " + this.caller); }
+	try { fs.unlinkSync(p); } catch (e) {}
 	future.result = { returnValue: true };
 };

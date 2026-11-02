@@ -120,7 +120,7 @@ Listed so the plan is honest about the critical path:
 | Video handler job (new) | `/etc/event.d/ce-register-video-handler` + `/usr/palm/ce-seed/jobs/…sh` | see trap below |
 | Media TLS | **add** `/usr/lib/gstreamer-0.10/libgstcurlhttpsrc.so`, **remove** `libgstsouphttpsrc.so` | |
 | Calculator 3.2.0 | `/usr/palm/applications/com.palm.app.calculator/`, `/usr/palm/packages/com.palm.calculator/`; **remove** `/usr/palm/ipkgs/com.palm.app.calculator/` | |
-| Contacts 3.2.0 (600074) | `/usr/palm/applications/com.palm.app.contacts/{app/FirstUse.js,appinfo.json}` | already a rootfs app on 3.1.0 (the community build); source `apps/com.palm.app.contacts` |
+| Contacts 3.2.0 (600074, Import vCards added after) | `/usr/palm/applications/com.palm.app.contacts/{app/FirstUse.js,app/ContactsApp.js,app/utils/VCardParser.js,app/utils/VCardBatchImport.js,depends.js,appinfo.json,tests/VCardParserTest.js}` | already a rootfs app on 3.1.0 (the community build), and rootfs wins over a cryptofs install, so a feed ipk has no effect; source `apps/com.palm.app.contacts`. Import vCards writes photos through `org.webosarchive.photos.service`, so it needs that service's `remove` command and Contacts caller: **the service lives in cryptofs**, so an OTA must update it in `ce-ota-finish`, or imported contacts arrive without photos (the import says so and carries on) |
 | Calendar 3.2.0 (600074) | the staged `/usr/palm/ipkgs/com.palm.app.calendar/…3.0.11007_all.ipk` is repacked | **no effect on an installed device**: Calendar lives in cryptofs, and the staged ipk keeps its 3.0.11007 filename. See §2.2 |
 | Account templates (600074) | `/usr/palm/public/accounts/com.palm.{palmprofile,facebook,linkedin}/**/*.json` (24 files) | "webOS Account"; Facebook without CALENDAR/CONTACTS; LinkedIn hidden. The accounts service caches templates until it restarts |
 | Accounts library strings (600074) | `/usr/palm/frameworks/enyo/0.10/framework/lib/accounts/resources/{de,en,en_ca,es,fr,it}.json` | "Get started with your webOS account:" |
@@ -185,6 +185,12 @@ The rootfs diff can't express these:
    Photos hand-off (1). A healthy **reflash** is not affected: the Doctor wipes
    cryptofs, so first boot installs the staged ipk, which carries 3.2.0. Only a
    failed wipe (KNOWN-ISSUES #10) would leave the stock copy in place.
+9. **Photos service for Import vCards.** Contacts writes imported photos through
+   `org.webosarchive.photos.service`, which lives in cryptofs. Lay
+   `apps/org.webosarchive.photos.service/{service.js,services.json}` over
+   `/media/cryptofs/apps/usr/palm/services/org.webosarchive.photos.service/` and
+   stop the running service. Without this, an installed device imports contacts
+   without their photos, and the import's summary counts them.
 
 ### 2.3 Delivery tier: armed flash, on purpose
 
