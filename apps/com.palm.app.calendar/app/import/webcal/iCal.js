@@ -1425,6 +1425,13 @@ var iCal = (function () {
 					if (revent) {
 						applyHacks(revent, exceptions);
 						exceptions.forEach(function (e) { applyHacks(e); });
+						if (revent.exdates) {
+							revent.exdates = revent.exdates.map(function (exdate) {
+								return Time.exdateInEventZone(exdate, revent.tzId);
+							}).filter(function (exdate, index, all) {
+								return all.indexOf(exdate) === index;
+							});
+						}
 						grouped.push({
 							result: revent,
 							exceptions: exceptions,

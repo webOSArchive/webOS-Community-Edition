@@ -34,6 +34,13 @@ repo, so a parser fix goes in both, with the shared `tests/iCalParserTest.js`.
 
 ## Rules worth keeping
 
+- **Exceptions are plain dates.** `rrule-manager.js` tests an exception against the occurrence's
+  date in the event's zone plus dtstart's clock time in the device's zone. A date and time misses
+  when the two zones differ by a day or in daylight time, and the cancelled occurrence still shows.
+  So `exdates` hold `YYYYMMDD` in the event's zone. `app/import/webcal/iCal.js` and
+  `iCalTimeHandling.js` need updating to get this. Events imported before then keep the old form,
+  and a re-import skips them, so delete and re-import any that matter.
+
 - **On-device only.** `ICalEvents.target` accepts only `syncSource: "Local"` on the
   `com.palm.calendar:1` kind, and events use the `com.palm.calendarevent:1` kind. Otherwise the
   import stops. It must never use the default calendar, because a synced calendar uploads what

@@ -430,6 +430,17 @@ var Time = (function () {
     }
 	/* End support for Windows timezones */
 
+	// The calendar tests an exception against the occurrence's date in the event's zone, plus
+	// the clock time of dtstart in the device's zone. A date and time only matches when both
+	// zones agree on the day and on daylight time. A plain date is compared as a date, so that
+	// is what it gets: the day this occurrence falls on in the event's zone.
+	function exdateInEventZone(value, tzId) {
+		if (DATE.test(value)) {
+			return value;
+		}
+		return webOsTimeToICal(convertTime(iCalTimeToWebOsTime(value), TZManager.timezone, tzId), true, false);
+	}
+
 	function normalizeToTimezone(events, direction) {
 		var future = fetchTimezones(events),
 			tsFields = ["dtstamp", "created", "lastModified"];
@@ -562,6 +573,7 @@ var Time = (function () {
 			return Object.keys(unknownTimezones);
 		},
 
+		exdateInEventZone: exdateInEventZone,
 		convertDurationIntoMicroseconds: convertDurationIntoMicroseconds,
 		iCalTimeToWebOsTime: iCalTimeToWebOsTime,
 		webOsTimeToICal: webOsTimeToICal,

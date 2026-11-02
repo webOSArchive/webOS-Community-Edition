@@ -189,7 +189,7 @@ test("a series saves its exceptions under the parent, and re-imports as one thin
     world.run(text);
     assert.equal(world.rows.length, 2);
     assert.equal(world.rows[0].rrule.freq, "WEEKLY");
-    assert.deepEqual(world.rows[0].exdates, ["20270111T100000Z"]);
+    assert.deepEqual(world.rows[0].exdates, ["20270111"]);
     assert.equal(world.rows[1].parentId, world.rows[0]._id);
     assert.equal(world.rows[1].parentDtstart, world.rows[0].dtstart);
     assert.equal(world.rows[1].remoteId, undefined);
