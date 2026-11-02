@@ -3,8 +3,9 @@
 For the agent adding webOS CE's Import Calendar to Lunacy. App Menu > Import Calendar adds an
 `.ics` file's events to the on-device calendar. Importing again adds only new events.
 
-**Status:** tested under node only (28 tests), with Enyo, db8 and the time zone service stubbed.
-It has not run on a TouchPad or on Lunacy yet, so take it after the TouchPad tap test.
+**Status:** it works on a TouchPad, including a real tap through the picker and a repeat import
+with no duplicates. It has not run on Lunacy. One cosmetic fault is open: the progress dialog's
+text can look cut in half during an import.
 
 ## What to take
 
