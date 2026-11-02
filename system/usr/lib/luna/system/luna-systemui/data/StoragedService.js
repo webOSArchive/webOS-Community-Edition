@@ -52,7 +52,7 @@ enyo.kind({
 	 * Show the USB banner. Tapping it relaunches this app with these params.
 	 */
 	showUSBBanner: function() {
-		enyo.windows.addBannerMessage($L("USB Connected, tap for options"), enyo.json.stringify({action:"usbOptions"}), "/usr/lib/luna/system/luna-systemui/images/notification-small-usb.png");
+		enyo.windows.addBannerMessage($L("USB Connected"), enyo.json.stringify({action:"usbOptions"}), "/usr/lib/luna/system/luna-systemui/images/notification-small-usb.png");
 	},
 	
 	handleRelaunch: function(inSender, inEvent) {
