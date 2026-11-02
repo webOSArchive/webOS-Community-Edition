@@ -4,8 +4,7 @@ For the agent adding webOS CE's Import Calendar to Lunacy. App Menu > Import Cal
 `.ics` file's events to the on-device calendar. Importing again adds only new events.
 
 **Status:** it works on a TouchPad, including a real tap through the picker and a repeat import
-with no duplicates. It has not run on Lunacy. One cosmetic fault is open: the progress dialog's
-text can look cut in half during an import.
+with no duplicates. It has not run on Lunacy.
 
 ## What to take
 
@@ -45,3 +44,5 @@ repo, so a parser fix goes in both, with the shared `tests/iCalParserTest.js`.
 - **Attendees are safe here.** Meeting mail needs `com.palm.calendarevent.eas:1`, so attendees on
   the local calendar send nothing. Keep it that way.
 - **Stop.** The import starts through `enyo.asyncMethod` for the same reason as Import vCards.
+- **Progress text stays put.** Changing the label while the dialog is up left the top half of the
+  text frozen on a TouchPad, in both imports. The label is set once and only the bar moves.

@@ -52,16 +52,16 @@ enyo.kind({
         {name: "progressBar", kind: enyo.ProgressBar, style: "margin-bottom: 12px;"},
         {name: "stopBtn", kind: enyo.Button, caption: $L("Stop"), onclick: "stopClick"}
     ],
-    openAtStart : function () {
+    // The label is set once. Changing it while the dialog is up leaves the top half of the text
+    // frozen on a TouchPad: WebKit repaints only the bottom half. The bar repaints properly.
+    openAtStart : function (inCount) {
         this.validateComponents();
         this.$.stopBtn.setDisabled(false);
-        this.$.progressLbl.setContent($L("Reading the file..."));
+        this.$.progressLbl.setContent(new enyo.g11n.Template($L("1#Importing 1 event...|#Importing #{count} events...")).formatChoice(inCount, {count: inCount}));
         this.$.progressBar.setPosition(0);
         this.openAtCenter();
     },
     showProgress: function (inDone, inTotal) {
-        var template = new enyo.g11n.Template($L("Importing #{done} of #{total}"));
-        this.$.progressLbl.setContent(template.evaluate({done: inDone, total: inTotal}));
         this.$.progressBar.setPosition(inTotal ? (100 * inDone / inTotal) : 0);
     },
     stopClick   : function () {
@@ -126,6 +126,7 @@ enyo.kind({
             return;
         }
         this.text = inText;
+        this.eventCount = count;
         this.$.confirmDialog.openWith(new enyo.g11n.Template($L("1#Import 1 event from #{file} to this device?|#Import #{count} events from #{file} to this device?")).formatChoice(count, {
             count: count,
             file : this.filePath.substring(this.filePath.lastIndexOf("/") + 1)
@@ -155,7 +156,7 @@ enyo.kind({
         this.groups = null;
         this.nextGroup = 0;
         this.known = ICalEvents.newKnown();
-        this.$.progressDialog.openAtStart();
+        this.$.progressDialog.openAtStart(this.eventCount);
         // Let the dialog paint first: the parse holds the page until it is done.
         enyo.asyncMethod(this, "loadParser");
     },

@@ -27,15 +27,16 @@ enyo.kind({
         {name: "progressBar", kind: "ProgressBar", style: "margin-bottom: 12px;"},
         {name: "stopBtn", kind: "Button", caption: $L("Stop"), onclick: "stopClick"}
     ],
-    openAtStart : function () {
+    // The label is set once. Changing it while the dialog is up leaves the top half of the text
+    // frozen on a TouchPad: WebKit repaints only the bottom half. The bar repaints properly.
+    openAtStart : function (inCount) {
         this.validateComponents();
         this.$.stopBtn.setDisabled(false);
+        this.$.progressLbl.setContent(new enyo.g11n.Template($L("1#Importing 1 contact...|#Importing #{count} contacts...")).formatChoice(inCount, {count: inCount}));
         this.showProgress(0, 0);
         this.openAtCenter();
     },
     showProgress: function (inDone, inTotal) {
-        var template = new enyo.g11n.Template($L("Importing #{done} of #{total}"));
-        this.$.progressLbl.setContent(template.evaluate({done: inDone, total: inTotal}));
         this.$.progressBar.setPosition(inTotal ? (100 * inDone / inTotal) : 0);
     },
     stopClick   : function () {
@@ -138,7 +139,7 @@ enyo.kind({
         this.counts = {imported: 0, skipped: 0, failed: 0, photosFailed: 0};
         this.nextCard = 0;
         this.keys = {};
-        this.$.progressDialog.openAtStart();
+        this.$.progressDialog.openAtStart(this.cards.length);
         this.$.progressDialog.showProgress(0, this.cards.length);
         this.loadExistingKeys();
     },
