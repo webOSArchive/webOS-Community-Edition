@@ -30,6 +30,8 @@ case "$1" in
 feed)
     find "$SRC/app" "$SRC/libs" -name '*.js' -exec node --check {} \;
     node --check "$SRC/index.js"; node --check "$SRC/depends.js"
+    node "$SRC/tests/iCalParserTest.js" | { ! grep FAIL; }
+    node "$SRC/tests/ICalImportTest.js" | { ! grep FAIL; }
     for f in $(find "$SRC" -name appinfo.json); do
         grep -q "\"version\"[[:space:]]*:[[:space:]]*\"$VER\"" "$f" || { echo "$f is not at version $VER" >&2; exit 1; }
     done
@@ -37,7 +39,7 @@ feed)
     cp -r "$SRC" "$W/data/usr/palm/applications/$PKG"
     # HP's development leftovers: specs, Ruby/rake build files, design notes.
     (cd "$W/data/usr/palm/applications/$PKG" && \
-        rm -rf spec docs Gemfile Gemfile.lock Rakefile .rvmrc ci_build.sh && \
+        rm -rf spec docs tests Gemfile Gemfile.lock Rakefile .rvmrc ci_build.sh && \
         find . -name .DS_Store -delete)
     cd "$W"
     (cd data && tar --sort=name --owner=0 --group=0 -czf ../data.tar.gz ./usr)

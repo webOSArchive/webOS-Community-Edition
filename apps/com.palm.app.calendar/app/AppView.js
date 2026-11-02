@@ -38,6 +38,7 @@ enyo.kind({
 		,	onCreateAllDayEvent		: "createAllDayEvent"
 		,	onCreateEvent			: "createTimedEvent"
 //		,	onDeleteEvent			: "showDeleteConfirm"
+		,	onImportCalendar		: "importCalendar"
 		,	onJumpTo				: "showJumpTo"
 		,	onShowHelp				: "showHelp"
 //		,	onShowMap				: "showMap"
@@ -47,6 +48,8 @@ enyo.kind({
 		,	onShowToday				: "showDate"
 		,	onSyncNow				: "syncNow"
 		},//End: AppMenu
+
+		{name:"iCalImport", kind:"calendar.ICalImport"},	// webOS CE: App Menu > Import Calendar
 
 		{kind: enyo.Pane, flex: 1, onSelectView: "viewSelected", components: [
 			{name: "calendar", kind: enyo.VFlexBox,
@@ -435,6 +438,10 @@ enyo.kind({
 		var ui = this.$;
 		ui.jumpToDialog.lazy && ui.jumpToDialog.validateComponents();
 		ui.jumpToDialog.openAtCenter();
+	},
+
+	importCalendar: function importCalendar () {
+		this.$.iCalImport.pickFile();
 	},
 
 	showPreferences: function showPreferences () {

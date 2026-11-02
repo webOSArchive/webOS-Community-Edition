@@ -15,6 +15,7 @@ enyo.kind({
 	{	onCreateAllDayEvent		: ""
 	,	onCreateEvent			: ""
 	,	onDeleteEvent			: ""
+	,	onImportCalendar		: ""
 	,	onJumpTo				: ""
 	,	onShowHelp				: ""
 	,	onShowMap				: ""
@@ -45,6 +46,7 @@ enyo.kind({
 		{name:"menuToday"		, caption: $L("Show today")				, onclick: "doShowToday"			, showing: false},	// TODO: In a future release, set onresize showing:true
 		{name:"menuJump"		, caption: $L("Jump to...")				, onclick: "doJumpTo"				, showing: false},	// TODO: In a future release, set onresize showing:true
 		{name:"menuReminders"	, caption: $L("Missed reminders...")	, onclick: "doShowMissedReminders"	, showing: false},	// TODO: Enable when missed reminders view is completed.
+		{name:"menuImport"		, caption: $L("Import Calendar")		, onclick: "doImportCalendar"		, showing: false},	// webOS CE
 		{name:"menuPrefs"		, caption: $L("Preferences & Accounts")	, onclick: "doShowPreferences"		, showing: false},
 		{name:"menuHelp"		, caption: $L("Help")					, onclick: "doShowHelp"}
 	],
@@ -57,6 +59,7 @@ enyo.kind({
 		,	menuSync		: true
 		,	menuToday		: false
 		,	menuJump		: false
+		,	menuImport		: true
 		,	menuPrefs		: true
 		,	menuHelp		: true
 		},

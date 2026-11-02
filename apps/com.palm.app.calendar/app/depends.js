@@ -38,4 +38,6 @@ enyo.depends
 ,	"shared/FormatterCache.js"
 ,	"shared/JumpToView.js"
 ,	"shared/Utilities.js"
+,	"import/ICalEvents.js"							// webOS CE: App Menu > Import Calendar
+,	"import/ICalImport.js"
 );
