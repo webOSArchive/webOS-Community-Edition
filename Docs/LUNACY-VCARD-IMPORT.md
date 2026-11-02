@@ -63,8 +63,7 @@ existing behaviour for linked contacts, not something the import adds.
 Changing the label while the dialog is up left the top half of the text frozen on a TouchPad:
 WebKit repainted only the bottom half. It showed in both this import and Import Calendar. So the
 label says "Importing N contacts..." once and only the bar moves. Don't put a running count back
-without checking it on a TouchPad. The same label fix hasn't been seen running in Contacts on the
-device yet; it was confirmed in Calendar's matching dialog.
+without checking it on a TouchPad.
 
 ## Checked, and fine as it stands
 
