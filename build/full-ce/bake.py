@@ -2474,9 +2474,9 @@ def main():
         sys.exit(f"ERROR: {rel} is not in the stock image")
     wcopy(rel, os.path.join(SYSTEM, rel), 0o644)
 
-    # Calendar framework: a repeat keeps its first occurrence when that falls a
-    # day later on the device's clock than in the event's zone. Every copy a
-    # loader can reach: source, the app's concatenated.js, the services' minified.
+    # Calendar framework: two fixes for repeats in another zone, the first
+    # occurrence and COUNT paging. Every copy a loader can reach: source, the
+    # app's concatenated.js, the services' minified.
     for rel in ("usr/palm/frameworks/calendar/submission/42/javascript/event-manager.js",
                 "usr/palm/frameworks/calendar/submission/42/concatenated.js",
                 "usr/palm/frameworks/calendar/submission/42calendar.js"):
@@ -2484,7 +2484,7 @@ def main():
             sys.exit(f"ERROR: {rel} is not in the stock image")
         mine = open(os.path.join(SYSTEM, rel), "rb").read()
         if mine == read_rootfs(ROOTFS_TGZ, exact=[f"./{rel}"])[f"./{rel}"]["data"]:
-            sys.exit(f"ERROR: system/{rel} is identical to stock; the first-occurrence fix is missing")
+            sys.exit(f"ERROR: system/{rel} is identical to stock; the repeat fixes are missing")
         w(rel, mine, 0o644)
 
     # 12) rootcertsupdate : FULL build-time replay of the trust-store update.

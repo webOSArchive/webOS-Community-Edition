@@ -2065,10 +2065,12 @@ var EventManagerUtils = Class.create ({
 			}
 			
 			//We need to keep looking. Start looking after the last one we found.
-			timeMachine.setTime(lastFound);
+			//webOS CE: the day after, as the event's zone counts days. A day on the device's clock can
+			//still be the same occurrence's day there, and it would be counted twice.
+			timeMachine.setTime(this.timezoneManager.convertTime(lastFound, this.timezoneManager.getSystemTimezone(), event.tzId));
 			timeMachine.addDays(1);  //+1 day to skip past this occurrence and start looking for the next
 			timeMachine.clearTime();
-			tempStart = timeMachine.getTime();
+			tempStart = this.timezoneManager.convertTime(timeMachine.getTime(), event.tzId, this.timezoneManager.getSystemTimezone());
 			limit = limit - numFoundSoFar;
 		}
 		

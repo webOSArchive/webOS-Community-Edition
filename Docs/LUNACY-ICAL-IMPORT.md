@@ -45,6 +45,13 @@ repo, so a parser fix goes in both, with the shared `tests/iCalParserTest.js`.
   `datesInEvent[0]`. The finished framework files are in
   `system/usr/palm/frameworks/calendar/submission/`. It isn't an import fault: any repeat in another
   zone had it.
+- **A COUNT repeat keeps all its occurrences.** Stock `findRepeatsInRangeCountVersion` resumed its
+  search one day after the last occurrence on the device's clock. Ahead of the device, that is
+  still the same occurrence's day, so it counted twice and the repeat ran out early. It now resumes
+  a day later in the event's zone. A wide range hid this; the day view's small ranges showed it.
+- **Known, not fixed: an exception can add an occurrence at the end.** The cached list of found
+  occurrences leaves out exceptions, so paging a COUNT repeat with a cancelled date can show one
+  extra occurrence after the end. It happens in any zone, and it is Palm's framework.
 - **On-device only.** `ICalEvents.target` accepts only `syncSource: "Local"` on the
   `com.palm.calendar:1` kind, and events use the `com.palm.calendarevent:1` kind. Otherwise the
   import stops. It must never use the default calendar, because a synced calendar uploads what
