@@ -24,6 +24,7 @@ feed)
     find "$SRC/app" -name '*.js' -exec node --check {} \;
     node --check "$SRC/depends.js"
     node "$SRC/tests/VCardParserTest.js" | { ! grep FAIL; }
+    node "$SRC/tests/VCardAccountTest.js" | { ! grep FAIL; }
     W="$ROOT/build/work/contacts-feed"; rm -rf "$W"; mkdir -p "$W/data/usr/palm/applications" "$W/ctl" "$OUT"
     cp -r "$SRC" "$W/data/usr/palm/applications/$PKG"
     find "$W/data" -name .DS_Store -delete

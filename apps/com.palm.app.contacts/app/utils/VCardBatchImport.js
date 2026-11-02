@@ -1,5 +1,9 @@
 // webOS CE: App Menu > Import vCards. Picks a .vcf file and adds every contact in it to the
-// default account, with its photo.
+// on-device account, with its photo.
+//
+// Always the on-device account, never the default account: the default can be set to Exchange,
+// and a contact written to a synced account's kind is uploaded by that account's sync. A file
+// of cards must not reach a server unasked. If there is no on-device account the import stops.
 //
 // VCardParser.js says why this does not call the contacts service's importVCard. A contact
 // already in the account is skipped, so importing a file twice, or again after stopping
@@ -9,7 +13,7 @@
 // org.webosarchive.photos.service (part of Photos 3.2.0) into /media/internal/.contactphotos.
 // Without that service the contacts are imported without photos and the summary says so.
 
-/*global enyo, $L, ContactsLib, AppPrefs, AccountsList, PalmCall, Future, VCardParser, XMLHttpRequest, Image */
+/*global enyo, $L, ContactsLib, AccountsList, PalmCall, Future, VCardParser, XMLHttpRequest, Image */
 
 enyo.kind({
     name      : "VCardImportProgressDialog",
@@ -97,7 +101,7 @@ enyo.kind({
             this.showResult($L("There are no contacts in this file."));
             return;
         }
-        var template = new enyo.g11n.Template($L("1#Import 1 contact from #{file}?|#Import #{count} contacts from #{file}?"));
+        var template = new enyo.g11n.Template($L("1#Import 1 contact from #{file} to this device?|#Import #{count} contacts from #{file} to this device?"));
         this.confirmMessage = template.formatChoice(this.cards.length, {
             count: this.cards.length,
             file : this.filePath.substring(this.filePath.lastIndexOf("/") + 1)
@@ -120,17 +124,13 @@ enyo.kind({
         enyo.asyncMethod(this, "startImport");
     },
     startImport        : function () {
-        this.accountId = AppPrefs.get(ContactsLib.AppPrefs.Pref.defaultAccountId);
-        if (!this.accountId) {
-            this.showResult($L("There is no account to import contacts into."));
+        var accounts = AccountsList.getAccountsByTemplateId("com.palm.palmprofile");
+        if (!accounts || !accounts[0] || !accounts[0]._id) {
+            this.showResult($L("There is no on-device account to import contacts into."));
             return;
         }
-        try {
-            this.contactKind = AccountsList.getProvider(this.accountId).dbkinds.contact;
-        } catch (e) {
-            enyo.warn("VCardBatchImport: no provider for the default account: " + e);
-        }
-        this.contactKind = this.contactKind || "com.palm.contact.palmprofile:1";
+        this.accountId = accounts[0]._id;
+        this.contactKind = "com.palm.contact.palmprofile:1";
 
         this.running = true;
         this.stopped = false;

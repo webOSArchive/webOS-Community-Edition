@@ -41,6 +41,21 @@ Adding `vcf` to the list would fix this one app and leave the difference for the
 `filtered()` lowercases the extension, so `"VCF"` in the list simply never matches; an
 uppercase `.VCF` file still matches `"vcf"`.
 
+## The import only writes to the on-device account
+
+`startImport` takes the account with template `com.palm.palmprofile` and the kind
+`com.palm.contact.palmprofile:1`. It ignores the default account, because a default set to
+Exchange would have put every card in `com.palm.contact.eas:1`, which `mojomail-eas` uploads.
+With no on-device account the import stops and says so; it has no fallback. The confirm dialog
+says "to this device". To check that a tree has this change, look for `getAccountsByTemplateId`
+in `app/utils/VCardBatchImport.js`. `node apps/com.palm.app.contacts/tests/VCardAccountTest.js`
+covers it.
+
+The linker can still merge an imported contact with an Exchange contact into one person. That
+link is only in `com.palm.person:1`, and neither contact moves. Editing or deleting such a
+merged person hasn't been tested, and it may reach the Exchange contact. That is the app's
+existing behaviour for linked contacts, not something the import adds.
+
 ## Checked, and fine as it stands
 
 - **Reading the file.** The app does an XHR to `file:///media/internal/...`, with a
