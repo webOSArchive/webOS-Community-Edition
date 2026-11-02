@@ -23,9 +23,10 @@ repo, so a parser fix goes in both, with the shared `tests/iCalParserTest.js`.
   or video is a `document`. Without it `.ics` files won't be listed.
 - **`new Function`.** `ICalEvents.instantiate` evaluates the parser's files this way, so they stay
   unchanged and out of the global scope. A content security policy that blocks eval will stop it.
-- **XHR to `app/import/webcal/`.** The parser loads relative to `index.html` when an import
-  starts. A failure shows "This file could not be read."
-- **Libraries.** It needs `MojoLoader.require` for `foundations`, and `Calendar.TimezoneManager`.
+- **XHR to `import/webcal/`.** The parser loads relative to the card, `app/calendar.html`, when an
+  import starts. A failure shows "This file could not be read."
+- **Libraries.** It reads `MojoLoader` and `Calendar` from `enyo.windows.getRootWindow()`, because
+  only the headless `index.html` has them. It needs `foundations` and `Calendar.TimezoneManager`.
 - **`com.palm.systemservice/timezone/getTimeZoneRules`.** The answers need `hasDstChange`,
   `utcOffset`, `dstOffset`, `dstStart` and `dstEnd` as on a TouchPad. South of the equator,
   `dstStart` comes after `dstEnd`. A request naming only unknown zones fails on a TouchPad; with a

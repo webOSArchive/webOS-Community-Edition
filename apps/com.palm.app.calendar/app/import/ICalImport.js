@@ -3,8 +3,11 @@
 //
 // An event that won't parse or save is counted, and the rest carry on. Most launches never
 // import, so the parser's files are fetched and evaluated here, when an import starts.
+//
+// This runs in the card, app/calendar.html, so paths are relative to app/. MojoLoader and the
+// Calendar library are only in the headless window, index.html.
 
-/*global enyo, $L, ICalEvents, CalendarEvent, Calendar, MojoLoader, XMLHttpRequest */
+/*global enyo, $L, ICalEvents, CalendarEvent, XMLHttpRequest */
 
 enyo.kind({
     name      : "calendar.ImportDialog",
@@ -71,7 +74,7 @@ enyo.kind({
     name      : "calendar.ICalImport",
     kind      : enyo.Component,
     statics   : {
-        PARSER_PATH   : "app/import/webcal/",
+        PARSER_PATH   : "import/webcal/",
         FIND_PAGE_SIZE: 500,
         SAVE_BATCH    : 50
     },
@@ -167,7 +170,7 @@ enyo.kind({
         this.showResult($L("This file could not be read."));
     },
     foundations    : function () {
-        return MojoLoader.require({name: "foundations", version: "1.0"}).foundations;
+        return enyo.windows.getRootWindow().MojoLoader.require({name: "foundations", version: "1.0"}).foundations;
     },
     // Reads the parser's files, one after another, then builds it.
     loadParser     : function () {
@@ -215,7 +218,7 @@ enyo.kind({
             this.parser = ICalEvents.instantiate(inSources, {
                 Log        : {log: note, log_icalDebug: quiet, debug: quiet},
                 Future     : foundations.Control.Future,
-                Calendar   : Calendar,
+                Calendar   : enyo.windows.getRootWindow().Calendar,
                 checkResult: function (inFuture) {
                     return inFuture.exception ? {returnValue: false, exception: inFuture.exception} : inFuture.result;
                 }

@@ -58,6 +58,7 @@ function makeWorld(inCalendar) {
     sandbox = {
         console: console,
         $L: function (s) { return s; },
+        root: {
         Calendar: {TimezoneManager: function () {
             return {
                 timezone: "UTC", timezones: {},
@@ -71,8 +72,10 @@ function makeWorld(inCalendar) {
                 assert.equal(service, "palm://com.palm.db/");
                 return db(method, params);
             }}}}};
-        }},
+        }}
+        },
         enyo: {
+            windows: {getRootWindow: function () { return sandbox.root; }},
             kind: function (k) { kinds[k.name] = k; },
             application: {calendarsManager: {getLocalCalendar: function () { return world.calendar; }}},
             asyncMethod: function (scope, method) { world.queue.push(function () { scope[method](); }); },
