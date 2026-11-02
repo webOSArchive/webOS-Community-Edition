@@ -462,12 +462,9 @@ var endDate=timeMachine;var isZeroTime=startTime==endTime;if(!isZeroTime&&endDat
 				continue;
 			}
 			//If repeatsOnDate == -1, that means it repeated on that date, but it was an EXDATE.
-			//So it counts as an occurrence, but we shouldn't return it to the caller
+			//webOS CE: limit is how many occurrences the caller wants, and this isn't one. COUNT repeats
+			//don't come through here, so nothing needs an exception counted.
 			if(repeatsOnDate === -1){
-				numFound++;
-				if (numFound === limit) {
-					return eventOccurrences;
-				}
 				continue;
 			}
 

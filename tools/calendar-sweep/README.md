@@ -13,7 +13,8 @@ parser, on `concatenated.js` and `42calendar.js`. Nothing here runs on a device 
   no calendar code takes part. Ten event zones, five start times, daily, weekly on one or several
   days, every second week, monthly by date and by weekday, and yearly, ending with COUNT, UNTIL or
   not at all, with and without a cancelled date, around every clock change. The text goes through
-  the real parser, and each case is paged by day, by week and in one range. `SAMPLE=n` runs every
+  the real parser, and each case is paged by day, by week and in one range. It also asks
+  `findNextOccurrence` for the occurrence after each one, as reminders do. `SAMPLE=n` runs every
   nth case.
 - **`touchpad-rules.json`:** real `getTimeZoneRules` replies from a TouchPad with tzdata 2026f, which
   is what the framework reads. Recapture it when the zone data changes.
