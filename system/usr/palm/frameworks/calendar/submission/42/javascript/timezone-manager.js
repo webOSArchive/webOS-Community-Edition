@@ -303,7 +303,9 @@ var TimezoneManager = Class.create ({
 		if(!tzInfo.hasDstChange){
 			return tzInfo.utcOffset;
 		}
-		else if(timestampNoMillis >= tzInfo.dstStart && timestampNoMillis < tzInfo.dstEnd){
+		else if(tzInfo.dstStart <= tzInfo.dstEnd
+			? (timestampNoMillis >= tzInfo.dstStart && timestampNoMillis < tzInfo.dstEnd)
+			: (timestampNoMillis >= tzInfo.dstStart || timestampNoMillis < tzInfo.dstEnd)){	// webOS CE: south of the equator, dstStart comes after dstEnd.
 			return tzInfo.dstOffset;
 		}
 		

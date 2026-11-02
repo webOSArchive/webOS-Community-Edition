@@ -7,7 +7,8 @@ re-applying CE's edits. The apps themselves are in [`../apps/`](../apps/).
 | Path | Base | CE change |
 |---|---|---|
 | `usr/lib/luna/system/luna-systemui/data/StoragedService.js` | stock 3.0.5 | plugging in USB shows a banner and the dashboard, not the persistent popup; tapping the banner opens that popup. CE only: Lunacy's host handles USB |
-| `usr/palm/frameworks/calendar/submission/` | stock 3.0.5 (submission 42) | `event-manager.js` and its two built copies: for repeats in another zone, keeps the first occurrence when that falls a day later on the device's clock, and stops COUNT repeats counting one occurrence twice or losing count of a cancelled date |
+| `usr/palm/frameworks/calendar/submission/` | stock 3.0.5 (submission 42) | `event-manager.js` and its two built copies: for repeats in another zone, keeps the first occurrence when that falls a day later on the device's clock, stops COUNT repeats counting one occurrence twice or losing count of a cancelled date, and applies daylight time south of the equator (`timezone-manager.js`) |
+| `etc/palm/timezone.txt`, `usr/palm/ext-timezones.json` | stock 3.0.5 | offsets and `supportsDST` refreshed for tzdata 2026f. The compiled zone files are `AddToImage/PatchOrReplace/zoneinfo-2026f.tgz`, from `tools/tzdata/build-zoneinfo.sh` |
 | `usr/palm/public/accounts/com.palm.palmprofile/` | stock 3.0.5 | named "webOS Account" in every locale |
 | `usr/palm/public/accounts/com.palm.facebook/` | stock 3.0.5 | no CALENDAR or CONTACTS provider (dead APIs); PHOTO.UPLOAD kept |
 | `usr/palm/public/accounts/com.palm.linkedin/` | stock 3.0.5 | `"hidden": true` (its only capability, CONTACTS, is dead) |

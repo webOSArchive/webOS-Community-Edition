@@ -2475,9 +2475,11 @@ def main():
     wcopy(rel, os.path.join(SYSTEM, rel), 0o644)
 
     # Calendar framework: repeat fixes, for the first occurrence, COUNT paging
-    # across zones, and exceptions in a COUNT total. Every copy a loader can
-    # reach: source, the app's concatenated.js, the services' minified.
+    # across zones, exceptions in a COUNT total, and southern daylight time.
+    # Every copy a loader can reach: source, the app's concatenated.js, the
+    # services' minified.
     for rel in ("usr/palm/frameworks/calendar/submission/42/javascript/event-manager.js",
+                "usr/palm/frameworks/calendar/submission/42/javascript/timezone-manager.js",
                 "usr/palm/frameworks/calendar/submission/42/concatenated.js",
                 "usr/palm/frameworks/calendar/submission/42calendar.js"):
         if f"./{rel}" not in stock_names:
@@ -2486,6 +2488,22 @@ def main():
         if mine == read_rootfs(ROOTFS_TGZ, exact=[f"./{rel}"])[f"./{rel}"]["data"]:
             sys.exit(f"ERROR: system/{rel} is identical to stock; the repeat fixes are missing")
         w(rel, mine, 0o644)
+
+    # Time zones: stock is 2011 data. The compiled tree is from
+    # tools/tzdata/build-zoneinfo.sh; a name IANA retired keeps its stock file.
+    zoneinfos = sorted(glob.glob(os.path.join(POR, "zoneinfo-*.tgz")))
+    if len(zoneinfos) != 1:
+        sys.exit(f"ERROR: expected one zoneinfo-*.tgz in {POR}, found {zoneinfos}")
+    tz_done = 0
+    with tarfile.open(zoneinfos[0], "r:gz") as tf:
+        for m in tf.getmembers():
+            if m.isfile() or m.islnk():
+                w("usr/share/zoneinfo/" + os.path.normpath(m.name), tf.extractfile(m).read(), 0o644)
+                tz_done += 1
+    if tz_done < 500:
+        sys.exit(f"ERROR: {zoneinfos[0]}: only {tz_done} zone files")
+    for rel in ("etc/palm/timezone.txt", "usr/palm/ext-timezones.json"):
+        wcopy(rel, os.path.join(SYSTEM, rel), 0o644)
 
     # 12) rootcertsupdate : FULL build-time replay of the trust-store update.
     # postinst (3.x path): install scripts to /etc/ssl/scripts, then deploycerts:

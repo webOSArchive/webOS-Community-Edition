@@ -52,10 +52,12 @@ repo, so a parser fix goes in both, with the shared `tests/iCalParserTest.js`.
 - **Exceptions stay in a COUNT total.** `countInfo.occurrences` leaves out exceptions, so paging a
   COUNT repeat with a cancelled date added an extra occurrence at the end. The helper now records
   them in `countInfo.exceptions`, by date, and the paging counts them.
-- **Known, not fixed: southern daylight time.** Stock `TimezoneManager.getOffset` never applies it,
-  because `dstStart` comes after `dstEnd` in that hemisphere. The parser has its own correct lookup,
-  but the calendar doesn't. An event starting in the first hour after midnight during Sydney's
-  daylight time therefore lands a day early in the calendar's own working, and its exception misses.
+- **Southern daylight time.** Stock `TimezoneManager.getOffset` never applied it, because `dstStart`
+  comes after `dstEnd` in that hemisphere. `timezone-manager.js` now handles both orders. Lunacy's
+  `getTimeZoneRules` needs to answer with the same order: `dstStart` is the changeover into
+  daylight time, even when that falls later in the year than `dstEnd`.
+- **Time zone data is CE only.** CE replaced 2011 data with tzdata 2026f. Lunacy gets its rules from
+  Android, so it doesn't need those files.
 - **On-device only.** `ICalEvents.target` accepts only `syncSource: "Local"` on the
   `com.palm.calendar:1` kind, and events use the `com.palm.calendarevent:1` kind. Otherwise the
   import stops. It must never use the default calendar, because a synced calendar uploads what
