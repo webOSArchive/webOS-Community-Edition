@@ -7,6 +7,7 @@ re-applying CE's edits. The apps themselves are in [`../apps/`](../apps/).
 | Path | Base | CE change |
 |---|---|---|
 | `usr/lib/luna/system/luna-systemui/data/StoragedService.js` | stock 3.0.5 | plugging in USB shows a banner and the dashboard, not the persistent popup; tapping the banner opens that popup. CE only: Lunacy's host handles USB |
+| `usr/palm/frameworks/calendar/submission/` | stock 3.0.5 (submission 42) | `event-manager.js` and its two built copies: a repeat keeps its first occurrence when that falls a day later on the device's clock than in the event's zone |
 | `usr/palm/public/accounts/com.palm.palmprofile/` | stock 3.0.5 | named "webOS Account" in every locale |
 | `usr/palm/public/accounts/com.palm.facebook/` | stock 3.0.5 | no CALENDAR or CONTACTS provider (dead APIs); PHOTO.UPLOAD kept |
 | `usr/palm/public/accounts/com.palm.linkedin/` | stock 3.0.5 | `"hidden": true` (its only capability, CONTACTS, is dead) |

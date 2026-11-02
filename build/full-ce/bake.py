@@ -924,6 +924,7 @@ def main():
     log("scanning stock member names for the overwrite replays")
     stock_names = read_rootfs_names(ROOTFS_TGZ, [
         "./usr/lib/luna/system/luna-systemui/data/",
+        "./usr/palm/frameworks/calendar/",
         "./usr/palm/applications/com.palm.app.accounts/",
         "./usr/palm/applications/com.palm.app.phone/",
         "./usr/palm/applications/com.palm.app.enyo-findapps/",
@@ -2472,6 +2473,19 @@ def main():
     if f"./{rel}" not in stock_names:
         sys.exit(f"ERROR: {rel} is not in the stock image")
     wcopy(rel, os.path.join(SYSTEM, rel), 0o644)
+
+    # Calendar framework: a repeat keeps its first occurrence when that falls a
+    # day later on the device's clock than in the event's zone. Every copy a
+    # loader can reach: source, the app's concatenated.js, the services' minified.
+    for rel in ("usr/palm/frameworks/calendar/submission/42/javascript/event-manager.js",
+                "usr/palm/frameworks/calendar/submission/42/concatenated.js",
+                "usr/palm/frameworks/calendar/submission/42calendar.js"):
+        if f"./{rel}" not in stock_names:
+            sys.exit(f"ERROR: {rel} is not in the stock image")
+        mine = open(os.path.join(SYSTEM, rel), "rb").read()
+        if mine == read_rootfs(ROOTFS_TGZ, exact=[f"./{rel}"])[f"./{rel}"]["data"]:
+            sys.exit(f"ERROR: system/{rel} is identical to stock; the first-occurrence fix is missing")
+        w(rel, mine, 0o644)
 
     # 12) rootcertsupdate : FULL build-time replay of the trust-store update.
     # postinst (3.x path): install scripts to /etc/ssl/scripts, then deploycerts:

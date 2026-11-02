@@ -39,18 +39,12 @@ repo, so a parser fix goes in both, with the shared `tests/iCalParserTest.js`.
   in `iCalTimeHandling.js` therefore writes the end of that day, or the real end of the last
   occurrence if that is later, which it can be when the event's zone is behind the device. Then
   any day it reaches into becomes an exception. Lunacy's Android mirror may want the same rule.
-- **Known, not fixed: a repeat can lose its first occurrence.** When an event's first occurrence
-  falls on the next day on the device's clock, `event-manager.js` skips it, because it compares
-  `event.dtstart`, which is real time, with `nextMidnight`, which is the event's zone. It happens
-  with or without `UNTIL`, and it is Palm's framework, not the importer.
-
-- **Exceptions are plain dates.** `rrule-manager.js` tests an exception against the occurrence's
-  date in the event's zone plus dtstart's clock time in the device's zone. A date and time misses
-  when the two zones differ by a day or in daylight time, and the cancelled occurrence still shows.
-  So `exdates` hold `YYYYMMDD` in the event's zone. `app/import/webcal/iCal.js` and
-  `iCalTimeHandling.js` need updating to get this. Events imported before then keep the old form,
-  and a re-import skips them, so delete and re-import any that matter.
-
+- **A repeat keeps its first occurrence.** Stock `event-manager.js` compared `event.dtstart`, which
+  is real time, with `nextMidnight`, which is in the event's zone. So it skipped the first
+  occurrence when that fell on the next day on the device's clock. It now compares
+  `datesInEvent[0]`. The finished framework files are in
+  `system/usr/palm/frameworks/calendar/submission/`. It isn't an import fault: any repeat in another
+  zone had it.
 - **On-device only.** `ICalEvents.target` accepts only `syncSource: "Local"` on the
   `com.palm.calendar:1` kind, and events use the `com.palm.calendarevent:1` kind. Otherwise the
   import stops. It must never use the default calendar, because a synced calendar uploads what

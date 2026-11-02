@@ -612,6 +612,8 @@ var EventManagerUtils = Class.create ({
 			}
 
 			//Has the event's repeat cycle even started yet?
+			//webOS CE: date and nextMidnight are in the event's zone, so test the start in that zone.
+			//dtstart is real time, which skips the first occurrence when that falls a day later here.
 			if(i+1 != datesInRangeSize){
 				nextMidnight = datesInRange[i + 1];
 			}
@@ -621,7 +623,7 @@ var EventManagerUtils = Class.create ({
 				nextMidnight = timeMachine.getTime();
 			}			
 			
-			if(event.dtstart > nextMidnight) {
+			if(datesInEvent[0] >= nextMidnight) {
 				//this.evlog(this.logLevels.repeatDetails, "findRepeatsInRange: exit: repeat hasn't started yet 2");
 				continue;
 			}		
