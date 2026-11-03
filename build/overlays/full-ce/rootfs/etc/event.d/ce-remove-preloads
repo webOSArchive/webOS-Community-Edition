@@ -3,7 +3,7 @@
 # into /usr/lib/luna/customization/apps and
 # installed to /media/cryptofs/apps on first boot by com.palm.service.customization.
 # Delete the staged ipks before that install runs; also clear any cryptofs copy
-# already placed by an earlier flash/boot (cryptofs survives Doctor flashes).
+# already placed by an earlier flash/boot (left behind if the flash's wipe failed).
 #
 # Two different timing needs, same shape ce-cryptofs-seed/ce-firstboot-tweaks
 # already had to learn the hard way. The staged-ipk removal must WIN A RACE

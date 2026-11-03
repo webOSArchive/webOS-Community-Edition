@@ -262,7 +262,7 @@ enyo.kind({
 			return "This video didn't start.\nIt may use a format this TouchPad can't decode, such as H.264 High profile.";
 		}
 		if (s.isHttp && /^error:[23]$/.test(e) && never) {
-			return "Couldn't open this stream.\nIf the link leads to an HTTPS server, install the Media TLS update.";
+			return "Can't connect to the video source.";
 		}
 		if (/^error:2$/.test(e)) { return "The connection to the server was lost."; }
 		if (/^error:3$/.test(e)) { return "This video can't be decoded on this device."; }

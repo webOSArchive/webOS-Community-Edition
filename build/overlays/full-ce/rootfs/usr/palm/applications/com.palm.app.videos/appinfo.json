@@ -4,7 +4,7 @@
 	"vendor": "webOS Archive",
 	"type": "web",
 	"main": "index.html",
-	"title": "Videos",
+	"title": "Video Player",
 	"icon": "icon.png",
 	"splashicon": "icon-256x256.png",
 	"keywords": ["video", "player", "movie", "stream"],

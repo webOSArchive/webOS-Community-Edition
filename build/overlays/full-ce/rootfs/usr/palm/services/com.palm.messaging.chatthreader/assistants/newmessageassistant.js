@@ -381,11 +381,10 @@ var NewMessagesCommandAssistant = Class.create({
 			future.nest(MojoDB.get([personId]));
 		});
 		future.then(this, function(future) {
+			// Always set a result: reading future.result consumes it, so a buddy miss that only
+			// read it would never resolve, and the message would never be filed into a thread.
 			var res = future.result;
-			if (res && res.results) {
-				future.result = (res.results.length > 0) ? res.results[0] : undefined;
-			}
-			// else: already undefined (buddy miss) -> pass through
+			future.result = (res && res.results && res.results.length > 0) ? res.results[0] : undefined;
 		});
 		return future;
 	},
