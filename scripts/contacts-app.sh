@@ -28,6 +28,10 @@ feed)
     W="$ROOT/build/work/contacts-feed"; rm -rf "$W"; mkdir -p "$W/data/usr/palm/applications" "$W/ctl" "$OUT"
     cp -r "$SRC" "$W/data/usr/palm/applications/$PKG"
     find "$W/data" -name .DS_Store -delete
+    # test code stays in apps/ (the node tests above run from there): CE's vCard
+    # tests, the community Jasmine specs and their runner. Nothing on a normal
+    # launch loads them -- only the runTests path, whose spec loading is commented out.
+    (cd "$W/data/usr/palm/applications/$PKG" && rm -rf tests jasminerunner.html jrgenerator.sh)
     cd "$W"
     (cd data && tar --sort=name --owner=0 --group=0 -czf ../data.tar.gz ./usr)
     SIZE=$(du -sk data | cut -f1)
