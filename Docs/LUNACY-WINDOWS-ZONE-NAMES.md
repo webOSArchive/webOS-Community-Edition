@@ -7,7 +7,9 @@ clocks changed. The patch here makes the framework understand the zone name that
 and it is on a Galaxy Z Fold3, where the real event that showed the bug now computes to the right time.
 `lunacy-windows-zone-names.patch`, beside this file, is the same change against CE's own framework
 (`system/usr/palm/frameworks/calendar`), which doesn't have Lunacy's patch 0002. CE has applied it, and
-it passes `tools/calendar-sweep` on both built forms. It has not been run on a TouchPad.
+it passes `tools/calendar-sweep` on both built forms. On a TouchPad's Calendar, a repeat stored with
+`tzId: "Eastern Standard Time"` kept its clock time across the Nov 1, 2026 clock change and into
+March 2027.
 
 ## The bug
 
