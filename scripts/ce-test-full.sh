@@ -401,6 +401,89 @@ n=$(ls /media/internal/wallpapers/*.png 2>/dev/null | wc -l)
 [ "$n" = "0" ] && P "11  no orphaned .png wallpapers" || I "11  $n orphaned .png wallpapers (upgrade-from-CE artifact, accepted)"
 have /media/internal/wallpapers/22.jpg && P "11  default wallpaper 22.jpg present" || F "11  default wallpaper 22.jpg MISSING"
 
+# ---------------------------------------------------------------- 12. video player (3.2.0)
+# The CE Video Player (com.palm.app.videos) and the stock id that hosts the same
+# player, the Photos grid hand-off, the Tweaks toggle, the runtime handler, and
+# then the player's own self-test on a local clip. The Media TLS plugin set is
+# checked in section 9. Docs/VIDEO-3.2.0-NOTES.md has the background.
+V=/usr/palm/applications/com.palm.app.videos
+VP=/usr/palm/applications/com.palm.app.videoplayer
+grep -q '"version": "3.2.0"' $V/appinfo.json 2>/dev/null \
+  && P "12  Video Player 3.2.0 baked" || F "12  Video Player 3.2.0 not baked"
+[ ! -d $APPS/com.palm.app.videos ] && P "12  Video Player unshadowed" \
+  || F "12  Video Player SHADOWED by a cryptofs copy (feed install left behind?)"
+[ ! -d $V/ce-install ] && P "12  feed ce-install/ payload dropped" || F "12  ce-install/ payload baked into the app"
+# the stock id must BE the player (an id-launch pre-creates its card; a shim flashes a blank one)
+ok=1
+for f in index.html depends.js source/VideoEngine.js source/PlayerApp.js source/SelfTest.js css/player.css; do
+  if [ ! -f $V/$f ] || [ ! -f $VP/$f ]; then ok=0; F "12  player file $f missing (videos=$(have $V/$f && echo yes || echo NO) videoplayer=$(have $VP/$f && echo yes || echo NO))"
+  elif [ "$(md5sum < $V/$f)" != "$(md5sum < $VP/$f)" ]; then ok=0; F "12  videoplayer $f differs from the Video Player's"; fi
+done
+[ $ok = 1 ] && P "12  com.palm.app.videoplayer hosts the same player"
+grep -q '"id": *"com.palm.app.videoplayer"' $VP/appinfo.json 2>/dev/null \
+  && P "12  videoplayer keeps its stock id" || F "12  videoplayer appinfo id wrong"
+n=$(find $V $VP /usr/lib/gstreamer-0.10 -name '*.webosce-orig' 2>/dev/null | wc -l)
+[ "$n" = "0" ] && P "12  no feed-install backups (*.webosce-orig) in the image" || F "12  $n *.webosce-orig file(s) present"
+# Photos is a cryptofs preload: the hand-off is in the installed copy
+grep -q '"com.palm.app.videos"' $APPS/com.palm.app.photos/source/AlbumGridView.js 2>/dev/null \
+  && P "12  Photos grid hands videos to the Video Player" || F "12  Photos grid hand-off missing"
+have /media/cryptofs/apps/usr/palm/services/org.webosinternals.tweaks.prefs/preferences/com.palm.app.videos.json \
+  && P "12  Tweaks toggle (Pause video when minimized) seeded" || F "12  Tweaks definition not seeded"
+# runtime handler: ask LunaSysMgr what an .mp4 resolves to (guarded like the .ipk test)
+have /var/luna/preferences/ce-video-handler-registered \
+  && P "12  ce-register-video-handler ran and verified" \
+  || F "12  ce-register-video-handler has not flagged ($(tail -1 /var/log/ce-register-video-handler.log 2>/dev/null))"
+( luna-send -n 1 palm://com.palm.applicationManager/getResourceInfo \
+    '{"uri":"file:///media/internal/downloads/.ce-test.mp4"}' </dev/null > /tmp/.vidres 2>&1 ) &
+_p=$!; _i=0
+while [ $_i -lt 10 ] && kill -0 $_p 2>/dev/null; do sleep 1; _i=$((_i+1)); done
+kill -9 $_p 2>/dev/null
+res=$(cat /tmp/.vidres 2>/dev/null); rm -f /tmp/.vidres
+case "$res" in
+  *com.palm.app.videos*'"canStream": true'*|*'"canStream": true'*com.palm.app.videos*)
+    P "12  .mp4 resolves to the Video Player, streamable" ;;
+  *) F "12  .mp4 handler wrong: $(printf '%s' "$res" | cut -c1-140)" ;;
+esac
+
+# Self-test: the player drives its own engine (scrub storm + restart at end) and
+# logs "[vids] SELFTEST ..." lines. Needs a clip on the media partition, which
+# survives a flash; the canonical one is build/work/test-media/bars-30s-h264.mp4
+# (Docs/VIDEO-3.2.0-NOTES.md §7). Set CE_VIDEO_CLIP to use another.
+# Opens a card and closes it again afterwards.
+CLIP=${CE_VIDEO_CLIP:-/media/internal/Videos/bars-30s-h264.mp4}
+if [ ! -f "$CLIP" ]; then
+  I "12  self-test skipped: no clip at $CLIP (push build/work/test-media/bars-30s-h264.mp4 to run it)"
+else
+  ms0=$(pidof mediaserver); rd0=$(ls /var/log/rdxd/pending 2>/dev/null | wc -l)
+  l0=$(wc -l < $LOG)
+  ( luna-send -n 1 palm://com.palm.applicationManager/launch \
+      "{\"id\":\"com.palm.app.videos\",\"params\":{\"target\":\"$CLIP\",\"selftest\":\"all\",\"rounds\":2}}" \
+      </dev/null >/dev/null 2>&1 ) &
+  _p=$!; sleep 10; kill -9 $_p 2>/dev/null
+  sum=""; _i=0
+  while [ $_i -lt 48 ]; do                       # up to 4 minutes; a pass takes ~1-2
+    l1=$(wc -l < $LOG); [ "$l1" -lt "$l0" ] && l0=0  # syslog rotated under us
+    sum=$(tail -n +$((l0+1)) $LOG | grep 'SELFTEST \(PASS\|FAIL\) pass=' | tail -1 | sed 's/, file:.*$//')
+    [ -n "$sum" ] && break
+    sleep 5; _i=$((_i+1))
+  done
+  case "$sum" in
+    *"SELFTEST PASS"*) P "12  player self-test: ${sum##*SELFTEST }" ;;
+    *"SELFTEST FAIL"*) F "12  player self-test: ${sum##*SELFTEST }"
+       tail -n +$((l0+1)) $LOG | grep 'SELFTEST FAIL' | sed 's/.*SELFTEST /[INFO] 12    /' | cut -c1-200 ;;
+    *) F "12  player self-test: no summary within 4 min ($(tail -n +$((l0+1)) $LOG | grep '\[vids\]' | tail -1 | sed 's/.*\[vids\] //' | cut -c1-120))" ;;
+  esac
+  ms1=$(pidof mediaserver); rd1=$(ls /var/log/rdxd/pending 2>/dev/null | wc -l)
+  [ -n "$ms0" ] && [ "$ms0" = "$ms1" ] && P "12  mediaserver survived (pid $ms0)" || F "12  mediaserver pid changed: $ms0 -> $ms1"
+  [ "$rd0" = "$rd1" ] && P "12  no rdxd report during the self-test" || F "12  $((rd1-rd0)) new rdxd report(s) during the self-test"
+  # close the card (test-launched cards must not be left open)
+  luna-send -n 1 palm://com.palm.applicationManager/running '{}' </dev/null 2>/dev/null \
+    | tr ',' '\n' | grep -A1 'com.palm.app.videos' | grep -o '"[0-9]*"' | tr -d '"' \
+    | while read pid; do
+        luna-send -n 1 palm://com.palm.applicationManager/close "{\"processId\":\"$pid\"}" </dev/null >/dev/null 2>&1
+      done
+fi
+
 # ---------------------------------------------------------------- ota. CE OTA trust anchor
 # The only OTA component in the image (600070). No private key on the device, so
 # this cannot test a POSITIVE verification -- it tests that the anchor is the
