@@ -21,6 +21,8 @@ parser, on `concatenated.js` and `42calendar.js`. Nothing here runs on a device 
 - **`stock-compare.js`:** two builds on ordinary repeats in the device's own zone, stored the way
   Calendar's editor, Exchange and imports store them, including `findNextOccurrence`. Any difference
   from stock has to be explained.
+- **`windows-zone-sweep.js`:** a repeat stored with a Windows zone name, as older webcal stored
+  Outlook's, against the same repeat with its IANA name, for every name in `timezone-manager.js`.
 - **`sweep.js`, `until-sweep.js`, `lib.js`:** Lunacy's sweeps. Their answers and rules both come from
   `Intl`, so they can't see a fault in its data.
 - **`fold-rules.mjs`, `score-rules.py`, `zones.json`:** read `getTimeZoneRules` from a Lunacy card and
