@@ -139,6 +139,12 @@ ROOTFS_TGZ = os.path.join(WORK, "webos", "nova-cust-image-topaz.rootfs.tar.gz")
 # "webOS CE <CE_VERSION>" (tier 19). 3.1.0 shipped as 600070/600071 -- tag
 # 3.1.0-CE-Release.
 CE_VERSION = "3.2.0"
+# Each major release gets its own block of BUILDMARKs so a mark says which
+# release it belongs to: 3.1.0 used 6000xx (shipped 600070/600071); 3.2.0
+# starts at 600100. The counter still only goes up -- the OTA fingerprint
+# keys on it -- so a release's floor only ever lifts it. (600078 was the one
+# 3.2.0 bake made before this floor existed.)
+MARK_FLOOR = {"3.2.0": 600100}
 LUNACE = os.path.join(SIBLINGS, "LunaCE")
 
 ATI = os.path.join(PROJ, "AddToImage")
@@ -3992,7 +3998,7 @@ def main():
     # burns a mark nor leaves a tracked file modified.
     mark_file = os.path.join(HERE, "BUILDMARK")
     prev = int(open(mark_file).read().strip()) if os.path.exists(mark_file) else 599999
-    mark = prev + 1
+    mark = max(prev + 1, MARK_FLOOR.get(CE_VERSION, 0))
     bi2 = re.sub(r'^BUILDTIME=.*$', f'BUILDTIME={buildtime}', bi2, count=1, flags=re.M)
     bi2 = re.sub(r'^BUILDMARK=.*$', f'BUILDMARK={mark}', bi2, count=1, flags=re.M)
     if f"BUILDMARK={mark}" not in bi2 or f"BUILDTIME={buildtime}" not in bi2:
