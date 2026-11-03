@@ -911,6 +911,7 @@ def main():
         "./etc/palm/mojodb.conf",
         "./usr/bin/luna-send",
         "./etc/palm/defaultPreferences.txt",
+        "./etc/palm/default-launcher-page-layout.json",
         # the preload registry, rewritten by the App Catalog / Maps tiers
         "./usr/palm/ipkgs/manifest.json",
         # the browser's own search fallback (see the search-engine tier)
@@ -3261,6 +3262,20 @@ def main():
           os.path.join(d, "usr/palm/applications/com.palm.app.videos/tweaks/"
                           "com.palm.app.videos.json"), 0o644)
     log("  player under com.palm.app.videoplayer + Tweaks definition staged")
+    # Launcher placement: Apps tab, right after Music. An app the default
+    # layout doesn't list falls to the launcher's predefined marshal, which
+    # sends every non-HP vendor to Downloads. The layout is only read when
+    # the launcher has no saved layout, i.e. on a fresh flash.
+    LAYOUT = "etc/palm/default-launcher-page-layout.json"
+    layout = json.loads(sdata("./" + LAYOUT).decode())
+    apps_page = next((p for p in layout if p.get("title") == "apps"), None)
+    if not apps_page or "com.palm.app.musicplayer_default" not in apps_page["items"]:
+        sys.exit(f"ERROR: {LAYOUT}: no Music icon on the apps page to place Video Player after")
+    items = [i for i in apps_page["items"] if i != "com.palm.app.videos_default"]
+    items.insert(items.index("com.palm.app.musicplayer_default") + 1, "com.palm.app.videos_default")
+    apps_page["items"] = items
+    w(LAYOUT, json.dumps(layout, indent=1) + "\n", 0o644)
+    log("  launcher: Video Player on the Apps tab after Music")
 
     # 15e) Media TLS: the package's postinst swaps GStreamer's HTTP source on a
     # running device; the image bakes the result. media-pipeline creates
