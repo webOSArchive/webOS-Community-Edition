@@ -1070,6 +1070,11 @@ def main():
         src = os.path.join(LUNACE, "images", "launcher3", img)
         if os.path.exists(src):
             wcopy(f"usr/palm/sysmgr/images/launcher3/{img}", src, 0o644)
+    # No "Dismissing Cards" tutorial: LunaSysMgr shows it on the first card
+    # launch unless this marker exists (CardWindowManager reads
+    # Settings::firstCardLaunch at startup, and writes it once the tutorial
+    # has shown). Shipping the marker = the tutorial has already been seen.
+    w("var/luna/preferences/used-first-card", b"", 0o644)
 
     # 8) App Catalog : BAKE the community enyo-findapps over the stock rootfs
     # app, removing stock files the new build no longer ships — AND removing
