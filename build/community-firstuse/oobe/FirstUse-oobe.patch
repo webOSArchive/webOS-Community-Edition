@@ -43,7 +43,21 @@
  		
  		{name: "SimStatusQuery", kind: "TelephonyService", method: "simStatusQuery",subscribe: true, onSuccess: "handleSimStatusQuery"},
  		{name: "PlatformQuery", kind: "TelephonyService", method: "platformQuery",subscribe: false, onSuccess: "handlePlatformQuery", onFailure: "handlePlatformQueryFail"},
-@@ -322,9 +324,29 @@
+@@ -145,8 +147,12 @@
+ 		{name: "wifiPopupCancelDialog", kind: "ModalDialog", lazy: true, scrim:true, className: "popup",
+ 		 caption: rb.$L("Setup Options"),
+ 		 components: [
+-		 	{content: rb.$L("You need a network to setup your device."), className: "enyo-text-body"}, 
++		 	// webOS CE: a network is only needed for a webOS Account. Without one (no
++		 	// Wi-Fi in range, no internet, or our server down) setup must still be
++		 	// able to finish, so this dialog offers the same way out as the cards.
++		 	{content: rb.$L("You need a network to set up a webOS Account. You can also finish setting up your TouchPad without one."), className: "enyo-text-body"}, 
+ 			{kind: "Button", caption: rb.$L("Find Network"), className: 'enyo-button-affirmative', flex: 1, onclick: "wifiPopupCancelDialogFindNetwork", style: "margin-bottom:10px"},
++			{kind: "Button", caption: rb.$L("Skip Account Setup"), className: 'enyo-button', flex: 1, onclick: "wifiPopupCancelDialogSkip", style: "margin-bottom:10px"},
+ 			{kind: "Button", caption: rb.$L("Start Over"), className: 'enyo-button', flex: 1, onclick: "wifiPopupCancelDialogStartOver"},
+ 		]
+ 		},
+@@ -322,9 +328,29 @@
  		this.wosaStartTimer = null;
  		this.assignDeviceNameRetry = false;
  		this.pluggedInStatusChangedInited = false;
@@ -74,7 +88,7 @@
  			this.languageCode = rb.locale.getLanguage();
  			this.locale = rb.locale.getLocale();
  		}
-@@ -419,24 +441,24 @@
+@@ -419,24 +445,24 @@
  	},
  
  	// webOS Archive: check the App Museum for a newer build of this app.
@@ -110,7 +124,7 @@
  		console.info("Registering to plugged in status changes...");
  		this.$.monitorPluggedInStatus.call({"category":"/com/palm/power","method":"USBDockStatus"});
  		console.info("Setting timeout to powerdown, 1 minute...");
-@@ -446,8 +468,13 @@
+@@ -446,8 +472,13 @@
  			this.$.PlatformQuery.call({});
  		}
  		
@@ -126,7 +140,25 @@
  		
  		this.$.getMachineName.call({"key":"com.palm.properties.deviceName"});
  		
-@@ -944,7 +971,16 @@
+@@ -809,6 +840,17 @@
+ 		console.log("wifi dilog startover");
+ 		this.$.StartOverFU.restartFirstUse();
+ 	},
++	// webOS CE: finish setup without a network. Close both network dialogs and
++	// stop requirement tracking first, so a ConMan report arriving during the
++	// close cannot reopen the Wi-Fi popup over the restart notice.
++	wifiPopupCancelDialogSkip:function(){
++		console.info("WOSA: skip account setup from the network dialog");
++		this.$.wifiPopupCancelDialog.close();
++		this.$.wifiPopup.close();
++		this.wifiDialogIsOpen = false;
++		this.okToStartNetworking = false;
++		this.wosaSkipSetup();
++	},
+ 	wifiPopupCancelDialogFindNetwork:function(){
+ 		console.log("wifi dilog findnetwork");
+ 		this.$.wifiPopupCancelDialog.close();
+@@ -944,7 +986,16 @@
  		// written by accountservices (createNovaAccount/authenticateAccount). Do NOT
  		// call the dead HP postLogin services, do NOT reset, do NOT shut down —
  		// leave the confirmation page up; the user dismisses it with Done.
@@ -144,7 +176,7 @@
  		this.updateCompletePage();
  	},
  
-@@ -969,15 +1005,18 @@
+@@ -969,15 +1020,18 @@
  	},
  
  	closeApp: function(){
@@ -172,7 +204,7 @@
  			// webOS Archive: this is exactly what real stock HP firstuse called
  			// to finish OOBE in the common (no pending OTA) case — proven on
  			// real hardware, unlike our own markFirstUseDone()+machineReboot()
-@@ -1007,6 +1046,12 @@
+@@ -1007,6 +1061,12 @@
  	// Setup" link. Shows the restart warning for a moment so the UI doesn't just
  	// freeze with no explanation, then closes.
  	wosaSafeClose: function(){
@@ -185,3 +217,40 @@
  		console.info("WOSA: wosaSafeClose opening restart popup");
  		this.$.wosaSkipRestartPopup.openAtCenter();
  		setTimeout(enyo.bind(this, function(){
+@@ -1015,8 +1075,27 @@
+ 		}), 900);
+ 	},
+ 
++	// webOS CE: skipping must still finish OOBE properly. done() applies the
++	// language card's customization (populateDefaults) on the account path; the
++	// skip path used to close without it. Apply it here too, then close once it
++	// answers -- or after 5 s, so a stuck service can never hold setup open.
+ 	wosaSkipSetup: function(){
+-		this.wosaSafeClose();
++		if (this.wosaSkipping) { return; }
++		this.wosaSkipping = true;
++		if (!(this.wosaIsOobe && this.languageCode)) {
++			this.wosaSafeClose();
++			return;
++		}
++		console.info("WOSA CE OOBE: skipping account setup — applying customization first.");
++		var closeOnce = enyo.bind(this, function(why){
++			if (this.wosaSkipClosed) { return; }
++			this.wosaSkipClosed = true;
++			console.info("WOSA: skip close (" + why + ")");
++			this.wosaSafeClose();
++		});
++		setTimeout(function(){ closeOnce("customization timeout"); }, 5000);
++		this.wosaSkipCloseOnce = closeOnce;
++		this.$.setCustomization.call({"language":this.languageCode,"country":this.countryCode});
+ 	},
+ 	
+ 	postTimeZoneResponse: function(inSender, inResponse){
+@@ -1030,6 +1109,7 @@
+    
+    postCustomizationResponse: function(inSender, inResponse) {
+         console.info("postCustomizationResponse Call Returned");
++		if (this.wosaSkipCloseOnce) { this.wosaSkipCloseOnce("customization applied"); }
+ 		if (!inResponse.returnValue) {
+             console.info("Post login failure: " + JSON.stringify(inResponse));
+ 		}

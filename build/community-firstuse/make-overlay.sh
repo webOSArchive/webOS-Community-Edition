@@ -175,6 +175,15 @@ grep -q "wosaIsOobe" "$R/$APP/source/signin/StartOver.js" \
     || { echo "ERROR: Start Over Wi-Fi-wipe guard missing from StartOver.js" >&2; exit 1; }
 grep -q "if (this.wosaIsOobe) {" "$R/$APP/FirstUse.js" \
     || { echo "ERROR: OOBE-only gates missing from FirstUse.js start()" >&2; exit 1; }
+# Setup must finish without a network or with our server down (no Wi-Fi in
+# range, no internet, App Museum unreachable): every dialog that covers the
+# cards' skip link needs its own Skip, and a silent terms request must time out.
+grep -q "wifiPopupCancelDialogSkip" "$R/$APP/FirstUse.js" \
+    || { echo "ERROR: offline Skip missing from the network dialog (FirstUse.js)" >&2; exit 1; }
+grep -q "palmErrorSkip" "$R/$APP/source/tnc/Palm.js" \
+    || { echo "ERROR: Skip missing from the terms error popup (Palm.js)" >&2; exit 1; }
+grep -q "wosaTermsTimer" "$R/$APP/source/tnc/Palm.js" \
+    || { echo "ERROR: terms request timeout missing (Palm.js)" >&2; exit 1; }
 
 # Syntax-check every JS file we patch. These are hand-written diffs against an
 # app we do not own; a bad hunk produces valid-looking JS that only fails when

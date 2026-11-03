@@ -14,8 +14,8 @@ label_button_skip = rb.$L("Skip Account Setup");
 // requires the community update's modern TLS (the service reaches our origin via
 // the OTA's /usr/bin/curl); without it, the very first secure fetch (terms) fails.
 label_popup_palm_error_header = rb.$L("Connection Problem");
-label_popup_palm_error_body = rb.$L("Your TouchPad couldn't connect securely to the App Museum. Check your Wi-Fi and tap Close to try again. If the problem continues, visit webosarchive.org.");
-label_popup_palm_error_button = rb.$L("Close");
+label_popup_palm_error_body = rb.$L("Your TouchPad couldn't reach the webOS Account server. Check your Wi-Fi and try again, or skip account setup and finish setting up your TouchPad without an account.");
+label_popup_palm_error_button = rb.$L("Try Again");
 
 
 enyo.kind({
@@ -77,7 +77,10 @@ enyo.kind({
 		 components: [
 			{content: label_popup_palm_error_body, className: "enyo-text-body", ondblclick:"label_popup_palm_error_DoubleClk"}, 
 			{name: "popup_palm_error_body_error_code", content: "", className: "errorcode3"}, 
-			{kind: "Button", caption: label_popup_palm_error_button, onclick: "palmError"},
+			{kind: "Button", caption: label_popup_palm_error_button, onclick: "palmError", style: "margin-bottom:10px"},
+			// webOS CE: this popup is modal and covers the card's own skip link, so
+			// with the server unreachable "Try Again" was the only way out of it.
+			{kind: "Button", caption: label_button_skip, onclick: "palmErrorSkip"},
 		]},
 		{kind: "AccountServicesService", onFailure: "handleGenericFailure", onSuccess: "handleGenericSuccess", components:[
 			{name: "getServerURL", method: "getURLForTerms", onSuccess: "getTerms", onFailure: "getServerURLFailure"},
@@ -189,11 +192,22 @@ enyo.kind({
 		var lang = enyo.g11n.currentLocale().getLanguage();
 		console.info("Getting terms from: " + url);
 		this.$.getTermsAndConditions.call({"language": lang, "serverURL":url});
+		// webOS CE: the service's curl gives up after 30 s, but a wedged
+		// accountservices never answers at all, leaving the spinner up for good.
+		// Treat 45 s of silence as a failure; a late answer is still accepted.
+		if (this.wosaTermsTimer) { clearTimeout(this.wosaTermsTimer); }
+		this.wosaTermsTimer = setTimeout(enyo.bind(this, function(){
+			this.wosaTermsTimer = null;
+			if (this.termsAreSet) { return; }
+			console.info("WOSA: terms request timed out");
+			this.getTermsAndConditionsResponse(this, {returnValue: false, errorCode: -1, errorText: "timeout"});
+		}), 45000);
 	},
 	
     getTermsAndConditionsResponse: function(inSender, inResponse){
 		console.info("Get terms response: " + inResponse.returnValue);
 		this.getTermsResponseCalled = true;
+		if (inSender !== this && this.wosaTermsTimer) { clearTimeout(this.wosaTermsTimer); this.wosaTermsTimer = null; }
 
 		if(inResponse.returnValue) {
 			this.$.palmErrorPopup.close();
@@ -248,6 +262,16 @@ enyo.kind({
 	// their own skip button.
 	skipSetup: function(){
 		enyo.application.FirstUse.wosaSkipSetup();
+	},
+
+	palmErrorSkip: function(){
+		this.$.palmErrorPopup.close();
+		this.skipSetup();
+	},
+
+	destroy: function(){
+		if (this.wosaTermsTimer) { clearTimeout(this.wosaTermsTimer); this.wosaTermsTimer = null; }
+		this.inherited(arguments);
 	},
 
 	palmError: function(){
