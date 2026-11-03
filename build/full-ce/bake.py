@@ -458,6 +458,94 @@ def ipk_extract_data(ipk_path, dest):
     return dest
 
 
+# The Settings tab, alphabetical by English title. Every app that lands on it
+# is listed, including the ones the stock layout never named (Govnah, USB
+# Settings), which the launcher would otherwise append unsorted at the end.
+SETTINGS_TITLES = {
+    "com.palm.app.accounts": "Accounts",
+    "com.palm.app.backup": "Backup",
+    "com.palm.app.bluetooth": "Bluetooth",
+    "com.palm.app.dateandtime": "Date & Time",
+    "com.palm.app.deviceinfo": "Device Info",
+    "com.palm.app.exhibitionpreferences": "Exhibition",
+    "org.webosinternals.govnah": "Govnah",
+    "com.palm.app.help": "Help",
+    "com.palm.app.searchpreferences": "Just Type",
+    "com.palm.app.location": "Location Services",
+    "com.palm.app.printmanager": "Print Manager",
+    "com.palm.app.languagepicker": "Regional Settings",
+    "com.palm.app.screenlock": "Screen & Lock",
+    "com.palm.app.swmanager": "Software Manager",
+    "com.palm.app.soundsandalerts": "Sounds & Ringtones",
+    "com.palm.app.updates": "System Updates",
+    "com.palm.app.textassist": "Text Assist",
+    "com.webosarchive.usbsettings": "USB Settings",
+    "com.palm.app.vpn": "VPN",
+    "com.palm.app.wifi": "Wi-Fi",
+}
+
+
+def bake_launcher_layout(tmp, stock_dock):
+    """The launcher's first-boot page layout, from the variant's own
+    customization payload (hp.tar / att.tar), rewritten for CE: Video Player
+    on the Apps tab after Music, the Settings tab alphabetical.
+
+    The launcher prefers /usr/lib/luna/customization/default-launcher-page-
+    layout.json, which the Doctor installs from that payload AFTER the rootfs,
+    so the image cannot replace it. Instead the result goes to the rootfs
+    fallback (/etc/palm/default-launcher-page-layout.json) and the operational
+    settings set IgnoreLegacyCustomizationFiles, which makes the launcher skip
+    the customization copies of the page layout AND the dock positions. The
+    dock file is therefore checked: the payload's must equal the rootfs one,
+    or ignoring it would change the dock. Only a launcher with no saved layout
+    (a fresh flash) reads any of this."""
+    import zipfile
+    log("tier: launcher layout (Video Player after Music, Settings alphabetical)")
+    with zipfile.ZipFile(OEM_JAR) as jz:
+        custs = [n for n in jz.namelist() if re.fullmatch(r"resources/(?!webOS\.)[^/]+\.tar", n)]
+        found = []
+        for cn in custs:
+            with tarfile.open(fileobj=io.BytesIO(jz.read(cn))) as ct:
+                for m in ct.getmembers():
+                    if re.fullmatch(r"(\./)?sweatshop-[^/]+\.ipk", m.name):
+                        found.append((cn, m.name, ct.extractfile(m).read()))
+    if len(found) != 1:
+        sys.exit(f"ERROR: expected one sweatshop ipk in {OEM_JAR}'s customization tar, "
+                 f"found {[(c, n) for c, n, _ in found]}")
+    cn, ipkname, ipkdata = found[0]
+    ipk = os.path.join(tmp, "custpayload.ipk")
+    with open(ipk, "wb") as f:
+        f.write(ipkdata)
+    d = ipk_extract_data(ipk, os.path.join(tmp, "custpayload"))
+    cust = os.path.join(d, "usr/lib/luna/customization")
+    layout = json.load(open(os.path.join(cust, "default-launcher-page-layout.json")))
+    cust_dock = json.load(open(os.path.join(cust, "default-dock-positions.json")))
+    if cust_dock != json.loads(stock_dock):
+        sys.exit(f"ERROR: {cn} {ipkname}: its dock positions differ from the rootfs "
+                 "default; IgnoreLegacyCustomizationFiles would change the dock")
+    pages = {p.get("title"): p for p in layout}
+    if not {"apps", "prefs"} <= set(pages):
+        sys.exit(f"ERROR: {cn} layout has no apps/prefs page: {sorted(pages)}")
+
+    apps = [i for i in pages["apps"]["items"] if i != "com.palm.app.videos_default"]
+    if "com.palm.app.musicplayer_default" not in apps:
+        sys.exit(f"ERROR: {cn} layout: no Music icon on the apps page to place Video Player after")
+    apps.insert(apps.index("com.palm.app.musicplayer_default") + 1, "com.palm.app.videos_default")
+    pages["apps"]["items"] = apps
+
+    prefs = [i[:-len("_default")] for i in pages["prefs"]["items"]]
+    ids = list(dict.fromkeys(prefs + list(SETTINGS_TITLES)))
+    known = sorted((i for i in ids if i in SETTINGS_TITLES), key=lambda i: SETTINGS_TITLES[i].lower())
+    unknown = [i for i in ids if i not in SETTINGS_TITLES]
+    for i in unknown:
+        log(f"  WARNING: Settings entry {i} has no title in SETTINGS_TITLES; kept at the end, unsorted")
+    pages["prefs"]["items"] = [i + "_default" for i in known + unknown]
+
+    w("etc/palm/default-launcher-page-layout.json", json.dumps(layout, indent=1) + "\n", 0o644)
+    log(f"  from {cn}/{ipkname}: Video Player after Music; Settings: "
+        + ", ".join(SETTINGS_TITLES[i] for i in known))
+
+
 def read_rootfs(tgz, exact=(), prefixes=()):
     """Single streaming pass. Returns {member_name: entry} where entry is
     {'type':'file','data':bytes} or {'type':'link','link':target}."""
@@ -911,7 +999,7 @@ def main():
         "./etc/palm/mojodb.conf",
         "./usr/bin/luna-send",
         "./etc/palm/defaultPreferences.txt",
-        "./etc/palm/default-launcher-page-layout.json",
+        "./usr/palm/default-dock-positions.json",
         # the preload registry, rewritten by the App Catalog / Maps tiers
         "./usr/palm/ipkgs/manifest.json",
         # the browser's own search fallback (see the search-engine tier)
@@ -2921,7 +3009,9 @@ def main():
     # keyword "wosa-settings" to the 'prefs' page designator, and stamp that
     # keyword into the baked USB appinfo.json.
     w("etc/palm/launcher3/launcher_operational_settings.conf",
-      "[Main]\nPreferAppKeywordsForAppPlacement=true\n", 0o644)
+      "[Main]\nPreferAppKeywordsForAppPlacement=true\n"
+      "IgnoreLegacyCustomizationFiles=true\n", 0o644)
+    bake_launcher_layout(tmp, sdata("./usr/palm/default-dock-positions.json"))
     # N\name renames a page: AppMonitor::pageNameFromDesignator prefers the
     # map's name over the designator and displays it .toUpper() ("games" ->
     # "GAMES"); the page-restore path renames saved pages too. The FAVORITES
@@ -3262,20 +3352,6 @@ def main():
           os.path.join(d, "usr/palm/applications/com.palm.app.videos/tweaks/"
                           "com.palm.app.videos.json"), 0o644)
     log("  player under com.palm.app.videoplayer + Tweaks definition staged")
-    # Launcher placement: Apps tab, right after Music. An app the default
-    # layout doesn't list falls to the launcher's predefined marshal, which
-    # sends every non-HP vendor to Downloads. The layout is only read when
-    # the launcher has no saved layout, i.e. on a fresh flash.
-    LAYOUT = "etc/palm/default-launcher-page-layout.json"
-    layout = json.loads(sdata("./" + LAYOUT).decode())
-    apps_page = next((p for p in layout if p.get("title") == "apps"), None)
-    if not apps_page or "com.palm.app.musicplayer_default" not in apps_page["items"]:
-        sys.exit(f"ERROR: {LAYOUT}: no Music icon on the apps page to place Video Player after")
-    items = [i for i in apps_page["items"] if i != "com.palm.app.videos_default"]
-    items.insert(items.index("com.palm.app.musicplayer_default") + 1, "com.palm.app.videos_default")
-    apps_page["items"] = items
-    w(LAYOUT, json.dumps(layout, indent=1) + "\n", 0o644)
-    log("  launcher: Video Player on the Apps tab after Music")
 
     # 15e) Media TLS: the package's postinst swaps GStreamer's HTTP source on a
     # running device; the image bakes the result. media-pipeline creates

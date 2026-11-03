@@ -195,6 +195,10 @@ Tier order matters only for the ssl11 stack (browser first). Highlights:
   (`BUILDMARK` counter file here, CE marks start at 600000; each major release has its own block, 3.1.0 = 6000xx, 3.2.0 from 600100 via `MARK_FLOOR` in bake.py);
   the 2011 "Dismissing Cards" tutorial suppressed by shipping its seen-marker
   `/var/luna/preferences/used-first-card` (LunaCE tier);
+  the launcher's first-boot layout built from the variant's customization
+  payload (hp.tar/att.tar) into `/etc/palm/default-launcher-page-layout.json`
+  with `IgnoreLegacyCustomizationFiles` set: Video Player after Music, the
+  Settings tab alphabetical (`SETTINGS_TITLES` in bake.py);
   PmNetConfigManager's connectivity-probe URL list byte-patched from dead HP
   hosts to live community ones (the spurious hotspot-login fix) plus the enyo
   captiveportal login page repointed; Preware pre-registered as the `.ipk`
