@@ -76,34 +76,49 @@ build inputs (`curlhttpsrc/`, recreated by `scripts/media-tls13.sh setup`).
 
 ## 4. Folding into 3.2.0 — checklist
 
-Already wired in `bake.py` (never baked or flashed):
+Reviewed 2026-11-03, ahead of the 3.2.0 bake. Existing 3.1.0 devices reach
+3.2.0 by **OTA** (`Docs/OTA-PLAN.md` Path A), not by feed ipks; the feed ipks
+are for stock 3.0.5 / standalone users.
+
+Done — in `bake.py` and in every image since 600072 (none of them flashed yet):
 - `IPK["videos"]` from `AddToImage/NewApps`; the Videos tier bakes the app,
   drops its `ce-install/` payload, puts the player under
   `com.palm.app.videoplayer` (index.html + appinfo + source/css/4 images),
   and stages the Tweaks JSON into the cryptofs seed.
-- `edit_photos()` applies the album-grid hand-off patch.
+- The Photos hand-off: no longer a patch in `edit_photos()`; it is part of the
+  Photos 3.2.0 tree (`apps/com.palm.app.photos`, `AlbumGridView.js`), which
+  the bake takes whole from its PatchOrReplace ipk. Without the Video Player
+  the grid falls back to the inline `DbViewVideo` (a4fad5b, verified on HW).
 - `ce-register-video-handler` first-boot job (verify-then-flag, like the ipk
   handler job). Its register logic duplicates postinst stage 4 — keep them in
   sync.
+- Media TLS is bake tier 15e: `libgstcurlhttpsrc.so` in
+  `/usr/lib/gstreamer-0.10/`, stock `libgstsouphttpsrc.so` removed from the
+  image (the bake fails if the stock plugin isn't there to replace).
+- Feed metadata: both feed icon URLs in the `feed/control` files answer 200,
+  and `org.webosarchive.media-tls13` is the id every image since 600072 and
+  the OTA plan already use (changing it now would orphan feed installs).
+- Feed ipk in `AddToImage/NewApps` matches `apps/com.palm.app.videos` file for
+  file (includes the plainer "Can't connect to the video source." error, 4eb6761).
 
 Still to do:
-1. **Wire Media TLS into the bake**: ship `libgstcurlhttpsrc.so` in
-   `/usr/lib/gstreamer-0.10/` and *delete* the stock `libgstsouphttpsrc.so`
-   from the image (a fresh `/var` has no registry cache, so no drop needed).
-   Depends on the browser-tls13 tier (`/usr/lib/ssl11`).
-2. **Bake, flash, verify** both — neither has been through a real image.
-3. `scripts/ce-test-full.sh` video section (the self-test recipes in §7) and
+1. **Flash and verify** the Video Player and Media TLS — neither has been
+   through a flashed image.
+2. `scripts/ce-test-full.sh` video section (the self-test recipes in §7) and
    the reboot/playback soak (plan Phase 3).
-4. Guard against **two `souphttpsrc`s**: any later image or OTA that restores
-   the stock plugin next to ours makes the winner load-order dependent.
+3. **OTA (3.1.0 → 3.2.0):** `ce-register-video-handler` starts on
+   `first-use-finished`, which an OTA'd device never emits, so `ce-ota-finish`
+   must register the handlers; it must also de-shadow any cryptofs Video
+   Player / Media TLS a user installed from the feed (`Docs/OTA-PLAN.md` §2.2).
+4. Guard against **two `souphttpsrc`s**: the OTA must not restore the stock
+   plugin next to ours (the winner would be load-order dependent), and must
+   remove a feed-installed copy's `.webosce-orig` backups.
 5. Optional hardening (proposed, not done): if `/usr/lib/ssl11` is missing,
    have the plugin load the stock souphttpsrc instead of leaving the device
    with no HTTP media at all.
 6. Decide on the Photos carousel: swiping to a video inside picture mode still
    uses Photos' old inline player (only grid taps hand off).
-7. Confirm the package id `org.webosarchive.media-tls13` and the feed icon
-   URLs in both `feed/control` files (both are guesses).
-8. Not implemented from the stock player: trim/edit, share/upload, details
+7. Not implemented from the stock player: trim/edit, share/upload, details
    scene, RTSP, the camera capture flows (`source: upload-popup|upload-dashboard`
    now just play).
 
