@@ -1,0 +1,88 @@
+#!/bin/sh
+# Emoji for webOS (org.webosarchive.emoji): see packages/emoji-feed/README.md.
+#
+# 1. /usr/share/fonts/CE-Emoji.ttf: Noto Emoji (monochrome), with each low surrogate mapped to an
+#    emoji's outline (build/full-ce/emoji-font/make-font.py).
+# 2. /usr/lib/libWebKitLuna.so: the byte patch from build/full-ce/emoji-font/webkit_fallback_patch.py,
+#    shipped as its four sites (original and patched bytes): a fifth fallback-font slot that
+#    loads the font, and GlyphPage::fill keeping a glyph for emoji above U+FFFF. Applied only
+#    if every site holds exactly the original bytes; patched in a copy, checked, then renamed
+#    into place, so running processes keep the old file until the restart.
+#
+# Only copies files: no luna-send (Preware runs this inside LunaSysMgr). What this script
+# changed is recorded in $STATE, so the prerm undoes exactly that and nothing a webOS CE image
+# already has built in.
+
+STATE=/var/palm/org.webosarchive.emoji.state
+LOG=/var/log/org.webosarchive.emoji.log
+LIB=/usr/lib/libWebKitLuna.so
+FONT=/usr/share/fonts/CE-Emoji.ttf
+log() { echo "$(date 2>/dev/null) postinst: $*" >> "$LOG" 2>/dev/null; echo "emoji: $*"; }
+
+STAGE=
+for d in /media/cryptofs/apps/usr/palm/webosarchive/emoji /usr/palm/webosarchive/emoji; do
+    [ -f "$d/CE-Emoji.ttf" ] && STAGE=$d && break
+done
+if [ -z "$STAGE" ]; then
+    log "staged payload not found -- nothing installed"
+    exit 0
+fi
+
+# site_is <file> <offset> <bytesfile>: does <file> hold <bytesfile> at <offset>?
+site_is() {
+    n=$(wc -c < "$3")
+    [ "$(dd if="$1" bs=1 skip="$2" count="$n" 2>/dev/null | md5sum | cut -d' ' -f1)" = \
+      "$(md5sum < "$3" | cut -d' ' -f1)" ]
+}
+all_sites() {   # all_sites <file> orig|new
+    for s in "$STAGE"/webkit/*.orig; do
+        off=$(basename "$s" .orig)
+        site_is "$1" "$off" "$STAGE/webkit/$off.$2" || return 1
+    done
+}
+
+mount -o remount,rw / 2>/dev/null
+touch "$STATE"
+
+# 1) the WebKit patch (first: without it the font does nothing)
+webkit=no
+if all_sites "$LIB" new; then
+    webkit=yes
+    log "libWebKitLuna already has the emoji patch (built in, or an earlier install)"
+elif all_sites "$LIB" orig; then
+    T="$LIB.emnew"
+    if cp -f "$LIB" "$T" && chmod 644 "$T"; then
+        for s in "$STAGE"/webkit/*.new; do
+            off=$(basename "$s" .new)
+            dd if="$s" of="$T" bs=1 seek="$off" conv=notrunc 2>/dev/null
+        done
+        if all_sites "$T" new; then
+            chmod 555 "$T" && mv -f "$T" "$LIB" && echo "webkit=patched" >> "$STATE" &&
+                webkit=yes && log "patched $LIB"
+        else
+            rm -f "$T"; log "ERROR: patch did not verify; $LIB left as it was"
+        fi
+    else
+        rm -f "$T"; log "ERROR: no room to copy $LIB; left as it was"
+    fi
+else
+    log "libWebKitLuna is not a build this patch knows (webOS 3.0.5 or CE needed); nothing installed"
+    echo "Emoji for webOS: this device's web renderer isn't one it can patch (needs webOS 3.0.5 or webOS CE). Nothing was changed." >&2
+    [ -s "$STATE" ] || rm -f "$STATE"
+    mount -o remount,ro / 2>/dev/null
+    exit 1
+fi
+# 2) the font, only when WebKit can use it
+if [ $webkit = no ]; then
+    log "the WebKit patch failed; not installing the font"
+elif ! cmp -s "$STAGE/CE-Emoji.ttf" "$FONT"; then
+    [ -f "$FONT" ] && [ ! -f "$FONT.emoji-orig" ] && ! grep -q '^font=' "$STATE" && cp -f "$FONT" "$FONT.emoji-orig"
+    cp -f "$STAGE/CE-Emoji.ttf" "$FONT.emnew" && chmod 644 "$FONT.emnew" && mv -f "$FONT.emnew" "$FONT" &&
+        { grep -q '^font=' "$STATE" || echo "font=installed" >> "$STATE"; log "installed $FONT"; }
+    cp -f "$STAGE/OFL.txt" /usr/share/fonts/CE-Emoji-OFL.txt 2>/dev/null
+else
+    log "$FONT already current"
+fi
+
+mount -o remount,ro / 2>/dev/null
+exit 0

@@ -1,0 +1,49 @@
+#!/bin/sh
+# Emoji for webOS: removal. Undoes only what the postinst recorded in $STATE (so a webOS CE
+# image's built-in emoji support stays). File operations only: Preware runs this
+# synchronously inside LunaSysMgr, so nothing here may wait on the bus.
+
+STATE=/var/palm/org.webosarchive.emoji.state
+LOG=/var/log/org.webosarchive.emoji.log
+LIB=/usr/lib/libWebKitLuna.so
+FONT=/usr/share/fonts/CE-Emoji.ttf
+log() { echo "$(date 2>/dev/null) prerm: $*" >> "$LOG" 2>/dev/null; }
+
+STAGE=
+for d in /media/cryptofs/apps/usr/palm/webosarchive/emoji /usr/palm/webosarchive/emoji; do
+    [ -d "$d/webkit" ] && STAGE=$d && break
+done
+[ -f "$STATE" ] || exit 0
+mount -o remount,rw / 2>/dev/null
+
+site_is() {
+    n=$(wc -c < "$3")
+    [ "$(dd if="$1" bs=1 skip="$2" count="$n" 2>/dev/null | md5sum | cut -d' ' -f1)" = \
+      "$(md5sum < "$3" | cut -d' ' -f1)" ]
+}
+
+if grep -q '^webkit=patched' "$STATE" && [ -n "$STAGE" ]; then
+    ok=1
+    for s in "$STAGE"/webkit/*.new; do site_is "$LIB" "$(basename "$s" .new)" "$s" || ok=0; done
+    if [ $ok = 1 ] && cp -f "$LIB" "$LIB.emnew" && chmod 644 "$LIB.emnew"; then
+        for s in "$STAGE"/webkit/*.orig; do
+            dd if="$s" of="$LIB.emnew" bs=1 seek="$(basename "$s" .orig)" conv=notrunc 2>/dev/null
+        done
+        good=1
+        for s in "$STAGE"/webkit/*.orig; do site_is "$LIB.emnew" "$(basename "$s" .orig)" "$s" || good=0; done
+        if [ $good = 1 ]; then
+            chmod 555 "$LIB.emnew" && mv -f "$LIB.emnew" "$LIB" && log "restored $LIB"
+        else
+            rm -f "$LIB.emnew"; log "ERROR: restore did not verify; $LIB left patched"
+        fi
+    else
+        rm -f "$LIB.emnew"; log "$LIB changed since install; left as it is"
+    fi
+fi
+if grep -q '^font=' "$STATE"; then
+    if [ -f "$FONT.emoji-orig" ]; then mv -f "$FONT.emoji-orig" "$FONT"; else rm -f "$FONT" /usr/share/fonts/CE-Emoji-OFL.txt; fi
+    log "removed the font"
+fi
+rm -f "$STATE"
+mount -o remount,ro / 2>/dev/null
+exit 0

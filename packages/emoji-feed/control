@@ -1,0 +1,8 @@
+Package: org.webosarchive.emoji
+Version: @VERSION@
+Section: System
+Priority: optional
+Architecture: armv7
+Maintainer: webOS Archive <webmaster@webosarchive.org>
+Description: Emoji for webOS
+Source: { "Type":"Linux Application", "Feed":"WOSA Modernize", "Category":"Modernize", "LastUpdated":"@EPOCH@", "Title":"Emoji for webOS", "FullDescription":"Emoji show up instead of boxes: in the Browser, in email, messages and notes, and in every text field. Smileys, hands, hearts, animals, food and symbols draw as clean black-and-white outlines from Google's Noto Emoji, including the ones newer phones send (😀 👍 🎉). The stray box after a heart sent from a modern phone goes away too.<br><br>Colour emoji aren't possible on webOS 3's text renderer. A few rare symbols share a drawing with a common emoji (e.g. 🈁 shows as 😁).<br><br>For the HP TouchPad and TouchPad Go on webOS 3.0.5, and webOS CE. Adds a font and a small patch to the web renderer, both undone on removal. A restart is needed after install, update and removal.", "MinWebOSVersion":"3.0.5", "License":"Noto Emoji: SIL Open Font License 1.1", "PostInstallFlags":"RestartDevice", "PostUpdateFlags":"RestartDevice", "PostRemoveFlags":"RestartDevice" }
