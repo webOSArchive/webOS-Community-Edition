@@ -2,9 +2,17 @@
 
 **Target: CE 3.2.0.** Two parts: a monochrome fallback font for the 170 BMP
 emoji in every web view (§1–§6), and colour emoji as images in the apps where
-people read each other's text (§7). This is the plan, and the recipe for building it. Nothing
-here is baked yet. One part is proven on hardware: an emoji font in a WebKit
-fallback slot renders every emoji the renderer can address. See §2.
+people read each other's text (§7). This is the plan, and the recipe for building it.
+
+**Status 2026-11-04:** the §4 patch is built
+(`build/full-ce/emoji-font/webkit_fallback_patch.py`) and wired into bake tier
+19b. On a TouchPad (CE 3.2.0, bind-mounted) the patched library loads
+`CE-Emoji.ttf` as a fifth slot:
+- ☀ ☕ ✅ ❤ ⭐ ⚡ ✈ ☺ render in a web app and in the Browser;
+- the FE0F box is gone;
+- Korean, Japanese, both Chinese scripts and U+3001/3002 render as before.
+
+Not baked yet.
 
 ## 1. What is possible, and what is not
 

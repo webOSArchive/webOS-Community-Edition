@@ -205,7 +205,10 @@ def inputs_stamp():
                 d = hashlib.sha256(f.read()).hexdigest()
             entries.append((os.path.relpath(full, PROJ), d))
     # source files outside AddToImage that bake.py splices into the image
-    for rel in ("packages/webos-chat/imwrap-resident-wait.block",):
+    for rel in ("packages/webos-chat/imwrap-resident-wait.block",
+                "build/full-ce/emoji-font/CE-Emoji.ttf",
+                "build/full-ce/emoji-font/OFL.txt",
+                "build/full-ce/emoji-font/webkit_fallback_patch.py"):
         with open(os.path.join(PROJ, rel), "rb") as f:
             entries.append((rel, hashlib.sha256(f.read()).hexdigest()))
     lunace_bin = os.path.join(LUNACE, "bin", "LunaSysMgr-LunaCE-topaz")
@@ -300,6 +303,10 @@ OUT = os.path.join(BUILD, "overlays", _V["overlay"])
 OUT_ROOT = os.path.join(OUT, "rootfs")
 
 CE_PACKAGE = "org.webosarchive.ce-files"
+
+# The emoji fallback font the libWebKitLuna fifth-slot patch loads (tier 19b);
+# Noto Emoji subset, tested on a TouchPad 2026-11-04 (Docs/EMOJI-FONT.md §2-§4).
+CE_EMOJI_FONT_MD5 = "0012097d6e83e93dd689a93892d10bec"
 
 # mojomail-imap tag patch: stock md5 -> (offset, patched md5). Selected by device build.
 IMAP_TAGFIX = {
@@ -4148,7 +4155,26 @@ def main():
     if wk.count(b"video/x-ms-wmv") != 1:
         sys.exit("ERROR: expected exactly one 'video/x-ms-wmv' in libWebKitLuna.so")
     wk = wk.replace(b"video/x-ms-wmv", b"video/webm\x00\x00\x00\x00", 1)
-    patch_version_prefix("usr/lib/libWebKitLuna.so", wk, 0o555)
+    # ... and a fifth fallback font (Docs/EMOJI-FONT.md §4): a code cave in
+    # PGFallbackFonts::init loads /usr/share/fonts/CE-Emoji.ttf after the four CJK
+    # fonts, so the 170 BMP emoji render in every web view. The patcher refuses any
+    # input but the exact bytes it was written against (this tier's output).
+    if wk.count(b"HP webOS ") != 1:
+        sys.exit("ERROR: expected exactly one 'HP webOS ' in usr/lib/libWebKitLuna.so")
+    wk = wk.replace(b"HP webOS ", b"webOS CE ")
+    sys.path.insert(0, os.path.join(HERE, "emoji-font"))
+    import webkit_fallback_patch
+    try:
+        wk = webkit_fallback_patch.patch(wk)
+    except ValueError as e:
+        sys.exit(f"ERROR: libWebKitLuna emoji fallback patch: {e}")
+    w("usr/lib/libWebKitLuna.so", wk, 0o555)
+    emoji_dir = os.path.join(HERE, "emoji-font")
+    font = open(os.path.join(emoji_dir, "CE-Emoji.ttf"), "rb").read()
+    if hashlib.md5(font).hexdigest() != CE_EMOJI_FONT_MD5:
+        sys.exit("ERROR: build/full-ce/emoji-font/CE-Emoji.ttf is not the tested font")
+    w("usr/share/fonts/CE-Emoji.ttf", font, 0o644)
+    w("usr/share/fonts/CE-Emoji-OFL.txt", open(os.path.join(emoji_dir, "OFL.txt"), "rb").read(), 0o644)
 
     # 19c) CE platform tweaks (the 2026-08-17 hitlist)
     log("tier: CE platform tweaks")

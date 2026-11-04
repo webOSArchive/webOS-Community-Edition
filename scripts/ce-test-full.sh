@@ -197,6 +197,15 @@ grep -q '"keyboardSize":-1\|keyboardSize.*-1' /etc/palm/defaultPreferences.txt 2
   && P "7   keyboard defaults small" || I "7   keyboard default: $(grep -i keyboard /etc/palm/defaultPreferences.txt 2>/dev/null | head -1)"
 n=$(strings /usr/bin/LunaSysMgr 2>/dev/null | grep -c "HP webOS ")
 [ "$n" = "0" ] && P "7   version-prefix patch: 0 'HP webOS ' in LunaSysMgr" || F "7   'HP webOS ' still in LunaSysMgr x$n"
+# Emoji fallback font (Docs/EMOJI-FONT.md §4): libWebKitLuna's fifth fallback slot loads
+# CE-Emoji.ttf. Both md5s are the pair tested on a TouchPad 2026-11-04; rendering itself is
+# a TEST-PLAN eyes-on check. WebAppMgr maps the font once any web app has drawn text.
+m=$(md5sum /usr/share/fonts/CE-Emoji.ttf 2>/dev/null | cut -d' ' -f1)
+[ "$m" = "0012097d6e83e93dd689a93892d10bec" ] && P "7   emoji fallback font CE-Emoji.ttf" || F "7   CE-Emoji.ttf missing or wrong (md5 ${m:-none})"
+m=$(md5sum /usr/lib/libWebKitLuna.so 2>/dev/null | cut -d' ' -f1)
+[ "$m" = "a9fd798f6373d7da8aac127a5fff17c1" ] && P "7   libWebKitLuna fifth-fallback-slot patch" || F "7   libWebKitLuna not the slot-5 build (md5 $m)"
+wm=$(pidof LunaSysMgr | awk '{print $1}')
+grep -q CE-Emoji /proc/$wm/maps 2>/dev/null && P "7   WebAppMgr has CE-Emoji.ttf loaded" || I "7   WebAppMgr hasn't loaded CE-Emoji.ttf (no web text drawn yet?)"
 
 # Device Info account label (600070): "HP webOS Account" -> "webOS Account" across
 # every locale's view overrides. Counts the phrase in the VIEW files only -- the
