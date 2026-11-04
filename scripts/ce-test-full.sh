@@ -206,6 +206,11 @@ m=$(md5sum /usr/lib/libWebKitLuna.so 2>/dev/null | cut -d' ' -f1)
 [ "$m" = "9c3a2e3eba662899691ea5c54c835a62" ] && P "7   libWebKitLuna emoji patch (fallback slot + astral glyphs)" || F "7   libWebKitLuna not the emoji build (md5 $m)"
 wm=$(pidof LunaSysMgr | awk '{print $1}')
 grep -q CE-Emoji /proc/$wm/maps 2>/dev/null && P "7   WebAppMgr has CE-Emoji.ttf loaded" || I "7   WebAppMgr hasn't loaded CE-Emoji.ttf (no web text drawn yet?)"
+# Emoji keyboard (LunaCE): its keys draw these OpenMoji images; a missing one falls back to text.
+n=$(ls /usr/palm/frameworks/ce-emoji/images/72/*.png 2>/dev/null | wc -l)
+[ "$n" = "152" ] && [ -f /usr/palm/frameworks/ce-emoji/ATTRIBUTION.txt ] && P "7   emoji keyboard images: 152 + attribution" || F "7   emoji keyboard images: $n of 152 (or no ATTRIBUTION.txt)"
+n=$(strings /usr/bin/LunaSysMgr 2>/dev/null | grep -c "QtEmojiFallback")
+[ "$n" -gt 0 ] && P "7   LunaSysMgr has the emoji keyboard + Qt emoji fallback" || F "7   LunaSysMgr predates the emoji work"
 
 # Device Info account label (600070): "HP webOS Account" -> "webOS Account" across
 # every locale's view overrides. Counts the phrase in the VIEW files only -- the

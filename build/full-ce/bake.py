@@ -208,7 +208,10 @@ def inputs_stamp():
     for rel in ("packages/webos-chat/imwrap-resident-wait.block",
                 "build/full-ce/emoji-font/CE-Emoji.ttf",
                 "build/full-ce/emoji-font/OFL.txt",
-                "build/full-ce/emoji-font/webkit_fallback_patch.py"):
+                "build/full-ce/emoji-font/webkit_fallback_patch.py",
+                "packages/ce-emoji/ATTRIBUTION.txt") + tuple(
+                    "packages/ce-emoji/images/72/" + n for n in sorted(
+                        os.listdir(os.path.join(PROJ, "packages", "ce-emoji", "images", "72")))):
         with open(os.path.join(PROJ, rel), "rb") as f:
             entries.append((rel, hashlib.sha256(f.read()).hexdigest()))
     lunace_bin = os.path.join(LUNACE, "bin", "LunaSysMgr-LunaCE-topaz")
@@ -1166,6 +1169,15 @@ def main():
         src = os.path.join(LUNACE, "images", "launcher3", img)
         if os.path.exists(src):
             wcopy(f"usr/palm/sysmgr/images/launcher3/{img}", src, 0o644)
+    # The keyboard's emoji keys draw OpenMoji images from here (LunaCE
+    # Src/ime/EmojiKeys.h cEmojiImageDir); CC BY-SA 4.0, attribution beside them.
+    emoji_src = os.path.join(PROJ, "packages", "ce-emoji")
+    for name in sorted(os.listdir(os.path.join(emoji_src, "images", "72"))):
+        if name.endswith(".png"):
+            wcopy(f"usr/palm/frameworks/ce-emoji/images/72/{name}",
+                  os.path.join(emoji_src, "images", "72", name), 0o644)
+    wcopy("usr/palm/frameworks/ce-emoji/ATTRIBUTION.txt",
+          os.path.join(emoji_src, "ATTRIBUTION.txt"), 0o644)
     # No "Dismissing Cards" tutorial: LunaSysMgr shows it on the first card
     # launch unless this marker exists (CardWindowManager reads
     # Settings::firstCardLaunch at startup, and writes it once the tutorial

@@ -348,12 +348,13 @@ everything that shows colour emoji (§7), replacing Messaging's EmojiOne.
   - the textarea read `61 62 2615 63 64 d83d de01 65 66` after "ab" ☕ "cd" 😁 "ef".
 - **Not yet tried by touch:** toggling, paging and the hold pop-up.
 
-**Still open:**
-- **Baking.** Ship the image dir plus `ATTRIBUTION.txt` in the image, and
-  refresh LunaCE's `bin/LunaSysMgr-LunaCE-topaz`.
-- **The TouchPad Go keymaps.** Only the Tablet keymap was changed.
-- **What the user sees after typing:** BMP emoji draw once §4 lands; astral
-  ones are a box in any web text field (§1) until an app swaps them for images.
+**Bake wiring (2026-11-04):**
+- LunaCE `bin/LunaSysMgr-LunaCE-topaz` is refreshed (`67433cc`), byte-identical
+  to the build tested on the TouchPad.
+- Tier 7 ships `packages/ce-emoji/images/72` and `ATTRIBUTION.txt` to
+  `/usr/palm/frameworks/ce-emoji/`, and those files are in the inputs stamp.
+- `ce-test-full.sh` checks all 152 images and that LunaSysMgr has the emoji code.
+- Ready for the next bake, which hasn't been run.
 
 ## 9. Emoji above U+FFFF now render (2026-11-04)
 
