@@ -11,7 +11,8 @@ namespace Sk {
 
 class Keyboard {
 public:
-    // layout: "qwerty", "qwertz" or "azerty"; anything else is qwerty.
+    // layout: "qwerty"/"qwertz"/"azerty" or the device's names (english, german, french);
+    // anything else is qwerty.
     explicit Keyboard(const std::string& layout = "qwerty");
     void setLayout(const std::string& layout);
 

@@ -29,7 +29,7 @@ index e9da973..68a0f8a 100644
              i--;
          }
 diff --git a/Src/SmkyHunspellDatabase.cpp b/Src/SmkyHunspellDatabase.cpp
-index d02b978..964dc10 100644
+index d02b978..7ac47ba 100644
 --- a/Src/SmkyHunspellDatabase.cpp
 +++ b/Src/SmkyHunspellDatabase.cpp
 @@ -36,6 +36,7 @@ SmkyHunspellDatabase::SmkyHunspellDatabase (void)
@@ -120,7 +120,7 @@ index d02b978..964dc10 100644
          }
  #endif
      }
-@@ -208,7 +234,41 @@ SmartKeyErrorCode SmkyHunspellDatabase::findGuesses (const std::string& word, Sp
+@@ -208,7 +234,47 @@ SmartKeyErrorCode SmkyHunspellDatabase::findGuesses (const std::string& word, Sp
  bool SmkyHunspellDatabase::_isSpelledGood (const char* ip_word)
  {
      int info;
@@ -149,15 +149,21 @@ index d02b978..964dc10 100644
 +    if (!mp_corrector)
 +        return SKERR_FAILURE;
 +    Sk::Correction c = mp_corrector->correct(word, maxGuesses, hunspellKnows, mp_dict_base);
-+    result.inDictionary = c.valid;
-+    for (size_t i = 0; i < c.guesses.size(); ++i)
++    // Stock XT9's reply, as measured on a TouchPad: a valid word has no guesses; otherwise the
++    // typed word comes first ("sp": false), then the guesses, the auto-accepted one first. A
++    // shortcut or case fix (i -> I, im -> I'm) counts as spelled correctly, with auto-replace.
++    result.inDictionary = c.valid || c.caseOnly;
++    if (c.valid || c.guesses.empty())
++        return SKERR_SUCCESS;
++    result.guesses.push_back(WordGuess(word));
++    for (size_t i = 0; i < c.guesses.size() && (int)result.guesses.size() < maxGuesses + 1; ++i)
 +    {
 +        WordGuess g(c.guesses[i].word);
 +        g.spellCorrection = true;
 +        if (i == 0 && c.autoAccept)
 +        {
 +            g.autoAccept = true;
-+            g.autoReplace = c.caseOnly;   // i -> I, im -> I'm: a replacement, not a guess
++            g.autoReplace = c.caseOnly;
 +        }
 +        result.guesses.push_back(g);
 +    }

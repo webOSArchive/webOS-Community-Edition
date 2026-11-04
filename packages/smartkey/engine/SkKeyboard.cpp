@@ -12,9 +12,13 @@ void Keyboard::setLayout(const std::string& layout)
     // Rows as typed on the TouchPad's letter keyboard, with each row's offset in key widths.
     const char* rows[3];
     float off[3] = { 0.0f, 0.25f, 0.75f };
-    if (layout == "qwertz") {
+    // The device's keyboard preference reports names ("english", seen on a TouchPad), not
+    // geometry; webOS's German and French keyboards are QWERTZ and AZERTY.
+    bool qwertz = layout == "qwertz" || layout == "german" || layout == "deutsch";
+    bool azerty = layout == "azerty" || layout == "french" || layout == "francais";
+    if (qwertz) {
         rows[0] = "qwertzuiop\xC3\xBC"; rows[1] = "asdfghjkl\xC3\xB6\xC3\xA4"; rows[2] = "yxcvbnm";
-    } else if (layout == "azerty") {
+    } else if (azerty) {
         rows[0] = "azertyuiop"; rows[1] = "qsdfghjklm"; rows[2] = "wxcvbn'";
     } else {
         rows[0] = "qwertyuiop"; rows[1] = "asdfghjkl\xC3\xB1"; rows[2] = "zxcvbnm'";
