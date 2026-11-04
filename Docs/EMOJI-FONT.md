@@ -219,9 +219,20 @@ a relative address, not through a dynamic symbol. The fix that fits is in
 LunaCE: at startup, `dlsym` the plugin's vtable (`_ZTV22QBasicUnixFontDatabase`)
 and the function, find the slot that holds the function, and swap in a wrapper
 that calls the original and appends the emoji font's family. About 40 lines, no
-header or offset guessing. Qt's FreeType engine reads astral code points, so a
-full (not BMP-only) Noto Emoji there would give banners 😀 in monochrome.
-**Not built yet.** The keyboard doesn't need it (§8 draws images).
+header or offset guessing.
+
+**Built and verified 2026-11-04:** LunaCE `QtEmojiFallback.cpp`, called right
+after `QApplication`. On a TouchPad with `CE-Emoji.ttf` installed, the status
+bar's app title and a banner draw ☀ ❤ ☕ ✅.
+
+Gotcha: libqpalm has no RELRO, so the vtable shares a writable page with
+`.got`, `.data` and `.bss`. The page's protection must be restored as found,
+from `/proc/self/maps`. Leaving it read-only crashed `QEglFSWindow`.
+
+Qt's FreeType engine reads astral code points, so shipping the full Noto Emoji
+instead of the BMP subset would also give the system UI 😀 in monochrome
+(WebKit would still use only the BMP part). Not done. The keyboard doesn't need
+it, since §8 draws images.
 
 ## 6. Bake and release wiring
 
