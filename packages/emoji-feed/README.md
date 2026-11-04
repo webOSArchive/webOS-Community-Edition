@@ -31,6 +31,14 @@ Host simulation under busybox `sh`, with the real libraries:
 - **CE 3.2.0 image:** no-op both ways;
 - **3.0.4:** refused.
 
+On a webOS CE 3.1.0 TouchPad (2026-11-04), going through ipkgservice's own
+commands (`ipkg -o /media/cryptofs/apps install`, then the postinst; prerm, then
+`ipkg remove`):
+- install patched to `9c3a2e3e`; after the restart, emoji rendered in the Browser
+  and CJK was unchanged;
+- removal restored `0a44935b` exactly and removed the font and the state file;
+- reinstalled after.
+
 The stock 3.0.5 library differs from CE's only in strings: the build script asserts that
 every site holds the same original bytes. But the patched stock library hasn't run on
 hardware yet. The TouchPad Go's library isn't on hand; if it differs at any site, the

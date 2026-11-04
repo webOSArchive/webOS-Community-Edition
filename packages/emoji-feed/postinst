@@ -75,11 +75,11 @@ fi
 # 2) the font, only when WebKit can use it
 if [ $webkit = no ]; then
     log "the WebKit patch failed; not installing the font"
-elif ! cmp -s "$STAGE/CE-Emoji.ttf" "$FONT"; then
+elif ! cmp -s "$STAGE/CE-Emoji.ttf" "$FONT" 2>/dev/null; then
     [ -f "$FONT" ] && [ ! -f "$FONT.emoji-orig" ] && ! grep -q '^font=' "$STATE" && cp -f "$FONT" "$FONT.emoji-orig"
     cp -f "$STAGE/CE-Emoji.ttf" "$FONT.emnew" && chmod 644 "$FONT.emnew" && mv -f "$FONT.emnew" "$FONT" &&
         { grep -q '^font=' "$STATE" || echo "font=installed" >> "$STATE"; log "installed $FONT"; }
-    cp -f "$STAGE/OFL.txt" /usr/share/fonts/CE-Emoji-OFL.txt 2>/dev/null
+    cp -f "$STAGE/OFL.txt" /usr/share/fonts/CE-Emoji-OFL.txt 2>/dev/null && chmod 644 /usr/share/fonts/CE-Emoji-OFL.txt
 else
     log "$FONT already current"
 fi
