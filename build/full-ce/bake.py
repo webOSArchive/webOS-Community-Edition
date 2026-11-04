@@ -306,7 +306,7 @@ CE_PACKAGE = "org.webosarchive.ce-files"
 
 # The emoji fallback font the libWebKitLuna fifth-slot patch loads (tier 19b);
 # Noto Emoji subset, tested on a TouchPad 2026-11-04 (Docs/EMOJI-FONT.md §2-§4).
-CE_EMOJI_FONT_MD5 = "0012097d6e83e93dd689a93892d10bec"
+CE_EMOJI_FONT_MD5 = "1d357754da12e42f1a66080337e33e53"
 
 # mojomail-imap tag patch: stock md5 -> (offset, patched md5). Selected by device build.
 IMAP_TAGFIX = {

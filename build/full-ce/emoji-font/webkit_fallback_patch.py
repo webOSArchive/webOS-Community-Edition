@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""A fifth WebKit fallback font: the libWebKitLuna code-cave patch (Docs/EMOJI-FONT.md §4).
+"""Emoji in libWebKitLuna: two code caves (Docs/EMOJI-FONT.md §4).
 
     webkit_fallback_patch.py <in libWebKitLuna.so> <out> [font path]
 
@@ -7,6 +7,14 @@ Also imported by bake.py (patch()). PGFallbackFonts::init() loads four hard-code
 fallback fonts; the object has room for eight. This adds a fifth load, of FONT, right after
 the fourth: the `bl PGContext::create@plt` that follows the loads becomes `bl cave`, and the
 cave loads the font exactly as init loads the others, then tail-calls PGContext::create.
+
+Cave 2, emoji above U+FFFF: the Palm port's GlyphPage::fill stores each character code as
+its glyph (Piranha draws by character code) but gives up on pages of surrogate pairs
+("bufferLength > 256"), so every astral emoji drew as a box. Cave 2 handles those pages: for
+a pair whose lead surrogate is D83C..D83E (U+1F000..U+1FBFF) the glyph is the TRAIL
+surrogate, which Piranha then looks up in the fallback fonts; CE-Emoji.ttf maps each trail
+surrogate to an emoji's outline (make-font.py). Other astral characters keep glyph 0 (the old
+box).
 
 Refuses any input but the one it was written against (stock 3.0.5 + bake tier 19b's two byte
 patches), and asserts every byte it relies on. If the font file is missing at run time,
@@ -21,6 +29,15 @@ CALL_AT = 0x5bf080            # in PGFallbackFonts::init: bl PGContext::create@p
 PLT_CONTEXT_CREATE = 0x87964
 PLT_CREATE_FROM_FILE = 0x89db8   # what init's four loads call
 CAVE = 0x89ac30               # end of the R+X PT_LOAD; zeros up to the RW segment at 0x89b000
+CAVE2 = 0x89ac90
+FILL_BIG = 0x5c2f4c           # GlyphPage::fill: bhi 5c3000 (bufferLength > 256 -> return false)
+FILL_EXIT = 0x5c2ff8          # GlyphPage::fill: pop {r4-r8}; bx lr  (r0 = result)
+# cave 2, assembled from cave2.S (arm-none-linux-gnueabi-as); the two 0xEEEEEEEE are
+# "b FILL_EXIT", filled in below
+CAVE2_CODE = bytes.fromhex(
+    '020c52e31300008a010012e31100001aa260a0e1814080e0044084e2018180e0818f88e2025083e2'
+    'b21055e1b4c0d5e0361b41e23c1041e2020051e300c0a083b2c0c4e0047088e4016056e2f5ffff1a'
+    '0100a0e3eeeeeeee0000a0e3eeeeeeee')
 CAVE_END = 0x89b000
 # the stock code around CALL_AT that the cave depends on (r7 = this, r9 = per-font flag):
 EXPECT = {
@@ -29,6 +46,18 @@ EXPECT = {
     0x5bf078: 0x12822001,     # addne  r2, r2, #1
     0x5bf07c: 0x15872000,     # strne  r2, [r7]
     0x5bf064: 0xe28d4004,     # add    r4, sp, #4      (r4 is live after the call: saved)
+    # GlyphPage::fill(this, offset, length, buffer, bufferLength, fontData)
+    0x5c2f38: 0xe92d01f0,     # push {r4, r5, r6, r7, r8}
+    0x5c2f3c: 0xe59d2014,     # ldr  r2, [sp, #20]     (bufferLength)
+    0x5c2f40: 0xe1a05003,     # mov  r5, r3            (buffer)
+    0x5c2f44: 0xe59d7018,     # ldr  r7, [sp, #24]     (fontData)
+    0x5c2f48: 0xe3520c01,     # cmp  r2, #256
+    0x5c2f6c: 0xe1d500b0,     # ldrh r0, [r5]          (glyph = character code)
+    0x5c2f80: 0xe1c100b4,     # strh r0, [r1, #4]      (glyphs at this+4)
+    0x5c2f7c: 0xe5837004,     # str  r7, [r3, #4]      (fontData at this+516)
+    0x5c2ff4: 0xe3a00001,     # mov  r0, #1
+    0x5c2ff8: 0xe8bd01f0,     # pop  {r4, r5, r6, r7, r8}
+    0x5c2ffc: 0xe12fff1e,     # bx   lr
 }
 
 
@@ -77,7 +106,16 @@ def patch(data, font=FONT):
             raise ValueError('unexpected code at 0x%x: %08x' % (a, word(a)))
     if word(CALL_AT) != bl(CALL_AT, PLT_CONTEXT_CREATE):
         raise ValueError('0x%x is not bl PGContext::create@plt' % CALL_AT)
+    if word(FILL_BIG) != bl(FILL_BIG, 0x5c3000, cond=0x8) & ~(1 << 24):
+        raise ValueError('0x%x is not bhi 0x5c3000' % FILL_BIG)
     code = cave_code(font)
+    if CAVE + len(code) > CAVE2:
+        raise ValueError('cave 1 overruns cave 2')
+    c2 = bytearray(CAVE2_CODE)
+    for off in (0x54, 0x5c):
+        assert struct.unpack_from('<I', c2, off)[0] == 0xEEEEEEEE
+        struct.pack_into('<I', c2, off, b(CAVE2 + off, FILL_EXIT))
+    code = code + b'\0' * (CAVE2 - CAVE - len(code)) + bytes(c2)
     if any(data[CAVE:CAVE + len(code)]) or CAVE + len(code) > CAVE_END:
         raise ValueError('cave is not free')
     # ELF32 LE: the first PT_LOAD (R+X) ends exactly at the cave; grow it over the cave
@@ -97,6 +135,7 @@ def patch(data, font=FONT):
         raise ValueError('no PT_LOAD at offset 0')
     out[CAVE:CAVE + len(code)] = code
     struct.pack_into('<I', out, CALL_AT, bl(CALL_AT, CAVE))
+    struct.pack_into('<I', out, FILL_BIG, b(FILL_BIG, CAVE2) & 0x0FFFFFFF | 0x80000000)   # bhi cave2
     return bytes(out)
 
 
@@ -105,4 +144,4 @@ if __name__ == '__main__':
     font = sys.argv[3] if len(sys.argv) > 3 else FONT
     data = patch(open(src, 'rb').read(), font)
     open(dst, 'wb').write(data)
-    print('%s: fifth fallback font %s (md5 %s)' % (dst, font, hashlib.md5(data).hexdigest()))
+    print('%s: fifth fallback font %s + astral emoji glyphs (md5 %s)' % (dst, font, hashlib.md5(data).hexdigest()))

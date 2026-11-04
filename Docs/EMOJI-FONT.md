@@ -86,7 +86,7 @@ FreeType 2.3 cannot read variable fonts, so the build pins the weight and
 subsets the font:
 
 ```js
-// build/full-ce/emoji-font/make-font.js   (node; npm i subset-font)
+// build/full-ce/emoji-font/make-font.py   (fontTools; replaced the subset-font script)
 const subset = require('subset-font'), fs = require('fs');
 const cps = [];
 for (let u = 0x80; u <= 0xFFFF; u++) {            // the BMP emoji set (170 at Unicode 15/16)
@@ -354,3 +354,34 @@ everything that shows colour emoji (§7), replacing Messaging's EmojiOne.
 - **The TouchPad Go keymaps.** Only the Tablet keymap was changed.
 - **What the user sees after typing:** BMP emoji draw once §4 lands; astral
   ones are a box in any web text field (§1) until an app swaps them for images.
+
+## 9. Emoji above U+FFFF now render (2026-11-04)
+
+§1 said emoji above U+FFFF could never render. That was wrong: the limit was one
+early return, not the renderer.
+
+**The cause.** The Palm port's `WebCore::GlyphPage::fill` (in `libWebKitLuna`)
+stores each character code as its glyph, and Piranha draws by character code.
+For a page of surrogate pairs (`bufferLength > 256`) it returned false, so every
+astral emoji got glyph 0, the box. Piranha was never asked about those
+characters at all; a diagnostic font with marker glyphs proved it.
+
+**The fix** (`webkit_fallback_patch.py`, cave 2):
+- For pairs whose first half is `D83C`–`D83E` (U+1F000–1FBFF), the glyph becomes
+  the second half. Piranha looks that up in the fallback fonts, and
+  `CE-Emoji.ttf` maps each second half to an emoji outline (`make-font.py`).
+- Other astral characters keep glyph 0.
+
+**The font** (`make-font.py`, fontTools) is the full Noto Emoji at Regular,
+889 KB. It has real format-12 mappings, which Qt uses for astral emoji in
+banners and titles, plus the second-half mappings. One second half is shared by
+up to three emoji. The winner is the keyboard emoji if there is one, otherwise
+the older block. Losers draw as the winner's glyph in web views (e.g. 🈁 as 😁).
+The keyboard leaves out 🤍 and 🤒 so that 🔍 and 🔒 keep their own glyphs.
+
+**Verified on a TouchPad** (CE 3.2.0, bind-mounted):
+- 😀 😂 🤣 😍 🥰 🤔 👍 🙏 🔥 🎉 ❤️ ☕ 🔍 🔒 render as page text and in a text box;
+- text typed through the keyboard's commit path renders (`ab☕cd😁ef`);
+- the user typed emoji with the emoji key and saw them.
+
+Everything is monochrome; colour is still impossible (§1).
