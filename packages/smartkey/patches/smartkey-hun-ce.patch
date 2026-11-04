@@ -1,0 +1,392 @@
+diff --git a/Src/SmartKeyService.cpp b/Src/SmartKeyService.cpp
+index e9da973..68a0f8a 100644
+--- a/Src/SmartKeyService.cpp
++++ b/Src/SmartKeyService.cpp
+@@ -39,7 +39,6 @@
+ #include <fcntl.h>
+ #include <libgen.h>
+ #include <unistd.h>
+-#include <unicode/uchar.h>
+ #include "StringUtils.h"
+ #include <wctype.h>
+ #include <cjson/json.h>
+@@ -892,7 +891,7 @@ std::string SmartKeyService::stripPunctuation (const std::string& word, std::str
+     // This could be made way more efficient, but most words do not have punctuation so
+     // optimizing this function won't much of an impact on overall performance.
+     std::string newWord = word;
+-    while (!newWord.empty() && u_ispunct(newWord[0]))
++    while (!newWord.empty() && g_ascii_ispunct(newWord[0]))
+     {
+         leadingChars += newWord[0];
+         newWord.erase(0, 1);
+@@ -902,7 +901,7 @@ std::string SmartKeyService::stripPunctuation (const std::string& word, std::str
+     int i = lastCharIdx;
+     if (i > 0)
+     {
+-        while (i >= 0 && u_ispunct(newWord[i]))
++        while (i >= 0 && g_ascii_ispunct(newWord[i]))
+         {
+             i--;
+         }
+diff --git a/Src/SmkyHunspellDatabase.cpp b/Src/SmkyHunspellDatabase.cpp
+index d02b978..964dc10 100644
+--- a/Src/SmkyHunspellDatabase.cpp
++++ b/Src/SmkyHunspellDatabase.cpp
+@@ -36,6 +36,7 @@ SmkyHunspellDatabase::SmkyHunspellDatabase (void)
+ #else
+     m_initialized = false;
+ #endif
++    mp_corrector = NULL;
+ 
+     _loadDictionary();
+ }
+@@ -57,11 +58,13 @@ void SmkyHunspellDatabase::_clean (void)
+     if (mp_dict_base)
+     {
+         g_debug("Hunspell: going to release current dictionary..");
+-        delete mp_dict_base;
++        Hunspell_destroy(mp_dict_base);
+         mp_dict_base = NULL;
+         g_debug("Hunspell: done, no dictionaries");
+     }
+ #endif
++    delete mp_corrector;
++    mp_corrector = NULL;
+     m_initialized = false;
+ }
+ 
+@@ -81,13 +84,35 @@ void SmkyHunspellDatabase::_loadDictionary (void)
+ 
+     _clean();
+ 
++    // [CE] the corrector's dictionary: <dir>/<lang>_<COUNTRY>.skd, else <dir>/<lang>.skd
++    {
++        const LocaleSettings& ls = p_settings->localeSettings;
++        std::string dir = SK_DICT_DIR;
++        std::string cands[2] = { dir + "/" + ls.m_inputLanguage + "_" + ls.m_deviceCountry + ".skd",
++                                 dir + "/" + ls.m_inputLanguage + ".skd" };
++        for (int i = 0; i < 2 && !mp_corrector; ++i) {
++            Sk::Corrector* c = new Sk::Corrector();
++            if (c->load(cands[i])) {
++                std::string layout = ls.m_keyboardLayout;
++                for (size_t k = 0; k < layout.size(); ++k) layout[k] = tolower(layout[k]);
++                c->setLayout(layout);
++                mp_corrector = c;
++                g_message("SmartKey: corrector dictionary %s, layout %s", cands[i].c_str(), layout.c_str());
++            } else {
++                delete c;
++            }
++        }
++        if (!mp_corrector)
++            g_message("SmartKey: no corrector dictionary for %s", ls.m_inputLanguage.c_str());
++    }
++
+     if ( (g_file_test(aff_path.c_str(), G_FILE_TEST_EXISTS)) &&
+             (g_file_test(dict_path.c_str(), G_FILE_TEST_EXISTS)) )
+     {
+ #ifdef USE_HUNSPELL
+         g_debug("Hunspell: going to load dictionary for locale '%s'", locale.c_str());
+ 
+-        mp_dict_base = new Hunspell( aff_path.c_str(), dict_path.c_str(), NULL );
++        mp_dict_base = Hunspell_create( aff_path.c_str(), dict_path.c_str() );
+         m_initialized = mp_dict_base != NULL;
+ #endif
+ 
+@@ -131,7 +156,8 @@ bool SmkyHunspellDatabase::findEntry (const std::string& word)
+         const char* p_search_word = word.c_str();
+         int info;
+ 
+-        int res = mp_dict_base->spell( p_search_word, &info );
++        (void)info;
++        int res = mp_dict_base ? Hunspell_spell( mp_dict_base, p_search_word ) : 0;
+ 
+         return( res != 0 ); //is good word?
+ #endif
+@@ -168,7 +194,7 @@ SmartKeyErrorCode SmkyHunspellDatabase::findGuesses (const std::string& word, Sp
+         char** p_slst;
+         const char* p_search_word = word.c_str();
+ 
+-        res = mp_dict_base->suggest( &p_slst, p_search_word );
++        res = Hunspell_suggest( mp_dict_base, &p_slst, p_search_word );
+ 
+         if (res > 0) // have suggestion(s)!
+         {
+@@ -186,7 +212,7 @@ SmartKeyErrorCode SmkyHunspellDatabase::findGuesses (const std::string& word, Sp
+                 word_guess.autoAccept = false;
+             }
+ 
+-            mp_dict_base->free_list( &p_slst, res );
++            Hunspell_free_list( mp_dict_base, &p_slst, res );
+         }
+ #endif
+     }
+@@ -208,7 +234,41 @@ SmartKeyErrorCode SmkyHunspellDatabase::findGuesses (const std::string& word, Sp
+ bool SmkyHunspellDatabase::_isSpelledGood (const char* ip_word)
+ {
+     int info;
+-    return( mp_dict_base->spell( ip_word, &info ) != 0 ); //is good word?
++    (void)info;
++    return( Hunspell_spell( mp_dict_base, ip_word ) != 0 ); //is good word?
+ }
+ 
+ 
++
++// [CE] ---------------------------------------------------------------- corrector
++
++static bool hunspellKnows (const std::string& word, void* ctx)
++{
++    Hunhandle* h = static_cast<Hunhandle*>(ctx);
++    return h && Hunspell_spell(h, word.c_str()) != 0;
++}
++
++bool SmkyHunspellDatabase::hasCorrector (void) const
++{
++    return mp_corrector != NULL;
++}
++
++SmartKeyErrorCode SmkyHunspellDatabase::correct (const std::string& word, SpellCheckWordInfo& result, int maxGuesses)
++{
++    if (!mp_corrector)
++        return SKERR_FAILURE;
++    Sk::Correction c = mp_corrector->correct(word, maxGuesses, hunspellKnows, mp_dict_base);
++    result.inDictionary = c.valid;
++    for (size_t i = 0; i < c.guesses.size(); ++i)
++    {
++        WordGuess g(c.guesses[i].word);
++        g.spellCorrection = true;
++        if (i == 0 && c.autoAccept)
++        {
++            g.autoAccept = true;
++            g.autoReplace = c.caseOnly;   // i -> I, im -> I'm: a replacement, not a guess
++        }
++        result.guesses.push_back(g);
++    }
++    return SKERR_SUCCESS;
++}
+diff --git a/Src/SmkyHunspellDatabase.h b/Src/SmkyHunspellDatabase.h
+index ba781ee..65e712b 100644
+--- a/Src/SmkyHunspellDatabase.h
++++ b/Src/SmkyHunspellDatabase.h
+@@ -26,8 +26,10 @@
+ #define USE_HUNSPELL
+ 
+ #ifdef USE_HUNSPELL
+- #include <hunspell/hunspell.hxx>
++ // [CE] the C API: an opaque handle, so the device's own libhunspell-1.3 sizes its object
++ #include <hunspell/hunspell.h>
+ #endif
++#include "SkCorrector.h"
+ 
+ namespace SmartKey
+ {
+@@ -42,8 +44,10 @@ private:
+ 
+ #ifdef USE_HUNSPELL
+     //hunspell object
+-    Hunspell* mp_dict_base;
++    Hunhandle* mp_dict_base;
+ #endif
++    // [CE] frequency- and keyboard-ranked auto-correct (packages/smartkey/engine)
++    Sk::Corrector* mp_corrector;
+ 
+ public:
+ 
+@@ -56,6 +60,11 @@ public:
+ 
+     SmartKeyErrorCode findGuesses (const std::string& word, SpellCheckWordInfo& result, int maxGuesses);
+ 
++    // [CE] true when the corrector has a dictionary for the input language
++    bool hasCorrector (void) const;
++    // [CE] the corrector's verdict; result.inDictionary when the word needs no change
++    SmartKeyErrorCode correct (const std::string& word, SpellCheckWordInfo& result, int maxGuesses);
++
+ private:
+     //release all allocated objects
+     void _clean (void);
+diff --git a/Src/SmkySpellCheckEngine.cpp b/Src/SmkySpellCheckEngine.cpp
+index 47abe1e..8e082fc 100644
+--- a/Src/SmkySpellCheckEngine.cpp
++++ b/Src/SmkySpellCheckEngine.cpp
+@@ -35,7 +35,6 @@
+ #include "Settings.h"
+ #include "SmartKeyService.h"
+ #include "SmkySpellCheckEngine.h"
+-#include <pbnjson.hpp>
+ 
+ // debug macros for calls. Sets the wStatus variable that must be defined already. Declare a local status variable of type SMKY_STATUS.
+ #define SMKY_VERIFY(x) (G_LIKELY((wStatus = x) == SMKY_STATUS_NONE) || (g_warning("'%s' returned error #%d, in %s of %s line %d", #x, wStatus, __FUNCTION__, __FILE__, __LINE__), false))
+@@ -78,7 +77,9 @@ SmkySpellCheckEngine::SmkySpellCheckEngine (void)
+     m_languages.add("da");
+     m_languages.add("de");
+     m_languages.add("en");
++    m_languages.add("es");  // [CE] TouchPad keyboard languages missing from the list
+     m_languages.add("fr");
++    m_languages.add("it");
+     m_languages.add("gl");
+     m_languages.add("hu");
+     m_languages.add("kk");
+@@ -248,6 +249,20 @@ SmartKeyErrorCode SmkySpellCheckEngine::checkSpelling (const std::string& word,
+         return SKERR_SUCCESS;
+     }
+ 
++    // [CE] the corrector decides: valid, or guesses with a confident first one auto-accepted
++    if ( mp_hunspDb->hasCorrector() )
++    {
++        mp_hunspDb->correct(word, result, maxGuesses);
++        if ( result.guesses.empty() && auto_subdb_word.length() > 0 && !result.inDictionary )
++        {
++            WordGuess word_guess(auto_subdb_word);
++            word_guess.autoReplace = true;
++            word_guess.autoAccept = true;
++            result.guesses.push_back(word_guess);
++        }
++        return SKERR_SUCCESS;
++    }
++
+     if ( mp_hunspDb->findEntry(word) )
+     {
+         result.inDictionary = true;
+@@ -351,6 +366,20 @@ SmartKeyErrorCode SmkySpellCheckEngine::autoCorrect (const std::string& word, co
+         return SKERR_SUCCESS;
+     }
+ 
++    // [CE] the corrector decides: valid, or guesses with a confident first one auto-accepted
++    if ( mp_hunspDb->hasCorrector() )
++    {
++        mp_hunspDb->correct(word, result, maxGuesses);
++        if ( result.guesses.empty() && auto_subdb_word.length() > 0 && !result.inDictionary )
++        {
++            WordGuess word_guess(auto_subdb_word);
++            word_guess.autoReplace = true;
++            word_guess.autoAccept = true;
++            result.guesses.push_back(word_guess);
++        }
++        return SKERR_SUCCESS;
++    }
++
+     if ( mp_hunspDb->findEntry(word) )
+     {
+         result.inDictionary = true;
+diff --git a/Src/StringUtils.cpp b/Src/StringUtils.cpp
+index b133db0..24e2d70 100644
+--- a/Src/StringUtils.cpp
++++ b/Src/StringUtils.cpp
+@@ -23,6 +23,7 @@
+  */
+ 
+ #include "StringUtils.h"
++#include "SkUtf8.h"
+ #include <wctype.h>
+ #include <stdlib.h>
+ #include <algorithm>
+@@ -69,48 +70,11 @@ void StringUtils::chomp (char* str, size_t numChars)
+ */
+ bool StringUtils::compareStrings (const std::string& first, const std::string& second)
+ {
+-    UnicodeString uFirst  = StringUtils::utf8StringToUnicodeString(first);
+-    UnicodeString uSecond = StringUtils::utf8StringToUnicodeString(second);
+-
+-    StringUtils::transliterate(uFirst);
+-    StringUtils::transliterate(uSecond);
+-
+-    uFirst.toLower();
+-    uSecond.toLower();
+-
+-    return uFirst < uSecond;
+-}
+-
+-/**
+-* transliterate
+-*
+-* @param str
+-*   input unicode string
+-*
+-* @return bool
+-*   true if done
+-*/
+-bool StringUtils::transliterate (UnicodeString& str)
+-{
+-    UParseError parseError = { 0 };
+-    UErrorCode lStatus    = U_ZERO_ERROR;
+-    static icu::Transliterator* pTransliterator = 0;
+-
+-    if (pTransliterator == NULL)
+-    {
+-        pTransliterator = icu::Transliterator::createInstance("NFD; [:M:] Remove; NFC;", UTRANS_FORWARD, parseError, lStatus);
+-        if ((pTransliterator == 0) || U_FAILURE(lStatus))
+-        {
+-            return false;
+-        }
+-        else
+-        {
+-            icu::Transliterator::registerInstance(pTransliterator);
+-        }
+-    }
+-
+-    pTransliterator->transliterate(str);
+-    return true;
++    // [CE] case- and accent-insensitive, as ICU's "NFD; [:M:] Remove; NFC" + toLower was
++    Sk::U32 a = Sk::decode(first), b = Sk::decode(second);
++    for (size_t i = 0; i < a.size(); ++i) a[i] = Sk::baseLetter(Sk::toLower(a[i]));
++    for (size_t i = 0; i < b.size(); ++i) b[i] = Sk::baseLetter(Sk::toLower(b[i]));
++    return a < b;
+ }
+ 
+ /**
+@@ -140,33 +104,6 @@ std::string StringUtils::utf8tolower (const std::string& str)
+     return lowerStr;
+ }
+ 
+-/**
+-* convert utf8 string to unicode string
+-*
+-* @param str
+-*   input string
+-*
+-* @return UnicodeString
+-*   converted string
+-*/
+-UnicodeString StringUtils::utf8StringToUnicodeString (const std::string& str)
+-{
+-    if (str.empty())
+-        return UnicodeString();
+-
+-    glong len(0);
+-    auto_g_free_array<gunichar2> utf16 = g_utf8_to_utf16(str.c_str(), -1, NULL, &len, NULL);
+-    if (utf16 != NULL)
+-    {
+-        UnicodeString ustr(utf16.p);
+-        return ustr;
+-    }
+-    else
+-    {
+-        return UnicodeString();
+-    }
+-}
+-
+ /**
+ * print string
+ *
+diff --git a/Src/StringUtils.h b/Src/StringUtils.h
+index 79f9e45..efeacda 100644
+--- a/Src/StringUtils.h
++++ b/Src/StringUtils.h
+@@ -26,7 +26,7 @@
+ #define StringUtils_h
+ 
+ #include <string>
+-#include <unicode/translit.h>
++// [CE] no ICU: accent folding and case come from the corrector's SkUtf8
+ #include <sys/times.h>
+ #include <unistd.h>
+ #include "glib.h"
+@@ -39,9 +39,7 @@ class StringUtils
+ public :
+ 
+     static void chomp (char* str, size_t numChars);
+-    static UnicodeString utf8StringToUnicodeString (const std::string& str);
+     static std::string utf8tolower (const std::string& str);
+-    static bool transliterate (UnicodeString& str);
+     static bool compareStrings (const std::string& first, const std::string& second);
+ };
+ 

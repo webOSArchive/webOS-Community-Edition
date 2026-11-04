@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """Build a SmartKey correction dictionary (.skd) from an AOSP LatinIME wordlist.
 
-    build-skd.py <xx_wordlist.combined.gz> <out.skd>
+    build-skd.py <xx_wordlist.combined.gz> <out.skd> [--min-freq N]
+
+--min-freq drops words rarer than AOSP f=N from the trie (they can't be auto-accepted below
+the corrector's autoMinFreq anyway, but they still count as real words). Hunspell keeps
+covering validity for what's dropped.
 
 Input: AOSP LatinIME's dictionaries/<lang>_wordlist.combined.gz (Apache-2.0):
     dictionary=main:en_us,locale=en_US,...
@@ -28,7 +32,7 @@ what SkUtf8::toLower folds on the device (Latin-1 + Latin Extended-A + Greek/Cyr
 import gzip, struct, sys
 
 
-def parse(path):
+def parse(path, min_freq=1):
     words = {}   # lower -> dict(forms={form: f}, offensive, never)
     shortcuts = {}  # lower -> target
     last = None
@@ -47,6 +51,9 @@ def parse(path):
                 f = int(fields.get('f', '0') or 0)
                 flags = fields.get('flags', '')
                 never = fields.get('not_a_word') == 'true' or flags == 'nonword' or f == 0
+                if f < min_freq and not never:
+                    last = None
+                    continue
                 lw = w.lower()
                 e = words.setdefault(lw, {'forms': {}, 'offensive': False, 'never': True})
                 if not never:
@@ -141,7 +148,10 @@ def build(words, shortcuts):
 
 
 def main():
-    words, shortcuts = parse(sys.argv[1])
+    min_freq = 1
+    if '--min-freq' in sys.argv:
+        min_freq = int(sys.argv[sys.argv.index('--min-freq') + 1])
+    words, shortcuts = parse(sys.argv[1], min_freq)
     data, nn, nc, ns = build(words, shortcuts)
     with open(sys.argv[2], 'wb') as fh:
         fh.write(data)
