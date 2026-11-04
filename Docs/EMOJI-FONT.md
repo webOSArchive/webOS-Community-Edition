@@ -193,14 +193,27 @@ Pass criteria:
 
 ## 5. Not covered by this patch: the system UI
 
-LunaSysMgr's own UI renders with **Qt 4.8 for embedded Linux (QWS)**, not WebKit:
-notification banners, card titles, the status bar and the virtual keyboard. Qt's
-font database scans `/usr/share/fonts`, so dropping `CE-Emoji.ttf` there *may*
-give Qt per-glyph fallback for free. **Untested.** Test it after §4 lands, by
-sending a notification whose text contains ☀ and ❤️.
+LunaSysMgr's own UI renders with **Qt 4.8 (QPA, HP's fork)**, not WebKit:
+notification banners, card titles, the status bar and the virtual keyboard.
 
-If Qt doesn't pick it up, that fix belongs in LunaCE, whose source we have, not
-in this patch.
+**Tested 2026-11-04 (TouchPad, CE 3.2.0): dropping `CE-Emoji.ttf` into
+`/usr/share/fonts` does nothing for Qt.** After a Luna restart, a banner and a
+card title with ☀ ☕ ✅ ❤ still drew boxes; only ☺ rendered. The reason is in
+HP's fork (`openwebos/qt`, `qbasicunixfontdatabase.cpp`): the `qpalm` platform
+plugin's `QBasicUnixFontDatabase::fallbacksForFamily()` returns a **hard-coded**
+list, a style font (Verdana / Arial / Georgia / Courier New) then `Hei S`,
+`HeiT`, `Heisei Kaku Gothic`, `Dotum`. Qt only consults its global fallback
+list (`"Global Fallbacks"` in `qt_applyFontDatabaseSettings`) when that answer
+is empty, which it never is.
+
+Symbol interposition can't reach it: the plugin's vtable calls the function by
+a relative address, not through a dynamic symbol. The fix that fits is in
+LunaCE: at startup, `dlsym` the plugin's vtable (`_ZTV22QBasicUnixFontDatabase`)
+and the function, find the slot that holds the function, and swap in a wrapper
+that calls the original and appends the emoji font's family. About 40 lines, no
+header or offset guessing. Qt's FreeType engine reads astral code points, so a
+full (not BMP-only) Noto Emoji there would give banners 😀 in monochrome.
+**Not built yet.** The keyboard doesn't need it (§8 draws images).
 
 ## 6. Bake and release wiring
 
@@ -285,3 +298,40 @@ other people's text.** CE's Messaging already does this. 3.2.0 generalises it.
 - Each must show colour images in its app.
 - The same text in any other web view must show the monochrome BMP glyphs, and
   boxes only for astral code points.
+
+## 8. Typing emoji: the keyboard's emoji layer (LunaCE)
+
+**Decided 2026-11-04:** the bottom-row language key (the QWERTY/Dvorak and
+language switch, where older webOS had its emoticon key) becomes the emoji key.
+The image set is **OpenMoji** (CC BY-SA 4.0), for the keyboard and, later, for
+everything that shows colour emoji (§7), replacing Messaging's EmojiOne.
+
+**Built:** LunaCE `edc7408`, assets in `packages/ce-emoji/`.
+
+- **Tap** the key: the character keys of the top four rows type emoji, 38 per page
+  on QWERTY, 4 pages, 152 emoji in a fixed list
+  (`packages/ce-emoji/keyboard-emoji.txt`, which generates LunaCE's
+  `Src/ime/EmojiKeys.h`). Shift turns the page (`1/4`). The key reads `ABC` to
+  go back. Symbols, or hiding the keyboard, also return to letters.
+- **Hold** the key: this language's layouts and, with more than one keyboard
+  language, "next language". That covers everything the key did before, so
+  Regional Settings needs no change.
+- **Key images:** `/usr/palm/frameworks/ce-emoji/images/72/<HEX>.png`,
+  OpenMoji 17.0.0 72 px colour, named by code points without FE0F
+  (`fetch-openmoji.py`). Keys draw them scaled; a missing image falls back to
+  text.
+- **Astral text:** WebKit's `insertStringAsKeyEvents` silently drops
+  characters above U+FFFF. LunaCE's `WebPage::commitText` now sends text
+  containing a 4-byte UTF-8 sequence through the composition path, which keeps
+  the surrogate pair.
+- **Verified on hardware** (CE 3.2.0, bind-mounted build, test-only hook):
+  - pages 1–3 render;
+  - the textarea read `61 62 2615 63 64 d83d de01 65 66` after "ab" ☕ "cd" 😁 "ef".
+- **Not yet tried by touch:** toggling, paging and the hold pop-up.
+
+**Still open:**
+- **Baking.** Ship the image dir plus `ATTRIBUTION.txt` in the image, and
+  refresh LunaCE's `bin/LunaSysMgr-LunaCE-topaz`.
+- **The TouchPad Go keymaps.** Only the Tablet keymap was changed.
+- **What the user sees after typing:** BMP emoji draw once §4 lands; astral
+  ones are a box in any web text field (§1) until an app swaps them for images.

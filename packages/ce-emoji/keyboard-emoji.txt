@@ -1,0 +1,22 @@
+# The emoji on the CE keyboard's emoji layer, in key order: 4 pages of 38 (the number row,
+# then the three letter rows of a QWERTY keyboard). One emoji per line; # starts a comment.
+# Page 1: faces
+😀 😃 😄 😁 😆 😅 😂 🤣 😊 🙂
+😉 😍 🥰 😘 😋 😜 🤪 😎 🤩 🥳
+😏 😒 😞 😔 😟 😕 🙁 😣 😫
+😩 🥺 😢 😭 😤 😠 😡 🤯 😳
+# Page 2: more faces, hands
+😱 😨 😰 😥 🤗 🤔 🤭 🤫 🙄 😬
+😴 🤤 😷 🤒 🤢 🤮 🥵 🥶 😇 🤠
+🤓 😈 💩 👻 👍 👎 👌 ✌️ 🤞
+👏 🙌 🙏 💪 👋 🤝 👀 🤷 🤦
+# Page 3: hearts, symbols, celebration, weather
+❤️ 🧡 💛 💚 💙 💜 🖤 🤍 💔 💕
+💖 💯 ✨ 🔥 ⭐ 🌟 ⚡ 💥 🎉 🎊
+🎈 🎁 🎂 🏆 ✅ ❌ ❗ ❓ 💤
+💬 👑 💎 🌈 ☀️ 🌙 ☁️ ❄️ 🌧️
+# Page 4: food, animals, nature, things
+☕ 🍺 🍷 🍕 🍔 🍟 🌮 🍣 🍩 🍪
+🍎 🍌 🐶 🐱 🐻 🐼 🦊 🐸 🐵 🦄
+🐝 🌸 🌹 🌻 🌲 🍀 🚗 ✈️ 🚀
+🏠 📱 💻 📷 🎵 🎮 ⚽ 📚 💡
