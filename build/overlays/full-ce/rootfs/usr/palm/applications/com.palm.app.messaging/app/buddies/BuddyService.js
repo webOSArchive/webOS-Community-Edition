@@ -18,6 +18,8 @@ enyo.kind({
 			{name: "buddies", method: "find", service: "palm://com.palm.tempdb/", dbKind: "com.palm.imbuddystatus:1", onSuccess: "gotBuddies", subscribe: true, onWatch: "doWatch"/*, resubscribe: true, reCallWatches: true*/},
 			{name: "buddiesSearch", method: "search", service: "palm://com.palm.tempdb/", dbKind: "com.palm.imbuddystatus:1", onSuccess: "gotBuddies", subscribe: true, onWatch: "doWatch"/*, resubscribe: true, reCallWatches: true*/},
 			{name: "threads", dbKind: "com.palm.chatthread:1", method: "find", onSuccess: "gotThreads", subscribe: true, onWatch: "doWatch"/*, resubscribe: true, reCallWatches: true*/ },
+			// [Lunacy] the threads of buddies with no person, by address (see assembleIds)
+			{name: "addressThreads", dbKind: "com.palm.chatthread:1", method: "find", onSuccess: "gotAddressThreads", subscribe: true, onWatch: "doWatch"},
 			{name: "people", dbKind: "com.palm.person:1", method: "find", onSuccess: "gotPeople", subscribe: true, onWatch: "doWatch"/*, resubscribe: true, reCallWatches: true*/}
 		]},
 		{name: "mockBuddies", kind: "MockDb", dbKind: "buddies/com.palm.imbuddystatus:1", method: "find", onSuccess: "gotBuddies", onFailure: "fail", onWatch: "doWatch"},
@@ -66,11 +68,25 @@ enyo.kind({
 	},
 	assembleIds: function() {
 		this.pids = [];
+		// [Lunacy] A buddy the contacts linker hasn't given a person (no personId) would put
+		// undefined in pids: the threads query then matched every thread without a person (a
+		// Synergy connector's), and the buddy showed one of their unread counts. Such a buddy's
+		// thread is found by its address instead, as Messaging.js finds it when it is tapped.
+		this.addresses = [];
 		for (var i=0, d; d=this.data.results[i]; i++) {
-			this.pids.push(d.personId);
+			if (d.personId) {
+				this.pids.push(d.personId);
+			} else if (d.username) {
+				this.addresses.push(enyo.messaging.utils.normalizeAddress(d.username, d.serviceName));
+			}
 		}
 	},
 	queryPeople: function() {
+		// [Lunacy] no buddy has a person: nothing to join by person, only by address
+		if (!this.pids.length) {
+			this.gotThreads(null, {results: []});
+			return;
+		}
 		this.$.people.id = "buddyRequest_people";
 		this.$.people.cancel();
 		this.$.people.call({query: {
@@ -115,7 +131,33 @@ enyo.kind({
 		//enyo.log("#@#@ got chat threads: ", inResponse);
 		// join chat thread data to buddy data
 		enyo.messaging.utils.joinData(this.data, inResponse.results, "personId", "personId", "thread");
+		// [Lunacy] then the buddies with no person, by address
+		if (this.addresses && this.addresses.length) {
+			this.queryAddressThreads();
+			return;
+		}
 		// all done now
+		this.reply();
+	},
+	// [Lunacy] see assembleIds
+	queryAddressThreads: function() {
+		this.$.addressThreads.id = "buddyRequest_addressThreads";
+		this.$.addressThreads.cancel();
+		this.$.addressThreads.call({query: {
+			where: [{prop: "normalizedAddress", op: "=", val: this.addresses}],
+			select: ["_id", "_kind", "personId", "normalizedAddress", "displayName", "unreadCount"]
+		}});
+	},
+	gotAddressThreads: function(inSender, inResponse) {
+		var byAddress = {}, r = inResponse.results || [], i, d;
+		for (i = 0; (d = r[i]); i++) {
+			if (!d.personId) { byAddress[d.normalizedAddress] = d; }
+		}
+		for (i = 0; (d = this.data.results[i]); i++) {
+			if (!d.personId && d.username) {
+				d.thread = byAddress[enyo.messaging.utils.normalizeAddress(d.username, d.serviceName)];
+			}
+		}
 		this.reply();
 	}
 });

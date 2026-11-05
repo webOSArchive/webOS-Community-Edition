@@ -147,8 +147,12 @@ enyo.kind({
 		{name: "wifiPopupCancelDialog", kind: "ModalDialog", lazy: true, scrim:true, className: "popup",
 		 caption: rb.$L("Setup Options"),
 		 components: [
-		 	{content: rb.$L("You need a network to setup your device."), className: "enyo-text-body"}, 
+		 	// webOS CE: a network is only needed for a webOS Account. Without one (no
+		 	// Wi-Fi in range, no internet, or our server down) setup must still be
+		 	// able to finish, so this dialog offers the same way out as the cards.
+		 	{content: rb.$L("You need a network to set up a webOS Account. You can also finish setting up your TouchPad without one."), className: "enyo-text-body"}, 
 			{kind: "Button", caption: rb.$L("Find Network"), className: 'enyo-button-affirmative', flex: 1, onclick: "wifiPopupCancelDialogFindNetwork", style: "margin-bottom:10px"},
+			{kind: "Button", caption: rb.$L("Skip Account Setup"), className: 'enyo-button', flex: 1, onclick: "wifiPopupCancelDialogSkip", style: "margin-bottom:10px"},
 			{kind: "Button", caption: rb.$L("Start Over"), className: 'enyo-button', flex: 1, onclick: "wifiPopupCancelDialogStartOver"},
 		]
 		},
@@ -836,6 +840,17 @@ enyo.kind({
 		console.log("wifi dilog startover");
 		this.$.StartOverFU.restartFirstUse();
 	},
+	// webOS CE: finish setup without a network. Close both network dialogs and
+	// stop requirement tracking first, so a ConMan report arriving during the
+	// close cannot reopen the Wi-Fi popup over the restart notice.
+	wifiPopupCancelDialogSkip:function(){
+		console.info("WOSA: skip account setup from the network dialog");
+		this.$.wifiPopupCancelDialog.close();
+		this.$.wifiPopup.close();
+		this.wifiDialogIsOpen = false;
+		this.okToStartNetworking = false;
+		this.wosaSkipSetup();
+	},
 	wifiPopupCancelDialogFindNetwork:function(){
 		console.log("wifi dilog findnetwork");
 		this.$.wifiPopupCancelDialog.close();
@@ -1060,8 +1075,27 @@ enyo.kind({
 		}), 900);
 	},
 
+	// webOS CE: skipping must still finish OOBE properly. done() applies the
+	// language card's customization (populateDefaults) on the account path; the
+	// skip path used to close without it. Apply it here too, then close once it
+	// answers -- or after 5 s, so a stuck service can never hold setup open.
 	wosaSkipSetup: function(){
-		this.wosaSafeClose();
+		if (this.wosaSkipping) { return; }
+		this.wosaSkipping = true;
+		if (!(this.wosaIsOobe && this.languageCode)) {
+			this.wosaSafeClose();
+			return;
+		}
+		console.info("WOSA CE OOBE: skipping account setup — applying customization first.");
+		var closeOnce = enyo.bind(this, function(why){
+			if (this.wosaSkipClosed) { return; }
+			this.wosaSkipClosed = true;
+			console.info("WOSA: skip close (" + why + ")");
+			this.wosaSafeClose();
+		});
+		setTimeout(function(){ closeOnce("customization timeout"); }, 5000);
+		this.wosaSkipCloseOnce = closeOnce;
+		this.$.setCustomization.call({"language":this.languageCode,"country":this.countryCode});
 	},
 	
 	postTimeZoneResponse: function(inSender, inResponse){
@@ -1075,6 +1109,7 @@ enyo.kind({
    
    postCustomizationResponse: function(inSender, inResponse) {
         console.info("postCustomizationResponse Call Returned");
+		if (this.wosaSkipCloseOnce) { this.wosaSkipCloseOnce("customization applied"); }
 		if (!inResponse.returnValue) {
             console.info("Post login failure: " + JSON.stringify(inResponse));
 		}

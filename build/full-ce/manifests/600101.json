@@ -1,0 +1,65 @@
+{
+  "buildmark": 600101,
+  "variant": "hp",
+  "buildtime": "20261105130544",
+  "git": "3.1.0-CE-Release-130-gfad2a70",
+  "inputs_sha256": "e56f27403580637ad77dd8fba37bacd1515727f9645ba13d341e8960153a6984",
+  "build_epoch": 1793883944,
+  "host_tools": {
+    "openssl": "OpenSSL 3.0.13 30 Jan 2024 (Library: OpenSSL 3.0.13 30 Jan 2024)",
+    "shell_check": "busybox ash"
+  },
+  "oem_jar": {
+    "path": "webosdoctorp305hstnhwifi.jar",
+    "sha256": "735f93f8dc7ea9d3ce0d04dba6a8a0d5a2551d790e704376bda49ee1fe55d9ca"
+  },
+  "lunace_binary": {
+    "path": "/home/jonwise/Projects/LunaCE/bin/LunaSysMgr-LunaCE-topaz",
+    "sha256": "24d6624c3f42fb898ec2dcbb85ae6091c42eef455346c447911d9a3c986290b2"
+  },
+  "ipks": {
+    "AddToImage/NewApps/com.palm.app.videos_3.2.0_all.ipk": "cfe987368609a8c1a2a70a860761be29cb154ad1aa0d9b4f814eac5e938e6f50",
+    "AddToImage/NewApps/com.webosarchive.usbsettings_1.1.9_all.ipk": "6f1e286d2d6f7ef77eb847b956351783264f9144cf94f5c2d70f30eff2f40c2e",
+    "AddToImage/NewApps/org.webosarchive.btgamepad_1.1.0_armv7.ipk": "47e71bdb40596bf8ecffdb31676c63711fd6315c496f01e13f5851655d29e8d0",
+    "AddToImage/NewApps/org.webosarchive.media-tls13_1.0.0_armv7.ipk": "d744bb318a35c1331cdd36273ec7d7746871b0230fb162ce5a00786d70da7251",
+    "AddToImage/NewApps/org.webosinternals.govnah_1.3.9_arm.ipk": "42f165901643077952ebda9572a9ed8589fc69a200bfb3ef6e138744bf11d914",
+    "AddToImage/OOBE/org.webosarchive.webosaccount_1.1.12_all.ipk": "1d2d92bcf59194238cb744d5adb36596fef79fbaf9143709bf2d1727eb00d69b",
+    "AddToImage/PatchOrReplace/com.palm.app.accounts_3.1.1_all.ipk": "c784f4b4f5de7b1f323c24e9f57e03f6ffa42ce82a97eec2a5cc4897fafb214b",
+    "AddToImage/PatchOrReplace/com.palm.app.backup_3.1.1_all.ipk": "3f76d6e97fcc3c8f573298458a8ac0f9045af922ca2d63e71b999809a84acbf0",
+    "AddToImage/PatchOrReplace/com.palm.app.calculator_3.2.0_all.ipk": "c2e21837906a82806a9d6f3e83058eafa5248d90f57579c449b8802a09062b47",
+    "AddToImage/PatchOrReplace/com.palm.app.calendar_3.2.0_all.ipk": "e48c2265c8f0426e875c20e1c0d79c89203bb795ef0aada63ec3e0184f2a27db",
+    "AddToImage/PatchOrReplace/com.palm.app.contacts_3.2.0_all.ipk": "6c301fcc3c26041185c8d9996d8696fd7bbf0443ec34ea391bdb95ad34adc940",
+    "AddToImage/PatchOrReplace/com.palm.app.messaging_3.0.6607_all.ipk": "f57cffbc35b7df0db65f44078298d7c6194fba1c5100bb5634cb0f9178e88e9f",
+    "AddToImage/PatchOrReplace/com.palm.app.phone_2.0.1_all.ipk": "2b156b6b49c2d547feb367ccfc6d78bddbd7c74ae6c0808831acbf91e2f4dc7a",
+    "AddToImage/PatchOrReplace/com.palm.app.photos_3.2.0_all.ipk": "5ee9d7f390d9fc6d07b8c2e028ad9d39eff49794021fa3eca4a84d3d4db7a357",
+    "AddToImage/PatchOrReplace/com.palm.messaging.chatthreader_1.1.0.3_all.ipk": "5d992f5a5fe25ac1f1c7397a692391f3c80066e83d210327b353166e7eb7ccba",
+    "AddToImage/PatchOrReplace/com.palm.service.accounts_1.1.0.1_all.ipk": "795cce21c5b8e558c2dbdae646016130ae8aef54ac6e0581964a18f21b8ed430",
+    "AddToImage/PatchOrReplace/com.palm.service.contacts.linker_1.1.0.2_all.ipk": "58abb5c37283b6e90b48d137afa1992fa4a943498f0852dbb0c46435851bdaa3",
+    "AddToImage/PatchOrReplace/com.palm.synergy.generic_0.9.3.1_all.ipk": "9eac9ebe05f38879c5a09f5ea702caace1dc89731321d93a10701b1e85e0ca65",
+    "AddToImage/PatchOrReplace/com.palm_.rootcertsupdate_1.0-5_all.ipk": "19abc08433c6f2ae4d6f6a576aad652830987c5d34fda401f5e20f2931a3e3b9",
+    "AddToImage/PatchOrReplace/contacts.plugin.messaging_12.2.0_all.ipk": "9649a834176814d233e498bdb36d092218299741113ece12c4c34f4a7cb8167a",
+    "AddToImage/PatchOrReplace/enyo-accounts_1.1.1.1_all.ipk": "fa3924c094a6d0b1d69bb381483d084c9f1d3ef99ec3595032472a14058a1c29",
+    "AddToImage/PatchOrReplace/enyo-contactsui_1.0.1.1_all.ipk": "4bc5a90da765f35ee84ecbe8f24cc781377e5122b6e611f0d0ebe5c146209936",
+    "AddToImage/PatchOrReplace/luna-systemui_3.1.1.1_all.ipk": "e2eb0ae058f1d2a5a75a46cfcdda30d9894bb32a38e9ef05719902b8188d4d57",
+    "AddToImage/PatchOrReplace/messaging.library_1.3.1_all.ipk": "64db426fd11c0a2013b27d4b824ce2e305e605b71704b0e4ee16023eeb925200",
+    "AddToImage/PatchOrReplace/org.webosinternals.browser-tls13_1.1.2_armv7.ipk": "b22b814d36f9a899b63065945cff9db8c8eca8decb9f6cf92c041ddf0242b127",
+    "AddToImage/PatchOrReplace/org.webosinternals.curl-tls13_1.0.1_armv7.ipk": "2e4bc528935e1e595c20631dc775a6bd4336f32f70209ada33a4332b870039f3",
+    "AddToImage/PatchOrReplace/org.webosinternals.downloadmgr-tls13_1.1.0_armv7.ipk": "4eec02c9081d8b9b4af737954b71fd4ac9ccf66d345fb9acc33c688937f665fd",
+    "AddToImage/PatchOrReplace/org.webosinternals.kernels.uber-kernel-touchpad_3.0.5-93_arm.ipk": "33073206cd251676e51c48c3a4034fe30140d30143fc8695476259c72af1a70c",
+    "AddToImage/PatchOrReplace/org.webosinternals.luna-tls13_1.1.4_armv7.ipk": "e8107550e037e5fe7cb502f93601b4f1eb31770e53a4d00f512b59351e1dd9ec",
+    "AddToImage/PatchOrReplace/org.webosinternals.mail-tls13_1.3.2_armv7.ipk": "8225c4d037e964ef8c5bff4d5e25ec43c672a2f75fe579405cb9d83ca3342071",
+    "AddToImage/PatchOrReplace/org.webosinternals.ntpdate-sync_2.0.1_armv7.ipk": "54341c28a70b814450ffc91ab58f1d5fe692c016cce2851525b4788f780dc810",
+    "AddToImage/PatchOrReplace/org.webosinternals.patches.notifications-advanced-reset-options---de_3.0.5-14_all.ipk": "35625c5c76fd30e0ff0affe15b0af0e11e57f4185cdfb18150d978e23981d58d",
+    "AddToImage/PatchOrReplace/org.webosinternals.patches.notifications-advanced-reset-options---es_3.0.5-9_all.ipk": "6214f04e50bb587e4eae82204ce0a60344933995ac06cefbde195b3b7557f40b",
+    "AddToImage/PatchOrReplace/org.webosinternals.patches.notifications-advanced-reset-options---fr_3.0.5-14_all.ipk": "6a6cc53adef1a272fc2da124c46b1002079205cc8d12bb589f2fdc89ba633e61",
+    "AddToImage/PatchOrReplace/org.webosinternals.patches.notifications-advanced-reset-options---it_3.0.5-27_all.ipk": "e3246b22df4c7fdb99be701a6995d0406849172c8a0716027cefabcff1df7891",
+    "AddToImage/PatchOrReplace/org.webosinternals.patches.notifications-advanced-reset-options_3.0.5-9_all.ipk": "4d78cd18c47611b43c07a036eb1605276d031e320211df391990fec29e7fbf7b",
+    "AddToImage/PreInstall/com.palm.app.enyo-findapps_6.1.2923_all.ipk": "2a17a0b74ee8264c47d6f479112c721f6c916750920cdedc7a8bd8d1ae3d1876",
+    "AddToImage/PreInstall/com.palm.app.maps_4.0.1_all.ipk": "b86f2f05b861e0f64c86ba814666412bda93cc94bb16be19302afa9eb1657cf5",
+    "AddToImage/PreInstall/org.webosinternals.preware_1.9.19_arm.ipk": "bfcae7cebf0dfb7e216d99c50e97fc87967550c9116c37c7b3b3ca89f9f28296"
+  },
+  "output_jar": {
+    "path": "/home/jonwise/Projects/webos-doctor-ce/build/../out/webosdoctorp320hstnh-ce-600101.jar",
+    "sha256": "f94928b6f3029abb6a355bbf9248f8d3861c3672d0b88a4b3d3564a4271408d9"
+  }
+}
