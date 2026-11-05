@@ -210,6 +210,9 @@ def inputs_stamp():
                 "build/full-ce/emoji-font/OFL.txt",
                 "build/full-ce/emoji-font/webkit_fallback_patch.py",
                 "packages/ce-emoji/ATTRIBUTION.txt") + tuple(
+                    os.path.relpath(os.path.join(dp, fn), PROJ)
+                    for dp, _, fns in sorted(os.walk(os.path.join(PROJ, "packages", "smartkey", "prebuilt")))
+                    for fn in sorted(fns)) + tuple(
                     "packages/ce-emoji/images/72/" + n for n in sorted(
                         os.listdir(os.path.join(PROJ, "packages", "ce-emoji", "images", "72")))):
         with open(os.path.join(PROJ, rel), "rb") as f:
@@ -1178,6 +1181,18 @@ def main():
                   os.path.join(emoji_src, "images", "72", name), 0o644)
     wcopy("usr/palm/frameworks/ce-emoji/ATTRIBUTION.txt",
           os.path.join(emoji_src, "ATTRIBUTION.txt"), 0o644)
+    # 7b) SmartKey: CE's auto-correct (packages/smartkey) replaces the stock XT9
+    # SmartKeyService -- same binary name, bus id and API, plus its dictionaries.
+    log("tier: SmartKey (CE auto-correct engine)")
+    sk_root = os.path.join(PROJ, "packages", "smartkey", "prebuilt")
+    for dp, dns, fns in os.walk(sk_root):
+        dns.sort()
+        for fn in sorted(fns):
+            full = os.path.join(dp, fn)
+            rel = os.path.relpath(full, sk_root)
+            if rel == "README.md":
+                continue
+            wcopy(rel, full, 0o750 if rel == "usr/bin/SmartKeyService" else 0o644)
     # No "Dismissing Cards" tutorial: LunaSysMgr shows it on the first card
     # launch unless this marker exists (CardWindowManager reads
     # Settings::firstCardLaunch at startup, and writes it once the tutorial

@@ -211,6 +211,13 @@ n=$(ls /usr/palm/frameworks/ce-emoji/images/72/*.png 2>/dev/null | wc -l)
 [ "$n" = "152" ] && [ -f /usr/palm/frameworks/ce-emoji/ATTRIBUTION.txt ] && P "7   emoji keyboard images: 152 + attribution" || F "7   emoji keyboard images: $n of 152 (or no ATTRIBUTION.txt)"
 n=$(strings /usr/bin/LunaSysMgr 2>/dev/null | grep -c "QtEmojiFallback")
 [ "$n" -gt 0 ] && P "7   LunaSysMgr has the emoji keyboard + Qt emoji fallback" || F "7   LunaSysMgr predates the emoji work"
+# SmartKey (CE auto-correct, packages/smartkey): the service, its English dictionary, and an
+# answer to the same query WebKit sends while typing.
+m=$(md5sum /usr/bin/SmartKeyService 2>/dev/null | cut -d' ' -f1)
+[ "$m" = "97475abdcc315d0f95d142d4831eabf6" ] && P "7   SmartKeyService is CE's auto-correct" || F "7   SmartKeyService not CE's (md5 ${m:-none})"
+[ -f /usr/palm/smartkey/skd/en.skd ] && P "7   SmartKey English dictionary present" || F "7   /usr/palm/smartkey/skd/en.skd missing"
+r=$( (luna-send -n 1 palm://com.palm.smartKey/search '{"query":"teh"}' </dev/null & p=$!; ( sleep 15; kill $p 2>/dev/null ) & wait $p) 2>/dev/null)
+echo "$r" | grep -q '"str": "the", "sp": true, "auto-accept": true' && P "7   SmartKey corrects teh -> the" || F "7   SmartKey search teh: ${r:-no answer}"
 
 # Device Info account label (600070): "HP webOS Account" -> "webOS Account" across
 # every locale's view overrides. Counts the phrase in the VIEW files only -- the
