@@ -50,6 +50,8 @@ New in 3.2.0 (since 600070), and where each is tested:
                      "webOS Account" templates ............... §24
                    Messaging unread count, chatthreader
                      1.1.0.3 (stranger's first message) ...... §25
+                   Email: M365, Gmail, Outlook.com (the main
+                     feature, NOT in 600102) .................. §26
 
 Open going in:     - LunaSysMgr crash loop after OOBE Skip on 600100 (§0b):
                      14 SEGVs, cause unknown. This flash is the recheck.
@@ -878,6 +880,35 @@ The 3.2.0 goal is no HP branding anywhere.
       `WEBOS-CHAT-HANDOFF.md`).
 - [ ] A message from a known buddy still threads into the existing
       conversation
+
+## 26. Email: Microsoft 365, Gmail, Outlook.com  *(3.2.0's main feature, not yet baked)*
+
+Plan and design: `Docs/EMAIL-MODERNIZATION-PLAN.md`. 600102 has none of it, so
+this section applies to the bake that carries phase 5. Fill in the items as
+each phase lands. The plan's §4 is the gate for every bake.
+
+- [ ] **Legacy Exchange untouched:** a "Microsoft Exchange" account on Zoho
+      adds, syncs and sends
+- [ ] **Exchange time zones:** an event made on the TouchPad shows the right
+      time in Zoho's web calendar in a DST-change week
+- [ ] **Throttling:** a throttled server reads "temporarily unavailable", not
+      "check your login", and the service waits out `Retry-After`
+- [ ] **Microsoft 365 (Exchange) through the broker:** sign-in with a policy,
+      all folders sync, Ping push, send, reply and forward delivered, contacts
+      and calendar both ways, one moved and one deleted occurrence show in
+      Outlook
+- [ ] **Outlook.com** falls back to IMAP (mail only) without a second account
+      picker
+- [ ] **Gmail** (if D2 allows it): sign-in, sync, IDLE push, send
+- [ ] **A failed refresh** recovers by itself in about 30 s, with no sign-in
+      prompt
+- [ ] **Revoked access** gives "Check your login and password", and Change
+      Login Settings → Sign In Again fixes it
+- [ ] **A plain-password IMAP account** still works and is unchanged on the
+      wire
+- [ ] No mojomail crash reports across a reboot and a Luna Restart
+- [ ] **OTA'd device:** Email has the new Change Login Settings, and the
+      OAuth accounts work after the OTA (§16)
 
 ---
 
