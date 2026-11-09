@@ -505,6 +505,87 @@ else
       done
 fi
 
+# ---------------------------------------------------------------- 13. 3.2.0 apps + system UI
+# Labels use Docs/TEST-PLAN.md's section numbers (19-25), not this script's.
+# Every marker below was read from the 600102 overlay; each is a file content or
+# md5 the 3.2.0 change put there, so a stale or missing piece reads as FAIL.
+
+# 19. Contacts 3.2.0 (rootfs app) + the photos service it imports photos through
+C=/usr/palm/applications/com.palm.app.contacts
+grep -q '"version"[^,]*"3.2.0"' $C/appinfo.json 2>/dev/null && P "19  Contacts 3.2.0 baked" || F "19  Contacts not 3.2.0"
+have $C/app/utils/VCardParser.js && have $C/app/utils/VCardBatchImport.js \
+  && P "19  Import vCards present" || F "19  VCardParser/VCardBatchImport missing"
+have $C/appinfo.json && [ ! -e $C/tests ] && [ ! -e $C/jasminerunner.html ] && [ ! -e $C/jrgenerator.sh ] \
+  && P "19  Contacts ships no test code" || F "19  Contacts test files still in the image"
+PS=/media/cryptofs/apps/usr/palm/services/org.webosarchive.photos.service
+grep -q '"name": "remove"' $PS/services.json 2>/dev/null && grep -q contactphotos $PS/service.js 2>/dev/null \
+  && P "19  photos service takes Contacts photos (remove + .contactphotos)" \
+  || F "19  photos service predates Import vCards (contact photos will be dropped)"
+
+# 20. Calendar 3.2.0 (cryptofs preload), calendar framework, tzdata 2026f
+have $APPS/com.palm.app.calendar/app/import/ICalImport.js \
+  && P "20  Calendar has Import Calendar (3.2.0 tree installed)" || F "20  installed Calendar has no Import Calendar"
+I  "20  calendar $(grep -o '"version"[^,]*' $APPS/com.palm.app.calendar/appinfo.json 2>/dev/null | head -1)"
+CF=/usr/palm/frameworks/calendar/submission
+ok=1
+for f in 42/javascript/timezone-manager.js 42/concatenated.js 42calendar.js; do
+  grep -q "Pacific Standard Time" $CF/$f 2>/dev/null || { ok=0; F "20  calendar framework $f lacks Windows zone names"; }
+done
+[ $ok = 1 ] && P "20  calendar framework knows Windows zone names"
+m=$(md5sum /usr/share/zoneinfo/America/Vancouver 2>/dev/null | cut -c1-32)
+[ "$m" = "d61f0346eaf154f3fdbd3f1aca473f26" ] && P "20  zoneinfo is tzdata 2026f (America/Vancouver)" || F "20  zoneinfo not 2026f (Vancouver md5 ${m:-none})"
+m=$(md5sum /etc/palm/timezone.txt 2>/dev/null | cut -c1-32)
+[ "$m" = "c80b9b4a4b6ef82a793557f993e02c0d" ] && P "20  /etc/palm/timezone.txt is CE's" || F "20  timezone.txt not CE's (md5 ${m:-none})"
+m=$(md5sum /usr/palm/ext-timezones.json 2>/dev/null | cut -c1-32)
+[ "$m" = "669f76f30ef24488b966d01e9499e95d" ] && P "20  ext-timezones.json is CE's" || F "20  ext-timezones.json not CE's (md5 ${m:-none})"
+
+# 3/23. OOBE tutorial marker, USB banner, launcher layout
+# LunaSysMgr also writes this marker once the tutorial has shown, so its
+# presence says the tutorial is suppressed OR already shown; the plan's hand
+# check (no tutorial on the first card) is what decides it.
+have /var/luna/preferences/used-first-card && P "23  used-first-card marker present (no Dismissing Cards tutorial)" \
+  || F "23  used-first-card missing: the tutorial will show"
+grep -q "USB Connected" /usr/lib/luna/system/luna-systemui/data/StoragedService.js 2>/dev/null \
+  && P "23  USB banner (StoragedService.js is CE's)" || F "23  StoragedService.js is stock: USB popup instead of banner"
+grep -q '^IgnoreLegacyCustomizationFiles=true' /etc/palm/launcher3/launcher_operational_settings.conf 2>/dev/null \
+  && P "23  launcher ignores the payload layout (IgnoreLegacyCustomizationFiles)" || F "23  IgnoreLegacyCustomizationFiles not set"
+L=$(cat /etc/palm/default-launcher-page-layout.json 2>/dev/null | tr -d " \t\r\n" | tr "," "\n")
+lm=$(echo "$L" | grep -n 'com.palm.app.musicplayer_default' | cut -d: -f1)
+lv=$(echo "$L" | grep -n 'com.palm.app.videos_default' | cut -d: -f1)
+[ -n "$lm" ] && [ "$lv" = "$((lm+1))" ] && P "23  launcher layout: Video Player right after Music" \
+  || F "23  launcher layout: Video Player not after Music (music=$lm videos=$lv)"
+
+# 24. HP branding: App Catalog art (md5 = system/ copies) and account templates
+ok=1
+for e in \
+  2d832cf818ef111d0e92a2c6cbca7000:/usr/lib/luna/system/luna-systemui/images/notification-large-appcatalog.png \
+  b3cfd794c4801f6abd61a6e803918e01:/usr/lib/luna/system/luna-systemui/images/notification-small-appcatalog.png \
+  1b06a6e1ab4d137db61e82a44ce19b08:/usr/palm/applications/com.palm.app.exhibitionpreferences/images/appcatalog.png \
+  1b06a6e1ab4d137db61e82a44ce19b08:/usr/palm/applications/com.palm.app.searchpreferences/images/appcatalog.png \
+  69d107747bff09d98142c4f9fc8a4424:/usr/palm/applications/com.palm.app.swmanager/images/appcatalog_icon.png \
+  2d832cf818ef111d0e92a2c6cbca7000:/usr/palm/frameworks/accounts.ui/submission/41/images/1.5/appcatalog-32x32.png \
+  1b06a6e1ab4d137db61e82a44ce19b08:/usr/palm/frameworks/accounts.ui/submission/41/images/appcatalog-32x32.png \
+  1b06a6e1ab4d137db61e82a44ce19b08:/usr/palm/frameworks/enyo/0.10/framework/lib/accounts/images/appcatalog-32x32.png \
+  2d832cf818ef111d0e92a2c6cbca7000:/usr/palm/frameworks/enyo/0.10/framework/lib/accounts/images/appcatalog-48x48.png \
+  69d107747bff09d98142c4f9fc8a4424:/usr/palm/ipkgs/payment/icon.png \
+  69d107747bff09d98142c4f9fc8a4424:/usr/palm/services/com.palm.service.appcatalog/icon.png; do
+  want=${e%%:*}; f=${e#*:}
+  m=$(md5sum $f 2>/dev/null | cut -c1-32)
+  [ "$m" = "$want" ] || { ok=0; F "24  App Catalog icon not CE's: $f (md5 ${m:-none})"; }
+done
+[ $ok = 1 ] && P "24  all 11 App Catalog icons are the webOS App Catalog art"
+t=$(find /usr/palm/public/accounts -name '*.json' 2>/dev/null | wc -l)
+n=$(grep -rl "HP webOS" /usr/palm/public/accounts 2>/dev/null | wc -l)
+if [ "$t" -lt 10 ]; then F "24  only $t account template file(s) found: layout changed?"
+elif [ "$n" = "0" ]; then P "24  account templates: 0 of $t say \"HP webOS\""
+else F "24  $n of $t account template file(s) still say \"HP webOS\""; fi
+
+# 25. Messaging unread-count fix, chatthreader 1.1.0.3
+grep -q gotAddressThreads /usr/palm/applications/com.palm.app.messaging/app/buddies/BuddyService.js 2>/dev/null \
+  && P "25  Messaging buddy unread-count fix present" || F "25  Messaging BuddyService.js lacks the unread-count fix"
+grep -q "Always set a result" /usr/palm/services/com.palm.messaging.chatthreader/assistants/newmessageassistant.js 2>/dev/null \
+  && P "25  chatthreader 1.1.0.3 (non-buddy first message threads)" || F "25  chatthreader predates 1.1.0.3"
+
 # ---------------------------------------------------------------- ota. CE OTA trust anchor
 # The only OTA component in the image (600070). No private key on the device, so
 # this cannot test a POSITIVE verification -- it tests that the anchor is the
