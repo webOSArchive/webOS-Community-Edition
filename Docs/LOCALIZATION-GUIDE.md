@@ -41,7 +41,7 @@ The source for each one is in the repository's `apps/` folder.
 | Photos | `apps/com.palm.app.photos/resources/` | rotate and crop editor, exhibition clock | the same |
 | Calculator | `apps/com.palm.app.calculator/resources/` | new scientific (landscape) mode | the same |
 | Contacts | `apps/com.palm.app.contacts/` | now built from the open-source Contacts app | **no `resources/` folder at all**. The app is English-only today. A translation needs the whole table, built from the `$L("...")` strings in the JavaScript (about 100) |
-| Videos | `apps/com.palm.app.videos/` | new app | the strings are hard-coded English (no `$L()`). It can't be translated without code changes; please tell us if you'd like that |
+| Videos | `apps/com.palm.app.videos/resources/` | new app | new table: translate all of `en.json` (14 strings), and add `resources/<locale>/appinfo.json` for the title "Video Player" |
 
 ## 3. Changed system files
 
