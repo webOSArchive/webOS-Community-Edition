@@ -23,12 +23,17 @@
 	color: #444444;
 }
 
-/* CE's boot logo, cut out for a light page (tools/boot-logo builds it). */
-#ce-about-moon {
-	display: block;
-	margin: 6px auto 12px auto;
-	width: 96px;
-	height: 96px;
+/* The header icon is CE's boot logo, cut out for a light page (tools/boot-logo
+ * builds it), in place of Device Info's own. */
+#ce-about-main .palm-page-header .icon.ce-about-moon {
+	background: url(../images/ce-about-moon.png) center center no-repeat;
+}
+
+/* The photograph's credit, which its licence asks for wherever it is shown. */
+#ce-about-art {
+	margin: 20px 0px 0px 20px;
+	font-size: 13px;
+	color: #888888;
 }
 
 #ce-about-version {

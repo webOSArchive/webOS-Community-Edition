@@ -38,7 +38,7 @@ ROOT = os.path.dirname(os.path.dirname(HERE))
 DISC_PX = 70.0   # stock badge: 69 x 71
 CANVAS = 200
 LIT = 24         # above this a pixel is part of the artwork, not the background
-ABOUT_PX = 96    # the About scene's moon
+ABOUT_PX = 48    # the About scene's header icon (Device Info's own is 48 x 48)
 
 
 def bbox(im):
