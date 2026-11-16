@@ -3,7 +3,8 @@
 
     tools/boot-logo/build-boot-logo.py
 
-Inputs, both 200x200 on black with the disc at the same place in each:
+Inputs, both 200x200 on black with the disc at the same place in each (made
+from a CC BY-SA photograph; see ATTRIBUTION.txt, which ships in the image):
     moon-dim.png      the resting logo
     moon-bright.png   the same logo lit, with its glow
 
