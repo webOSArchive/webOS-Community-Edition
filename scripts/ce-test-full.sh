@@ -579,6 +579,21 @@ n=$(grep -rl "HP webOS" /usr/palm/public/accounts 2>/dev/null | wc -l)
 if [ "$t" -lt 10 ]; then F "24  only $t account template file(s) found: layout changed?"
 elif [ "$n" = "0" ]; then P "24  account templates: 0 of $t say \"HP webOS\""
 else F "24  $n of $t account template file(s) still say \"HP webOS\""; fi
+# boot logo: LunaSysMgr's pair and the copy bootie-images would write to NVRAM
+# (md5 = system/ copies). What bootie itself shows from NVRAM is a human check.
+ok=1
+for e in \
+  9eebe4508e57e39cccdf2724d16ab133:/usr/palm/sysmgr/images/hp-logo.png \
+  91ed1c742a0d93de191eb0a820caf8de:/usr/palm/sysmgr/images/hp-logo-bright.png; do
+  want=${e%%:*}; f=${e#*:}
+  m=$(md5sum $f 2>/dev/null | cut -c1-32)
+  [ "$m" = "$want" ] || { ok=0; F "24  boot logo not CE's: $f (md5 ${m:-none})"; }
+done
+m=$(tar xzOf /boot/boot-images.tar.gz BootLogo.tga 2>/dev/null | md5sum | cut -c1-32)
+[ "$m" = "de90b132dd69a3da0ababce78014ffc8" ] || { ok=0; F "24  boot-images.tar.gz BootLogo.tga not CE's (md5 $m)"; }
+[ $ok = 1 ] && P "24  boot logo files are the moon (2 PNGs + boot-images BootLogo.tga)"
+have /usr/palm/applications/com.palm.app.deviceinfo/images/ce-about-moon.png \
+  && P "24  Device Info About scene has the moon" || F "24  Device Info About scene lacks ce-about-moon.png"
 
 # 25. Messaging unread-count fix, chatthreader 1.1.0.3
 grep -q gotAddressThreads /usr/palm/applications/com.palm.app.messaging/app/buddies/BuddyService.js 2>/dev/null \

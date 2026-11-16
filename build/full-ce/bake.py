@@ -209,7 +209,11 @@ def inputs_stamp():
                 "build/full-ce/emoji-font/CE-Emoji.ttf",
                 "build/full-ce/emoji-font/OFL.txt",
                 "build/full-ce/emoji-font/webkit_fallback_patch.py",
-                "packages/ce-emoji/ATTRIBUTION.txt") + tuple(
+                "packages/ce-emoji/ATTRIBUTION.txt",
+                "system/usr/palm/sysmgr/images/hp-logo.png",
+                "system/usr/palm/sysmgr/images/hp-logo-bright.png",
+                "system/boot/boot-images/BootLogo.tga",
+                "build/full-ce/deviceinfo/about/ce-about-moon.png") + tuple(
                     os.path.relpath(os.path.join(dp, fn), PROJ)
                     for dp, _, fns in sorted(os.walk(os.path.join(PROJ, "packages", "smartkey", "prebuilt")))
                     for fn in sorted(fns)) + tuple(
@@ -2281,8 +2285,8 @@ def main():
     #
     #   (b) An "About" item on the app menu, pushing a scene that carries the
     #       release's dedication to the community and the credits. New files
-    #       (assistant, view, stylesheet) come from deviceinfo/about/ in this
-    #       repo; the names and the dedication text live in the assistant.
+    #       (assistant, view, stylesheet, the moon) come from deviceinfo/about/
+    #       in this repo; the names and the dedication text live in the assistant.
     log("tier: Device Info (BUILDMARK in the Build row + the CE About scene)")
     DIAPP = "usr/palm/applications/com.palm.app.deviceinfo"
     DISRC = os.path.join(HERE, "deviceinfo", "about")
@@ -2472,6 +2476,8 @@ def main():
           os.path.join(DISRC, "about-scene.html"), 0o644)
     wcopy(f"{DIAPP}/stylesheets/ce-about.css",
           os.path.join(DISRC, "ce-about.css"), 0o644)
+    wcopy(f"{DIAPP}/images/ce-about-moon.png",
+          os.path.join(DISRC, "ce-about-moon.png"), 0o644)
 
     # 11d) CE's system files from system/: the account templates (profile
     # account named "webOS Account", Facebook without its dead CALENDAR and
@@ -2601,6 +2607,77 @@ def main():
         if mine == stock_icons[f"./{rel}"]["data"]:
             sys.exit(f"ERROR: system/{rel} is still the stock HP bag")
         w(rel, mine, 0o644)
+
+    # 11f) Boot logo: the HP badge -> CE's moon, in the three places it lives.
+    # tools/boot-logo/build-boot-logo.py makes all three from one pair of
+    # images; its docstring has the sizes and the reason for the rotation.
+    #
+    #   - LunaSysMgr's pair, hp-logo.png and hp-logo-bright.png: the second is
+    #     faded in and out over the first to pulse while the system starts.
+    #     The names are compiled in, so only the contents change.
+    #   - bootie's logo, drawn from the NVRAM section logo-boot before the
+    #     kernel is up. The Doctor fills that section from webOS.tar's
+    #     BootLogo.tga (topaz.xml), which is not in the rootfs: the copy goes
+    #     to the overlay's webos/ folder and the harness swaps the member.
+    #   - /boot/boot-images.tar.gz, which the bootie-images postinst hands to
+    #     trenchcoat to rewrite the same NVRAM sections on a running device.
+    #     Same logo there, so that path does not put the badge back.
+    #
+    # The other nine NVRAM images (charging, no battery, ...) stay stock.
+    log("tier: boot logo (HP badge -> the moon) from system/")
+    LOGO_PNGS = ("usr/palm/sysmgr/images/hp-logo.png",
+                 "usr/palm/sysmgr/images/hp-logo-bright.png")
+    BOOT_IMAGES = "boot/boot-images.tar.gz"
+    stock_logo = read_rootfs(ROOTFS_TGZ, exact=[f"./{r}" for r in LOGO_PNGS + (BOOT_IMAGES,)])
+    for rel in LOGO_PNGS:
+        mine = open(os.path.join(SYSTEM, rel), "rb").read()
+        if mine == stock_logo[f"./{rel}"]["data"]:
+            sys.exit(f"ERROR: system/{rel} is still the stock HP badge")
+        # IHDR: both must be the canvas LunaSysMgr centres, 8-bit RGB, no alpha
+        if mine[:8] != b"\x89PNG\r\n\x1a\n" or mine[16:26] != (
+                b"\x00\x00\x00\xc8\x00\x00\x00\xc8\x08\x02"):
+            sys.exit(f"ERROR: system/{rel} is not a 200x200 8-bit RGB PNG")
+        w(rel, mine, 0o644)
+
+    stock_tga_path = os.path.join(WORK, "webos", "BootLogo.tga")
+    stock_tga = open(stock_tga_path, "rb").read()
+    new_tga = open(os.path.join(SYSTEM, "boot/boot-images/BootLogo.tga"), "rb").read()
+    if new_tga == stock_tga:
+        sys.exit("ERROR: system/boot/boot-images/BootLogo.tga is still the stock HP badge")
+    # bootie's TGA parser has only been tried with stock's encoding: same
+    # 18-byte header (RLE true-colour, 200x200, 32-bit, bottom-left origin).
+    if new_tga[:18] != stock_tga[:18]:
+        sys.exit(f"ERROR: BootLogo.tga header {new_tga[:18].hex()} differs from stock's "
+                 f"{stock_tga[:18].hex()}; rebuild it with tools/boot-logo/build-boot-logo.py")
+    # the NVRAM image region is 4MB less env (16KB) and tokens (4KB), shared by ten logos
+    if len(new_tga) > 128 * 1024:
+        sys.exit(f"ERROR: BootLogo.tga is {len(new_tga)} bytes; stock is {len(stock_tga)}")
+    src_tar = gzip.decompress(stock_logo[f"./{BOOT_IMAGES}"]["data"])
+    out_tar = io.BytesIO()
+    swapped = 0
+    with tarfile.open(fileobj=io.BytesIO(src_tar)) as tin, \
+            tarfile.open(fileobj=out_tar, mode="w", format=tarfile.GNU_FORMAT) as tout:
+        for m in tin:
+            data = tin.extractfile(m).read() if m.isfile() else None
+            if os.path.basename(m.name) == "BootLogo.tga":
+                if data != stock_tga:
+                    sys.exit("ERROR: boot-images.tar.gz's BootLogo.tga is not webOS.tar's; "
+                             "stock changed, look before replacing it")
+                data = new_tga
+                m.size = len(data)
+                swapped += 1
+            tout.addfile(m, io.BytesIO(data) if data is not None else None)
+    if swapped != 1:
+        sys.exit(f"ERROR: boot-images.tar.gz: expected one BootLogo.tga, found {swapped}")
+    gz = io.BytesIO()
+    with gzip.GzipFile(fileobj=gz, mode="wb", mtime=0) as g:
+        g.write(out_tar.getvalue())
+    w(BOOT_IMAGES, gz.getvalue(), 0o644)
+    # webOS.tar member override, beside rootfs/ (harness.py: load_webos_overrides)
+    os.makedirs(os.path.join(OUT, "webos"), exist_ok=True)
+    with open(os.path.join(OUT, "webos", "BootLogo.tga"), "wb") as f:
+        f.write(new_tga)
+    log(f"  webos   BootLogo.tga ({len(new_tga)} bytes, replaces the webOS.tar member)")
 
     # USB connection: a banner and the dashboard instead of the stock popup.
     rel = "usr/lib/luna/system/luna-systemui/data/StoragedService.js"

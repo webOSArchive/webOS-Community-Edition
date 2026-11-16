@@ -15,6 +15,8 @@ CE Doctor. Pass one to the build:
   rootfs/               # files to add or replace, mirrored at the device root
     etc/rdxd.conf       # -> ./etc/rdxd.conf on the device
     usr/lib/...         # -> ./usr/lib/... etc.
+  webos/                # optional: replacements for webOS.tar members
+    BootLogo.tga        # -> the BootLogo.tga the Doctor writes to NVRAM
 ```
 
 - **Add / replace:** any file under `rootfs/` is written to the matching path in
@@ -26,6 +28,11 @@ CE Doctor. Pass one to the build:
   source's exec bit. Tighter stock modes (`0700`) cannot be reproduced for
   added files.
 - **Remove:** list device paths in `changes.json` `"remove": [...]`.
+- **Replace a `webOS.tar` member:** a file in an optional `webos/` folder beside
+  `rootfs/` replaces the member of that name in `webOS.tar` itself. This is for
+  what the Doctor flashes from outside the rootfs, such as `BootLogo.tga`, which
+  it writes to NVRAM. The name must already be a member, and the rootfs is not
+  replaced this way.
 
 ### `changes.json`
 

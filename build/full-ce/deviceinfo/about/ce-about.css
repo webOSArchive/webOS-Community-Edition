@@ -23,6 +23,14 @@
 	color: #444444;
 }
 
+/* CE's boot logo, cut out for a light page (tools/boot-logo builds it). */
+#ce-about-moon {
+	display: block;
+	margin: 6px auto 12px auto;
+	width: 96px;
+	height: 96px;
+}
+
 #ce-about-version {
 	margin: 0px;
 	font-size: 16px;

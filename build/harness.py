@@ -208,6 +208,36 @@ def cmd_extract(jar_path, work):
 
 # ---- overlay + md5 regeneration ---------------------------------------------
 
+def load_webos_overrides(overlay_dir, webos_dir):
+    """Return {basename: local_path} for the files in overlay/webos/.
+
+    These replace same-named members of webOS.tar itself -- the files the
+    Doctor flashes that are not in the rootfs, such as the boot logos it writes
+    to NVRAM. A name that is not already a member is refused: topaz.xml names
+    every file it flashes, so a new one would be carried and never used, and a
+    typo would ship the stock file without a word. The rootfs is not replaced
+    this way; it is built from overlay/rootfs/.
+    """
+    out = {}
+    d = os.path.join(overlay_dir, "webos") if overlay_dir else None
+    if not d or not os.path.isdir(d):
+        return out
+    with open(os.path.join(webos_dir, ".tarmeta.json")) as f:
+        members = {os.path.basename(n) for n in json.load(f)["order"]}
+    for name in sorted(os.listdir(d)):
+        full = os.path.join(d, name)
+        if not os.path.isfile(full):
+            sys.exit(f"[ce-harness] FATAL: {full} is not a regular file")
+        if name == os.path.basename(ROOTFS_MEMBER):
+            sys.exit(f"[ce-harness] FATAL: {full}: the rootfs comes from overlay/rootfs/, "
+                     f"not overlay/webos/")
+        if name not in members:
+            sys.exit(f"[ce-harness] FATAL: {full} is not a webOS.tar member "
+                     f"(members: {', '.join(sorted(members))})")
+        out[name] = full
+    return out
+
+
 def load_overlay(overlay_dir):
     """Return (adds_replaces, removes, symlinks, changes_cfg).
 
@@ -981,8 +1011,11 @@ def cmd_build(args):
     # pristine OEM rootfs. bake.py worked around this by force-re-extracting
     # before every run; --reextract is no longer required for correctness.
     webos_tar = os.path.join(work, "webOS.ce.tar")
-    rebuild_webos_tar(webos_dir, webos_tar,
-                      overrides={os.path.basename(ROOTFS_MEMBER): new_rootfs})
+    overrides = load_webos_overrides(args.overlay, webos_dir)
+    for name in overrides:
+        log(f"webOS.tar member replaced from the overlay: {name}")
+    overrides[os.path.basename(ROOTFS_MEMBER)] = new_rootfs
+    rebuild_webos_tar(webos_dir, webos_tar, overrides=overrides)
     branding = ce_branding(args.overlay)
     if branding:
         log(f"branding the installer wrapper as {branding['version']} "

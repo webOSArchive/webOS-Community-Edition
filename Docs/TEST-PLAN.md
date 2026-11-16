@@ -47,7 +47,7 @@ New in 3.2.0 (since 600070), and where each is tested:
                    OOBE Skip offline, no Dismissing Cards
                      tutorial, launcher layout, USB banner ... §3, §23
                    HP branding: App Catalog icons,
-                     "webOS Account" templates ............... §24
+                     "webOS Account" templates, boot logo .... §24
                    Messaging unread count, chatthreader
                      1.1.0.3 (stranger's first message) ...... §25
                    Email: M365, Gmail, Outlook.com (the main
@@ -856,7 +856,7 @@ CE's SmartKeyService replaces the stock XT9 engine (`packages/smartkey`).
 The 3.2.0 goal is no HP branding anywhere.
 
 - [ ] All 11 App Catalog icons match the CE art in `system/`; no account
-      template says "HP webOS" — *automated*
+      template says "HP webOS"; the boot logo files are the moon — *automated*
 
 - [ ] No HP shopping bag anywhere: the "Find more…" rows (Exhibition, Search,
       the Accounts lists), the App Catalog's install and notification icons,
@@ -864,6 +864,11 @@ The 3.2.0 goal is no HP branding anywhere.
 - [ ] Settings → Accounts and the account templates say **"webOS Account"**,
       in English and one other language
 - [ ] Facebook offers no Calendar/Contacts capability; LinkedIn is hidden
+- [ ] **Boot logo is the moon from power-on**: no HP badge at any point, the
+      still logo hands over to the pulsing one without jumping or turning,
+      and it glows while the system starts. Check after a Doctor flash, since
+      the first still frame comes from NVRAM
+- [ ] Device Info → app menu → About shows the moon above the version
 - [ ] Note any other "HP" text or art seen while testing, for the next pass
 
 ## 25. Messaging and chat  *(new in 3.2.0)*
