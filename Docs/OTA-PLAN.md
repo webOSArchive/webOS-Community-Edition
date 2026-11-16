@@ -128,6 +128,7 @@ Listed so the plan is honest about the critical path:
 | Calendar framework (after 600077) | `/usr/palm/frameworks/calendar/submission/{42calendar.js,42/concatenated.js,42/javascript/{event-manager,rrule-manager,timezone-manager}.js}` | repeat expansion rewrite and southern daylight time; every repeat depends on it, so it travels with the Calendar 3.2.0 tree |
 | Time zone data (after 600077) | `/usr/share/zoneinfo/**` from `zoneinfo-2026f.tgz`, `/etc/palm/timezone.txt`, `/usr/palm/ext-timezones.json` | tzdata 2026f, compiled with `zic -b fat`. Refresh before each release with `tools/tzdata/build-zoneinfo.sh`. A Luna restart picks it up |
 | USB connection (after 600077) | `/usr/lib/luna/system/luna-systemui/data/StoragedService.js` | banner and dashboard replace the popup |
+| Boot logo (d6c4c78, not yet baked) | `/usr/palm/sysmgr/images/{hp-logo,hp-logo-bright}.png`, `/boot/boot-images.tar.gz` | the moon replaces the HP badge. The two PNGs are the pulsing logo and need nothing more. The still logo bootie draws first is in NVRAM, which a rootfs diff cannot reach: see §2.2 (10) |
 | Emoji fallback font (planned, `EMOJI-FONT.md`) | **add** `/usr/share/fonts/CE-Emoji.ttf` (+ OFL text), **patched** `/usr/lib/libWebKitLuna.so` (fifth fallback slot) | lib is held open by BrowserServer/WebAppMgr — fine in the ramdisk, a reason not to hotpatch |
 | Colour emoji images (planned, `EMOJI-FONT.md` §7) | **add** `/usr/palm/frameworks/ce-emoji/` (shared `emoji.js` + EmojiOne PNGs, ~10.5 MB); **changed** Messaging (images move out of its app dir), Email, Contacts | Email is a cryptofs app: its patch goes in `ce-ota-finish`, not the rootfs diff |
 | Photos hand-off | the staged `/usr/palm/ipkgs/com.palm.app.photos/…ipk` is repacked | **no effect on an installed device**: Photos already lives in cryptofs |
@@ -194,6 +195,40 @@ The rootfs diff can't express these:
    `/media/cryptofs/apps/usr/palm/services/org.webosarchive.photos.service/` and
    stop the running service. Without this, an installed device imports contacts
    without their photos, and the import's summary counts them.
+10. **Boot logo in NVRAM.** bootie draws its still logo from the NVRAM section
+    `logo-boot`, which only the Doctor writes. The rootfs diff delivers the new
+    `/boot/boot-images.tar.gz`; `ce-ota-finish` writes it to NVRAM the way the
+    stock `bootie-images` postinst does:
+
+    ```sh
+    mkdir -p /tmp/boot-images && cd /tmp/boot-images
+    tar zxf /boot/boot-images.tar.gz
+    /sbin/trenchcoat --config=/boot/image-update.xml
+    ```
+
+    `image-update.xml` reuses the partitions and rewrites only the NVRAM entry,
+    with `env` and `tokens` marked `recover="true"`. Done by hand on a 3.2.0
+    TouchPad on 2026-11-16: the token and env strings were unchanged afterwards
+    and bootie drew the new logo.
+
+    - **Why here and not the ramdisk postinst** (where HP ran it): this is the
+      path tried on hardware, a failure cannot abort the update, and it keeps
+      the NVRAM write apart from the armed flash. The cost is one boot. The
+      reboot that ends the OTA still shows the HP badge as the still frame, and
+      the moon takes over from the boot after.
+    - **Save NVRAM first.** trenchcoat rewrites the whole 4 MB partition,
+      device tokens included, so a power cut mid-write is the hazard. Copy
+      `/dev/mmcblk0p12` to `/var` before the write and keep it until the job's
+      flag is set. Skip the write on low battery.
+    - **Verify, then flag.** trenchcoat must exit 0 and `tokens --list` must
+      still list the tokens. To know the logo landed, look for the new
+      `BootLogo.tga`'s bytes in the partition: trenchcoat stores it whole, and
+      its offset moves with the layout (24576 after this path, 32768 after a
+      Doctor flash), so search for it and do not read a fixed offset.
+    - Only `BootLogo.tga` differs from stock. The other nine images are
+      rewritten with the same content.
+    - A reflash needs none of this: the Doctor writes the image's
+      `BootLogo.tga` to NVRAM itself.
 
 ### 2.3 Delivery tier: armed flash, on purpose
 
