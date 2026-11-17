@@ -41,9 +41,11 @@ var CE_CREDITS = [
 ];
 
 /* The dedication, one array entry per paragraph. Plain text; escaped before it
- * reaches the DOM. */
+ * reaches the DOM. "{version} " becomes the release number the image reports
+ * (the 3.2.0 of "webOS CE 3.2.0"), so the text follows the release; it is left
+ * out until the number is known, and for good if it never arrives. */
 var CE_DEDICATION = [
-	"webOS 3.1.0 Community Edition is dedicated to everyone who helped keep the " +
+	"webOS {version} Community Edition is dedicated to everyone who helped keep the " +
 	"dream alive. All of the community members of webOS Archive, the former " +
 	"members of webOS Nation, the developers of LuneOS, and the original " +
 	"developers at Palm and HP, deserve credit for creating, maintaining and " +
@@ -102,9 +104,13 @@ var AboutAssistant = Class.create({
 	},
 
 	dedicationHtml: function(){
+		// "webOS CE 3.2.0" -> "3.2.0"
+		var m = /\d+(\.\d+)+/.exec(this.version || '');
+		var number = m ? m[0] + ' ' : '';
 		var out = [];
 		for (var i = 0; i < CE_DEDICATION.length; i++) {
-			out.push('<p class="ce-about-p">' + CE_DEDICATION[i].escapeHTML() + '</p>');
+			out.push('<p class="ce-about-p">' +
+					 CE_DEDICATION[i].split('{version} ').join(number).escapeHTML() + '</p>');
 		}
 		return out.join('');
 	},
@@ -114,8 +120,10 @@ var AboutAssistant = Class.create({
 		if (!payload)
 			return;
 
-		if ("com.palm.properties.version" in payload)
+		if ("com.palm.properties.version" in payload) {
 			this.version = payload["com.palm.properties.version"];
+			this.controller.get('ce-about-dedication').innerHTML = this.dedicationHtml();
+		}
 
 		if ("com.palm.properties.buildDate" in payload)
 			this.buildDate = payload["com.palm.properties.buildDate"];
