@@ -479,8 +479,8 @@ is.
       ran (94020K -> 122880K).
 - [ ] Default wallpaper present — *automated*
 - [ ] Default wallpaper looks right on screen: from 3.2.0 it is the moon
-      (`28.jpg`). The moon sits right of centre, so check **portrait** as
-      well as landscape: its right edge is close to the portrait crop
+      (`28.jpg`). The moon sits left of centre, so check **portrait** as
+      well as landscape: its left edge is close to the portrait crop
 - *Known/accepted:* `/media/internal` **accumulates** — the customization service
   only copies in, never removes. Upgrading from an older CE build leaves the old
   `NN.png` wallpapers beside the new `.jpg` set. Decision: do not delete from the
