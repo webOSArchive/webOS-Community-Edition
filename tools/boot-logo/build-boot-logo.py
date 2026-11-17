@@ -14,6 +14,7 @@ Outputs, which bake.py puts in the image:
     system/usr/palm/sysmgr/images/hp-logo-bright.png   cross-faded over it to pulse
     system/boot/boot-images/BootLogo.tga               bootie's logo (NVRAM logo-boot)
     build/full-ce/deviceinfo/about/ce-about-moon.png   Device Info's About scene
+    tools/boot-logo/moon-disc.png                      the same cut-out at full size, for use elsewhere
 
 The disc is scaled to DISC_PX and centred: about a third larger than the stock
 HP badge (70 px), which is the size chosen by eye on a TouchPad. LunaSysMgr
@@ -27,8 +28,10 @@ BootLogo.tga is exactly stock's hp-logo.png turned that way. Its encoding copies
 stock's too (32-bit RLE, bottom-left origin, opaque alpha); bootie's parser has
 only been tried with that.
 
-The About scene sits on a light page, so its copy is the dim disc alone, cut out
-with a transparent background. Needs Pillow.
+The About scene sits on a light page, so its copy is the disc alone, cut out
+with a transparent background. It is cut from the lit image, whose lettering
+stands out more, and leaves the outer glow behind: white on a light page would
+not show. moon-disc.png is that cut-out before it is scaled down. Needs Pillow.
 """
 import os
 import sys
@@ -81,15 +84,19 @@ def main():
     tga.save(p, compression="tga_rle", orientation=-1)
     print(f"{os.path.relpath(p, ROOT)}: {os.path.getsize(p)} bytes")
 
-    # The disc alone for the About scene. The mask is drawn oversized and scaled
+    # The lit disc alone, for the About scene. The mask is drawn oversized and scaled
     # down for a smooth edge, and sits a pixel inside the disc so no black rim shows.
     ss = max(1, min(8, 4000 // max(dim.size)))
     mask = Image.new("L", (dim.size[0] * ss, dim.size[1] * ss), 0)
     ImageDraw.Draw(mask).ellipse([(l + 1) * ss, (t + 1) * ss, (r - 1) * ss - 1, (b - 1) * ss - 1],
                                  fill=255)
-    cut = dim.convert("RGBA")
+    cut = bright.convert("RGBA")
     cut.putalpha(mask.resize(dim.size, Image.LANCZOS))
-    cut = cut.crop((l, t, r, b)).resize((ABOUT_PX, ABOUT_PX), Image.LANCZOS)
+    cut = cut.crop((l, t, r, b))
+    p = os.path.join(HERE, "moon-disc.png")
+    cut.save(p, optimize=True)
+    print(f"{os.path.relpath(p, ROOT)}: {cut.size[0]}x{cut.size[1]}, {os.path.getsize(p)} bytes")
+    cut = cut.resize((ABOUT_PX, ABOUT_PX), Image.LANCZOS)
     p = os.path.join(ROOT, "build/full-ce/deviceinfo/about/ce-about-moon.png")
     cut.save(p, optimize=True)
     print(f"{os.path.relpath(p, ROOT)}: {cut.size[0]}x{cut.size[1]}, {os.path.getsize(p)} bytes")
