@@ -918,6 +918,10 @@ each phase lands. The plan's §4 is the gate for every bake.
       all folders sync, Ping push, send, reply and forward delivered, contacts
       and calendar both ways, one moved and one deleted occurrence show in
       Outlook
+- [ ] **Microsoft 365 attachments:** a small and a several-MB attachment
+      download and open
+- [ ] **Microsoft 365 meeting invitation:** Accept shows as accepted in the
+      organizer's Outlook
 - [ ] **Outlook.com** falls back to IMAP (mail only) without a second account
       picker
 - [ ] **Gmail** (if D2 allows it): sign-in, sync, IDLE push, send

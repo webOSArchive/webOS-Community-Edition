@@ -10,6 +10,14 @@ fixing Palm's Exchange time zones and throttling for every Exchange server.
 report "Lunacy's email and accounts changes, for webOS CE". Lunacy's code is an
 input. We copy it and build it here; we never edit the Lunacy repo.
 
+**Lunacy since then (checked 2026-11-17, `main` at `ffc8ac5`; last mail commit
+`e96d881`, 2026-11-14):** copy from `main`, not from `c922796`. New since the
+plan was written: `attfetch.h` (attachments on Exchange Online), the meeting
+invitation fixes in `wbxmlfilter.h` and `composemail.h`, about 120 more lines
+in `preload.c`, and `Docs/email-app-for-ce.md` (one Email app bug). The mail
+part of `preload.c` still starts at line 1260. They are folded into phases 1,
+3 and 4 below.
+
 **Status:** plan only, 2026-11-09. Nothing is built.
 
 **Release:** all five phases ship in **webOS CE 3.2.0**, as its main feature
@@ -56,8 +64,8 @@ server-side work.
 1. Copy into `packages/mailshim/` the mail-only parts of Lunacy's preload:
    - `preload.c` from about line 1260 to the end: the `LSMessageRespond`
      wrapper, the glib channel hooks and the curl glue
-   - `wbxmlfilter.h`, `composemail.h`, `calfilter.h`, `backoff.h`, `easerr.h`
-     and `mailauth.h`
+   - `wbxmlfilter.h`, `composemail.h`, `calfilter.h`, `backoff.h`, `easerr.h`,
+     `mailauth.h` and `attfetch.h`
    - the host tests from `LunaRuntimes/pdk/tests/`
 
    Leave out the Android path-mapping, `popen`, semaphore and DNS hooks
@@ -72,7 +80,8 @@ server-side work.
      (`backoff.h`), and throttle messages (`easerr.h`). Back-off state goes to
      `/var/preferences/ce-eas-backoff`.
    - **Off until phase 3:** the Exchange 16.1 adapters (version, provisioning,
-     device info, the reply filter, ComposeMail, calendar items, exceptions).
+     device info, the reply filter, ComposeMail, calendar items, exceptions,
+     attachments as ItemOperations, and the two meeting-reply fixes).
      They only matter for Exchange Online, which needs a token, so they can't
      be tested on a TouchPad before then.
 4. Bake: install to `/usr/lib/ssl11mail/libce-mailshim.so`, and add it to
@@ -143,6 +152,10 @@ TouchPad test passes, so later phases are tested on top of it.
    - send, reply and forward delivered
    - contacts and calendar both ways
    - moving and deleting one occurrence of a repeating event shows in Outlook
+   - an attachment downloads and opens (Lunacy's adapter 7), including one of
+     several MB, which Lunacy has not tried
+   - accepting a meeting invitation shows as an acceptance in the organizer's
+     Outlook. Also try Maybe, Decline and a series, which Lunacy has not seen
    - an AADSTS consent error reads plainly
    - Outlook.com falls back to IMAP. That stays open while Microsoft's "User is
      authenticated but not connected" is unresolved.
@@ -163,7 +176,11 @@ strings.
    counts as the default. First check that CE has the bug.
 4. **`AddressingPopup.js:222`:** guard `this.$.list`. Check the line on CE's
    stock framework first.
-5. **Park:** a server Change for an unknown id is stored with `_id: null`. The
+5. **Compose background** (`css/compose.css`, `compose/source/Compose.js`):
+   Lunacy's fix for screens wider than 1024 px
+   (`Docs/email-app-for-ce.md`). It changes nothing at 1024 px, so take it
+   only to keep the two copies of Email alike.
+6. **Park:** a server Change for an unknown id is stored with `_id: null`. The
    fix belongs in the `mojomail-eas` binary. A shim-level rewrite (a Change for
    an unknown ServerId becomes an Add) needs per-folder state, so it is not
    planned unless it bites.
