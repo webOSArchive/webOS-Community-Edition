@@ -49,7 +49,7 @@ waits for phase 5's bake, and that bake is tested with
 | The shim gets tokens over `LUNACY_BUS` | No such link | Use `luna-send -P` to the token service with stdin from `/dev/null`, and cache the token in the process until it nears expiry. Decide in phase 1 whether a direct `LSCall` from inside the mail process is safe instead. |
 | Security policies through Android's screen lock | The TouchPad enforces EAS policies natively | Nothing to do. CE is already at parity. |
 | A foreground service keeps mail running | Not an issue on webOS | Nothing to do. |
-| Google through the broker | The broker holds the secret and passes the refresh token, so Google's restricted-scope review may require a paid security assessment (CASA) | **Google is gated** on that review (§5, decision D2). Microsoft does not have this problem. |
+| Google through the broker | The broker holds the secret and passes the refresh token | **Google is in** (decided 2026-11-17, §5 D2): Google allows up to 100 users, who see an unverified-app warning. Full verification (and any CASA assessment) is only needed past that. |
 
 ## 3. Phases
 
@@ -101,11 +101,13 @@ TouchPad test passes, so later phases are tested on top of it.
 
 ### Phase 2: Token service and broker
 
-1. **Prerequisite, server side (webOSArchive, not this repo):** the broker's
-   `apps/microsoft/` app needs a Web client, the redirect
-   `https://oauth.wosa.link/callback.php`, and a secret on the server. This is
-   the same Entra registration "webOS Email", with the EAS scope added. Google
-   waits for D2.
+1. **Prerequisite, server side (webOSArchive, not this repo; ours to do,
+   2026-11-17):** the broker needs an `apps/microsoft/` and an `apps/google/`
+   app. Each needs a Web client, the redirect
+   `https://oauth.wosa.link/callback.php`, and a secret on the server.
+   Microsoft's is the same Entra registration "webOS Email", with the EAS
+   scope added. Nothing in phases 2 and 3 can be tested against a real
+   provider until this exists.
 2. **Check reachability from a TouchPad:** `/usr/bin/curl` to `oauth.wosa.link`,
    `login.microsoftonline.com` and `oauth2.googleapis.com`. Use real TLS
    verification against CE's trust store.
@@ -138,7 +140,7 @@ TouchPad test passes, so later phases are tested on top of it.
    - "Microsoft Outlook" (Exchange; subtitle "Email (Calendar and Contacts, if
      available)")
    - a hidden Microsoft IMAP template for the AADSTS70011 fallback
-   - Google, behind D2
+   - Google (IMAP and SMTP)
 
    The legacy "Microsoft Exchange" template stays as it is.
 3. **Shim:** turn on the 16.1 adapters and the IMAP/SMTP XOAUTH2 translation
@@ -157,8 +159,10 @@ TouchPad test passes, so later phases are tested on top of it.
    - accepting a meeting invitation shows as an acceptance in the organizer's
      Outlook. Also try Maybe, Decline and a series, which Lunacy has not seen
    - an AADSTS consent error reads plainly
-   - Outlook.com falls back to IMAP. That stays open while Microsoft's "User is
-     authenticated but not connected" is unresolved.
+   - Outlook.com falls back to IMAP with OAuth (mail only). This now works
+     for Lunacy (user, 2026-11-17).
+   - Gmail: sign-in through the broker (with Google's warning), sync, IDLE
+     push, send.
 
 ### Phase 4: Email and Accounts app changes
 
@@ -217,7 +221,7 @@ strings.
 | # | Decision | Recommendation |
 |---|---|---|
 | D1 | ~~Phase 1 in 3.2.0, or after?~~ | **Decided 2026-11-09:** all phases are in 3.2.0. |
-| D2 | Google on CE: through the broker (possible CASA cost), or not at all until there is an on-device path? | Microsoft first. Google waits for Google's restricted-scope review (started 2026-11-05). |
+| D2 | ~~Google on CE: through the broker, or not at all?~~ | **Decided 2026-11-17:** through the broker. Google approved up to 100 users, with a warning at sign-in. Revisit before the count nears 100. |
 | D3 | Token transport from the shim: `luna-send` subprocess, or an in-process `LSCall`? | `luna-send` first, because it is simple and isolated. Measure the latency on the TouchPad. |
 | D4 | In interim bakes before phase 3, are the 16.1 adapters compiled out or compiled in but inert? | Compiled out. Nothing reaches a flash unverified. All of them are on in the final 3.2.0 bake. |
 

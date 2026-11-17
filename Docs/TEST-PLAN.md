@@ -924,7 +924,8 @@ each phase lands. The plan's §4 is the gate for every bake.
       organizer's Outlook
 - [ ] **Outlook.com** falls back to IMAP (mail only) without a second account
       picker
-- [ ] **Gmail** (if D2 allows it): sign-in, sync, IDLE push, send
+- [ ] **Gmail:** sign-in through the broker (Google shows an unverified-app
+      warning), sync, IDLE push, send
 - [ ] **A failed refresh** recovers by itself in about 30 s, with no sign-in
       prompt
 - [ ] **Revoked access** gives "Check your login and password", and Change
