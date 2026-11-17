@@ -15,7 +15,7 @@ Outputs, which bake.py puts in the image:
     system/boot/boot-images/BootLogo.tga               bootie's logo (NVRAM logo-boot)
     build/full-ce/deviceinfo/about/ce-about-moon.png   Device Info's About scene
 
-The disc is scaled to DISC_PX and centred: about a quarter larger than the stock
+The disc is scaled to DISC_PX and centred: about a third larger than the stock
 HP badge (70 px), which is the size chosen by eye on a TouchPad. LunaSysMgr
 draws both PNGs centred and fades the bright one in and out over the dim one
 (BootupAnimation::renderInStateLogo), so the glow is whatever differs between
@@ -37,10 +37,10 @@ from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-DISC_PX = 88.5   # stock badge: 69 x 71; this is 70 x 1.15 x 1.10
+DISC_PX = 93.0   # stock badge: 69 x 71; this is 70 x 1.15 x 1.10 x 1.05
 CANVAS = 200
 LIT = 24         # above this a pixel is part of the artwork, not the background
-ABOUT_PX = 48    # the About scene's header icon (Device Info's own is 48 x 48)
+ABOUT_PX = 92    # the About scene's moon, which hangs from the header strip
 
 
 def bbox(im):

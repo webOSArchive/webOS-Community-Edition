@@ -583,14 +583,14 @@ else F "24  $n of $t account template file(s) still say \"HP webOS\""; fi
 # (md5 = system/ copies). What bootie itself shows from NVRAM is a human check.
 ok=1
 for e in \
-  4cbd8818b1ff1a7554d698634e626be0:/usr/palm/sysmgr/images/hp-logo.png \
-  5d707d1556f5a7c1651e67b28b4adef6:/usr/palm/sysmgr/images/hp-logo-bright.png; do
+  33a4e7866c843b87305e52b2944bb5c7:/usr/palm/sysmgr/images/hp-logo.png \
+  91978a1c9afb3765bdb6d7f5d2b2be9e:/usr/palm/sysmgr/images/hp-logo-bright.png; do
   want=${e%%:*}; f=${e#*:}
   m=$(md5sum $f 2>/dev/null | cut -c1-32)
   [ "$m" = "$want" ] || { ok=0; F "24  boot logo not CE's: $f (md5 ${m:-none})"; }
 done
 m=$(tar xzOf /boot/boot-images.tar.gz BootLogo.tga 2>/dev/null | md5sum | cut -c1-32)
-[ "$m" = "920eca43ac1be10e11f2808df253fade" ] || { ok=0; F "24  boot-images.tar.gz BootLogo.tga not CE's (md5 $m)"; }
+[ "$m" = "2d4d05a732fa181064e72f5a2df42e97" ] || { ok=0; F "24  boot-images.tar.gz BootLogo.tga not CE's (md5 $m)"; }
 [ $ok = 1 ] && P "24  boot logo files are the moon (2 PNGs + boot-images BootLogo.tga)"
 have /usr/palm/applications/com.palm.app.deviceinfo/images/ce-about-moon.png \
   && P "24  Device Info About scene has the moon" || F "24  Device Info About scene lacks ce-about-moon.png"
