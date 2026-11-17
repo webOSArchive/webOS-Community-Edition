@@ -29,13 +29,6 @@
 	background: url(../images/ce-about-moon.png) center center no-repeat;
 }
 
-/* The photograph's credit, which its licence asks for wherever it is shown. */
-#ce-about-art {
-	margin: 20px 0px 0px 20px;
-	font-size: 13px;
-	color: #888888;
-}
-
 #ce-about-version {
 	margin: 0px;
 	font-size: 16px;

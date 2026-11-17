@@ -1,7 +1,0 @@
-Boot logo: the Moon, from "FullMoon2010.jpg" by Gregory H. Revera
-(https://commons.wikimedia.org/wiki/File:FullMoon2010.jpg), taken 22 October 2010.
-License: CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/).
-Changed for webOS CE: scaled down, brightened, a glow added to the lit version, rotated for
-the bootloader, and cut out with a transparent background for Device Info. The resulting
-files are under the same license: hp-logo.png and hp-logo-bright.png here, BootLogo.tga in
-the boot images, and ce-about-moon.png in Device Info.

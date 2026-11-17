@@ -213,7 +213,6 @@ def inputs_stamp():
                 "system/usr/palm/sysmgr/images/hp-logo.png",
                 "system/usr/palm/sysmgr/images/hp-logo-bright.png",
                 "system/boot/boot-images/BootLogo.tga",
-                "tools/boot-logo/ATTRIBUTION.txt",
                 "build/full-ce/deviceinfo/about/ce-about-moon.png") + tuple(
                     os.path.relpath(os.path.join(dp, fn), PROJ)
                     for dp, _, fns in sorted(os.walk(os.path.join(PROJ, "packages", "smartkey", "prebuilt")))
@@ -2639,10 +2638,6 @@ def main():
                 b"\x00\x00\x00\xc8\x00\x00\x00\xc8\x08\x02"):
             sys.exit(f"ERROR: system/{rel} is not a 200x200 8-bit RGB PNG")
         w(rel, mine, 0o644)
-    # the photograph is CC BY-SA: its credit ships beside the logo, as the
-    # emoji images' does
-    wcopy("usr/palm/sysmgr/images/ce-boot-logo-ATTRIBUTION.txt",
-          os.path.join(PROJ, "tools", "boot-logo", "ATTRIBUTION.txt"), 0o644)
 
     stock_tga_path = os.path.join(WORK, "webos", "BootLogo.tga")
     stock_tga = open(stock_tga_path, "rb").read()

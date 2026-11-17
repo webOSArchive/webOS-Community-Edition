@@ -868,8 +868,7 @@ The 3.2.0 goal is no HP branding anywhere.
       still logo hands over to the pulsing one without jumping or turning,
       and it glows while the system starts. Check after a Doctor flash, since
       the first still frame comes from NVRAM
-- [ ] Device Info → app menu → About shows the moon as its header icon, and
-      the photograph's credit under the names
+- [ ] Device Info → app menu → About shows the moon as its header icon
 - [ ] Note any other "HP" text or art seen while testing, for the next pass
 
 ## 25. Messaging and chat  *(new in 3.2.0)*
