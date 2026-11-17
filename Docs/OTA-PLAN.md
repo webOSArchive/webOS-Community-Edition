@@ -129,6 +129,7 @@ Listed so the plan is honest about the critical path:
 | Time zone data (after 600077) | `/usr/share/zoneinfo/**` from `zoneinfo-2026f.tgz`, `/etc/palm/timezone.txt`, `/usr/palm/ext-timezones.json` | tzdata 2026f, compiled with `zic -b fat`. Refresh before each release with `tools/tzdata/build-zoneinfo.sh`. A Luna restart picks it up |
 | USB connection (after 600077) | `/usr/lib/luna/system/luna-systemui/data/StoragedService.js` | banner and dashboard replace the popup |
 | Boot logo (d6c4c78, not yet baked) | `/usr/palm/sysmgr/images/{hp-logo,hp-logo-bright}.png`, `/boot/boot-images.tar.gz` | the moon replaces the HP badge. The two PNGs are the pulsing logo and need nothing more. The still logo bootie draws first is in NVRAM, which a rootfs diff cannot reach: see §2.2 (10) |
+| HP wording (`hp_wording.py`, not yet baked) | `/etc/prefs/properties/{deviceName,deviceNameBranded}`; string tables and a few `.js` files in Accounts, Software Manager, the system UI, `accounts.ui` and the accounts library; Messaging's `FirstLaunchConstants.js`; Contacts' `ContactCountDialog.js`; the staged Email and Music ipks | "HP TouchPad" becomes "webOS TouchPad", "HP" dropped elsewhere. The rootfs files need nothing more. **Email and Music live in cryptofs**, so an installed device keeps the old text: see §2.2 (11). A device's own name is stored when it is set up, so the new default only shows on a fresh flash |
 | Emoji fallback font (planned, `EMOJI-FONT.md`) | **add** `/usr/share/fonts/CE-Emoji.ttf` (+ OFL text), **patched** `/usr/lib/libWebKitLuna.so` (fifth fallback slot) | lib is held open by BrowserServer/WebAppMgr — fine in the ramdisk, a reason not to hotpatch |
 | Colour emoji images (planned, `EMOJI-FONT.md` §7) | **add** `/usr/palm/frameworks/ce-emoji/` (shared `emoji.js` + EmojiOne PNGs, ~10.5 MB); **changed** Messaging (images move out of its app dir), Email, Contacts | Email is a cryptofs app: its patch goes in `ce-ota-finish`, not the rootfs diff |
 | Photos hand-off | the staged `/usr/palm/ipkgs/com.palm.app.photos/…ipk` is repacked | **no effect on an installed device**: Photos already lives in cryptofs |
@@ -235,6 +236,15 @@ The rootfs diff can't express these:
       rewritten with the same content.
     - A reflash needs none of this: the Doctor writes the image's
       `BootLogo.tga` to NVRAM itself.
+11. **HP wording in Email and Music.** Both are cryptofs preloads, changed in
+    the image only inside their staged ipks (which keep their stock
+    filenames, so `app-install` does not reinstall them). `ce-ota-finish`
+    lays the changed files over the installed apps, md5-guarded like the
+    Photos hand-off (1): Email's `data/AccountPreferences.js` and
+    `resources/{de,es,fr,it}.json`; Music's four `source/listView*.js` and
+    `resources/{de,es,fr,it}.json`. Email stores each account's signature
+    when the account is created, so existing accounts keep "HP TouchPad";
+    only new accounts get the new default. Leave stored signatures alone.
 
 ### 2.3 Delivery tier: armed flash, on purpose
 

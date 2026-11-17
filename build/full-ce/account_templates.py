@@ -40,9 +40,12 @@ The template's locale overrides (resources/<locale>/...) REPLACE the base file
 rather than merging into it, so each edit applies to every file.
 
 4. The accounts library (enyo lib/accounts) asks people to "Get started with your
-   HP webOS account:" on first launch. Its string tables are keyed by that English
-   phrase, so the KEY must stay as util.js spells it; only each table's value is
-   de-branded ("HP webOS" -> "webOS", the same rule as 1).
+   HP webOS account:" on first launch. debrand_get_started() below de-branded each
+   string table's value and kept the key, which is not enough: Enyo shows the
+   source string untranslated in US English, so the phrase stayed. hp_wording.py
+   now changes the phrase in util.js and the tables' keys together, along with
+   the library's "HP Synergy Services" labels. The function is kept for the
+   record of how system/ got its values.
 """
 import os
 import re

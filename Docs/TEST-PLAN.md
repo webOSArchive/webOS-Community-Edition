@@ -856,7 +856,8 @@ CE's SmartKeyService replaces the stock XT9 engine (`packages/smartkey`).
 The 3.2.0 goal is no HP branding anywhere.
 
 - [ ] All 11 App Catalog icons match the CE art in `system/`; no account
-      template says "HP webOS"; the boot logo files are the moon — *automated*
+      template says "HP webOS"; the boot logo files are the moon; the
+      de-branded strings are in their files — *automated*
 
 - [ ] No HP shopping bag anywhere: the "Find more…" rows (Exhibition, Search,
       the Accounts lists), the App Catalog's install and notification icons,
@@ -871,6 +872,12 @@ The 3.2.0 goal is no HP branding anywhere.
 - [ ] Device Info → app menu → About: the header has no icon or title, only
       the moon, centred and hanging from the strip into the page, in portrait
       and landscape; it stays put when the page scrolls and covers no text
+- [ ] **"HP" is gone from the wording**, in English (US) and one other
+      language: Device Info's name on a fresh flash is **webOS TouchPad**;
+      a new email's signature is "-- Sent from my webOS TouchPad"; Music
+      with an empty library says "webOS TouchPad" and no longer mentions
+      HP Play; the account lists say "Synergy Services"; Messaging's first
+      launch says "your webOS phone"
 - [ ] Note any other "HP" text or art seen while testing, for the next pass
 
 ## 25. Messaging and chat  *(new in 3.2.0)*

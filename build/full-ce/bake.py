@@ -213,6 +213,7 @@ def inputs_stamp():
                 "system/usr/palm/sysmgr/images/hp-logo.png",
                 "system/usr/palm/sysmgr/images/hp-logo-bright.png",
                 "system/boot/boot-images/BootLogo.tga",
+                "build/full-ce/hp_wording.py",
                 "build/full-ce/deviceinfo/about/ce-about-moon.png") + tuple(
                     os.path.relpath(os.path.join(dp, fn), PROJ)
                     for dp, _, fns in sorted(os.walk(os.path.join(PROJ, "packages", "smartkey", "prebuilt")))
@@ -1002,6 +1003,9 @@ def main():
         "./usr/palm/ipkgs/com.palm.app.clock/com.palm.app.clock_3.0.1904_all.ipk",
         # ... and the Calendar ipk, repacked with the CE Calendar's app tree
         "./usr/palm/ipkgs/com.palm.app.calendar/com.palm.app.calendar_3.0.11007_all.ipk",
+        # repacked by the HP-wording tier (11g)
+        "./usr/palm/ipkgs/com.palm.app.email/com.palm.app.email_3.0.13600_all.ipk",
+        "./usr/palm/ipkgs/com.palm.app.musicplayer/com.palm.app.musicplayer_3.0.8000_all.ipk",
         # CE platform tweaks (connectivity check, app installer, keyboard size)
         # + the JS-service launcher and the account service's dbus launcher
         "./usr/bin/run-js-service",
@@ -2536,12 +2540,14 @@ def main():
             w(f"{rel}/{f}", mine, 0o644)
             lib_done.append(f)
     lib_icons = ["images/appcatalog-32x32.png", "images/appcatalog-48x48.png"]
+    # what CE changed in the library: its string tables and the phrases
+    # util.js looks up in them (hp_wording.py), and the two catalog icons
     lib_strings = [f for f in lib_done if f not in lib_icons]
-    if (len(lib_strings) != 6 or not all(f.startswith("resources/") for f in lib_strings)
-            or not all(f in lib_done for f in lib_icons)):
+    lib_want = sorted(f"resources/{n}.json" for n in
+                      ("de", "en", "en_ca", "es", "es_es", "fr", "fr_ca", "it")) + ["source/util.js"]
+    if lib_strings != lib_want or not all(f in lib_done for f in lib_icons):
         sys.exit(f"ERROR: accounts library: expected system/ to differ from the "
-                 f"community library in 6 string tables and the 2 App Catalog "
-                 f"icons, got {lib_done}")
+                 f"enyo-accounts replay in {lib_want} and the two icons, found {lib_done}")
 
     # The stock contacts framework (no community build replaces it): its
     # AppPrefs lives in FOUR copies -- the source file, concatenated.js (what
@@ -2678,6 +2684,123 @@ def main():
     with open(os.path.join(OUT, "webos", "BootLogo.tga"), "wb") as f:
         f.write(new_tga)
     log(f"  webos   BootLogo.tga ({len(new_tga)} bytes, replaces the webOS.tar member)")
+
+    # 11g) HP's name out of the wording people see. "HP TouchPad" becomes
+    # "webOS TouchPad"; elsewhere "HP" is dropped ("HP webOS Account" ->
+    # "webOS Account"). hp_wording.py holds the strings, the rules, and the
+    # reason a phrase has to change in the source and in the tables' keys at
+    # once; its docstring also lists what is deliberately not touched.
+    #
+    # This runs after the tiers that lay down the community Accounts,
+    # Messaging and system UI, and edits whatever the image holds by then.
+    sys.path.insert(0, HERE)
+    import hp_wording
+    log('tier: HP wording ("HP TouchPad" -> "webOS TouchPad", "HP" dropped elsewhere)')
+    HPW_APPS = (
+        ("usr/palm/applications/com.palm.app.accounts", hp_wording.ACCOUNTS_APP, "Accounts"),
+        ("usr/lib/luna/system/luna-systemui", hp_wording.SYSTEMUI, "system UI"),
+        ("usr/palm/applications/com.palm.app.swmanager", hp_wording.SWMANAGER, "Software Manager"),
+    )
+    AUI = "usr/palm/frameworks/accounts.ui/submission/"
+    HPW_NAMES = ("etc/prefs/properties/deviceName", "etc/prefs/properties/deviceNameBranded")
+    hpw_stock = read_rootfs(
+        ROOTFS_TGZ, exact=[f"./{r}" for r in HPW_NAMES],
+        prefixes=[f"./{r}/" for r, _, _ in HPW_APPS] + [f"./{AUI}"])
+
+    def hpw_cur(rel):
+        """What the image holds at this point: an earlier tier's file, else stock's."""
+        p = os.path.join(OUT_ROOT, rel)
+        if os.path.isfile(p):
+            with open(p, "rb") as f:
+                return f.read()
+        e = hpw_stock.get(f"./{rel}")
+        if e and e["type"] == "file" and f"/{rel}" not in removes:
+            return e["data"]
+        return None
+
+    # (a) Enyo apps in the rootfs: the phrase in the source, and in every
+    # string table its key and value
+    for rel, keys, what in HPW_APPS:
+        names = {n[len(f"./{rel}/"):] for n in hpw_stock if n.startswith(f"./{rel}/")}
+        for dp, _dn, fns in os.walk(os.path.join(OUT_ROOT, rel)):
+            for fn in fns:
+                names.add(os.path.relpath(os.path.join(dp, fn), os.path.join(OUT_ROOT, rel)))
+        tables, sources = {}, {}
+        for n in sorted(names):
+            is_table = n.startswith("resources/") and n.count("/") == 1 and n.endswith(".json")
+            if not is_table and (n.startswith("resources/") or not n.endswith(".js")):
+                continue
+            data = hpw_cur(f"{rel}/{n}")
+            if data is None:
+                continue
+            if is_table:
+                tables[n[len("resources/"):]] = data.decode("utf-8")
+            else:
+                sources[n] = data.decode("utf-8")
+        new_tables, new_sources = hp_wording.apply(tables, sources, keys, what)
+        for n, text in sorted(new_tables.items()):
+            w(f"{rel}/resources/{n}", text.encode("utf-8"), 0o644)
+        for n, text in sorted(new_sources.items()):
+            w(f"{rel}/{n}", text.encode("utf-8"), 0o644)
+
+    # (b) the same for two apps that are staged ipks (installed to cryptofs on
+    # first boot): Email's default signature and Music's empty-library text
+    def hpw_staged(keys, what):
+        def edit(approot):
+            for rel in hp_wording.edit_app(approot, keys, what):
+                log(f"  edited  {what}: {rel}")
+        return edit
+
+    repack_staged_ipk("./usr/palm/ipkgs/com.palm.app.email/com.palm.app.email_3.0.13600_all.ipk",
+                      "com.palm.app.email", hpw_staged(hp_wording.EMAIL, "Email"))
+    repack_staged_ipk("./usr/palm/ipkgs/com.palm.app.musicplayer/"
+                      "com.palm.app.musicplayer_3.0.8000_all.ipk",
+                      "com.palm.app.musicplayer", hpw_staged(hp_wording.MUSIC, "Music"))
+
+    # (c) the accounts library is finished files in system/ (tier 11d ships
+    # them); it must already carry this module's edit
+    if not hp_wording.done(os.path.join(
+            SYSTEM, "usr/palm/frameworks/enyo/0.10/framework/lib/accounts"), hp_wording.ACCOUNTS_LIB):
+        sys.exit("ERROR: system/ accounts library still spells HP's phrases; "
+                 "run build/full-ce/hp_wording.py")
+
+    # (d) accounts.ui, the Mojo twin of that library: "#{capability} HP Synergy
+    # Services". The same idea done wholesale: the two words go from the
+    # source and from every table, key and value alike.
+    aui_done = []
+    for name in sorted(hpw_stock):
+        rel = name[2:]
+        if not rel.startswith(AUI) or not rel.endswith((".js", "strings.json")):
+            continue
+        data = hpw_cur(rel)
+        if data is None or b"HP Synergy" not in data:
+            continue
+        w(rel, data.replace(b"HP Synergy", b"Synergy"), 0o644)
+        aui_done.append(rel[len(AUI):])
+    if sorted(aui_done) != ["41/concatenated.js", "41/javascript/template-list-assistant.js",
+                            "41/resources/de/strings.json", "41/resources/es/strings.json",
+                            "41/resources/fr/strings.json", "41/resources/it/strings.json",
+                            "41accounts_ui.js"]:
+        sys.exit(f"ERROR: HP wording: accounts.ui files with \"HP Synergy\" are not the "
+                 f"expected seven: {sorted(aui_done)}")
+
+    # (e) Messaging's first-launch text. The community build has no string
+    # tables, so this is the source literal.
+    rel = "usr/palm/applications/com.palm.app.messaging/app/firstlaunch/FirstLaunchConstants.js"
+    data = hpw_cur(rel)
+    if data is None:
+        sys.exit(f"ERROR: HP wording: /{rel} was not laid down by the Messaging tier")
+    w(rel, sure_replace(data.decode("utf-8"), "connected with your HP webOS phone",
+                        "connected with your webOS phone",
+                        "Messaging first launch: HP webOS phone", count=1).encode("utf-8"), 0o644)
+
+    # (f) the device's default name, which Device Info, Bluetooth and the
+    # account server's device list all start from
+    for rel in HPW_NAMES:
+        v = hpw_stock[f"./{rel}"]["data"]
+        if not v.startswith(b"HP TouchPad"):
+            sys.exit(f"ERROR: HP wording: /{rel} is {v!r}, expected it to start \"HP TouchPad\"")
+        w(rel, b"webOS" + v[2:], 0o644)
 
     # USB connection: a banner and the dashboard instead of the stock popup.
     rel = "usr/lib/luna/system/luna-systemui/data/StoragedService.js"

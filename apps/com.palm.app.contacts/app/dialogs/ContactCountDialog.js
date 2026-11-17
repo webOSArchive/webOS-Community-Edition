@@ -27,7 +27,7 @@ enyo.kind({
         count: 0
     },
     components     : [
-        {name: "messageLbl", className: "enyo-item enyo-first", style: "padding: 12px", content: $L("HP WebOS Account")},
+        {name: "messageLbl", className: "enyo-item enyo-first", style: "padding: 12px", content: $L("webOS Account")},
         {name: "countLbl", style: "padding: 12px 0px;"},
         {name: "okBtn", kind: "Button", caption: $L("OK"), onclick: "onOKClick", flex: 1, className: "enyo-button-affirmative"}
     ],

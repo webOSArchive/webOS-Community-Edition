@@ -592,6 +592,28 @@ done
 m=$(tar xzOf /boot/boot-images.tar.gz BootLogo.tga 2>/dev/null | md5sum | cut -c1-32)
 [ "$m" = "2d4d05a732fa181064e72f5a2df42e97" ] || { ok=0; F "24  boot-images.tar.gz BootLogo.tga not CE's (md5 $m)"; }
 [ $ok = 1 ] && P "24  boot logo files are the moon (2 PNGs + boot-images BootLogo.tga)"
+# HP's name out of the wording (build/full-ce/hp_wording.py). Each entry is
+# file|text that must be there. Email and Music are cryptofs apps.
+ok=1
+CA=/media/cryptofs/apps/usr/palm/applications
+while IFS='|' read -r f want; do
+  [ -n "$f" ] || continue
+  grep -qF -e "$want" "$f" 2>/dev/null || { ok=0; F "24  HP wording: $f lacks \"$want\""; }
+done <<HPW
+/etc/prefs/properties/deviceName|webOS TouchPad
+/etc/prefs/properties/deviceNameBranded|webOS TouchPad
+$CA/com.palm.app.email/data/AccountPreferences.js|-- Sent from my webOS TouchPad
+$CA/com.palm.app.musicplayer/source/listViewSongs.js|There are no songs on your webOS TouchPad
+/usr/palm/frameworks/enyo/0.10/framework/lib/accounts/source/util.js|\$L("Synergy Services")
+/usr/palm/frameworks/enyo/0.10/framework/lib/accounts/source/util.js|Get started with your webOS Account:
+/usr/palm/frameworks/accounts.ui/submission/41accounts_ui.js|#{capability} Synergy Services
+/usr/palm/applications/com.palm.app.accounts/source/palmID/Initialize.js|communicate with Cloud Services
+/usr/palm/applications/com.palm.app.contacts/app/dialogs/ContactCountDialog.js|\$L("webOS Account")
+/usr/palm/applications/com.palm.app.messaging/app/firstlaunch/FirstLaunchConstants.js|your webOS phone
+/usr/lib/luna/system/luna-systemui/app/SystemManagerAlerts/SystemManagerAlerts.js|not a webOS device
+/usr/palm/applications/com.palm.app.swmanager/main/utilities/common.js|Check out this webOS app
+HPW
+[ $ok = 1 ] && P "24  HP wording: 12 de-branded strings in place"
 have /usr/palm/applications/com.palm.app.deviceinfo/images/ce-about-moon.png \
   && P "24  Device Info About scene has the moon" || F "24  Device Info About scene lacks ce-about-moon.png"
 
