@@ -108,6 +108,18 @@ TouchPad test passes, so later phases are tested on top of it.
    Microsoft's is the same Entra registration "webOS Email", with the EAS
    scope added. Nothing in phases 2 and 3 can be tested against a real
    provider until this exists.
+
+   **Broker code and configs written 2026-11-17** (`../oauth-broker-for-webos`,
+   commit `Mail sign-in for Google and Microsoft`; tested against a fake
+   provider, not against Google or Microsoft). Three apps:
+   `google`, `microsoft365` (Exchange) and `microsoft` (IMAP and SMTP).
+   `microsoft365` falls back to `microsoft` inside the broker when Microsoft
+   refuses the Exchange scope (a personal account). The device then gets
+   `"broker_app": "microsoft"` with the tokens for the same code. The token
+   service must store that name, refresh through that app, and tell the
+   sign-in app to make the hidden IMAP account instead of the Exchange one.
+   Still to do on the server: the Web clients and secrets (the steps are in
+   each app's `config.example.php`), then deploy.
 2. **Check reachability from a TouchPad:** `/usr/bin/curl` to `oauth.wosa.link`,
    `login.microsoftonline.com` and `oauth2.googleapis.com`. Use real TLS
    verification against CE's trust store.
