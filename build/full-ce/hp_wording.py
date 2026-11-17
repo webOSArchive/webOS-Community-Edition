@@ -44,16 +44,23 @@ Docs/LOCALIZATION-GUIDE.md.
 A value that still holds "HP" after the rules is an error, so a string the
 rules do not cover cannot slip through half done.
 
+Two more things ride along
+--------------------------
+- Support links. Messages that sent people to http://hpwebos.com/support, a
+  dead address, now name www.webosarchive.org. The phrases are found in each
+  app's source by that address (find_phrases) and not listed here.
+- The "vendor" of an app. "HP" (or "HP, Inc.") in appinfo.json,
+  packageinfo.json and the preload manifests becomes "webOS Archive", which
+  is who looks after these apps now and what CE's own Videos already says.
+  Nothing in the image compares the field; it is only shown.
+
 What is deliberately not here
 -----------------------------
 - Export-control and payment errors from HP's dead servers ("The United States
   Government prohibits HP from ..."), which cannot be reworded by dropping a
   word and cannot be reached any more.
-- Messages that send people to http://hpwebos.com/support: the link is dead and
-  what should replace it is undecided.
-- The "vendor" field of each appinfo.json, Help's Care Pack page, the App
-  Catalog's terms, the first-use app, demo mode: each needs a decision that is
-  not a wording rule.
+- The App Catalog's terms, the first-use app, demo mode, the payment service:
+  each needs a decision that is not a wording rule.
 - Copyright notices, printer detection, and names of real hardware.
 """
 import json
@@ -63,6 +70,7 @@ import re
 # attached "HP" to a noun that survives without it.
 RULES = [
     (r"HP Touch[Pp]ad", "webOS TouchPad"),
+    (r"http://hpwebos\.com/support", "www.webosarchive.org"),
     (r"HP WEBOS", "WEBOS"),
     (r"HP [Ww]ebOS", "webOS"),
     (r"HP Synergy", "Synergy"),
@@ -86,7 +94,59 @@ RULES = [
     (r" à HP\.", "."),
     (r" ad HP ", " "),
 ]
-_HP = re.compile(r"(?<![A-Za-z0-9_])HP(?![A-Za-z0-9_])|hpplay")
+_HP = re.compile(r"(?<![A-Za-z0-9_])HP(?![A-Za-z0-9_])|hpplay|hpwebos")
+
+SUPPORT_URL = "http://hpwebos.com/support"
+VENDOR = "webOS Archive"
+VENDOR_FILES = ("appinfo.json", "packageinfo.json", "manifest.json")
+_VENDOR = re.compile(r'("vendor"\s*:\s*)"HP(?:, Inc\.?)?"')
+
+
+def vendor(text):
+    """An appinfo/packageinfo/manifest's text with HP's vendor name replaced."""
+    return _VENDOR.sub(lambda m: '%s"%s"' % (m.group(1), VENDOR), text)
+
+
+def vendor_tree(root):
+    """Replace HP's vendor name in every VENDOR_FILES file under root, in
+    place. Returns the paths changed."""
+    import os
+    changed = []
+    for dp, _dn, fns in os.walk(root):
+        for fn in fns:
+            if fn in VENDOR_FILES:
+                p = os.path.join(dp, fn)
+                with open(p, "rb") as f:
+                    old = f.read().decode("utf-8", "replace")
+                new = vendor(old)
+                if new != old:
+                    with open(p, "wb") as f:
+                        f.write(new.encode("utf-8"))
+                    changed.append(os.path.relpath(p, root))
+    return sorted(changed)
+
+
+_LITERAL = re.compile(r'"((?:[^"\\\n]|\\.)*)"' + r"|'((?:[^'\\\n]|\\.)*)'")
+
+
+def find_phrases(sources, needle):
+    """{phrase: None} for every string literal in `sources` that holds
+    `needle`, ready to merge into a keys table."""
+    out = {}
+    for text in sources.values():
+        if needle not in text:
+            continue
+        for m in _LITERAL.finditer(text):
+            raw = m.group(1) if m.group(1) is not None else m.group(2)
+            if needle not in raw:
+                continue
+            if m.group(1) is None:
+                raw = raw.replace("\\'", "'").replace('"', '\\"')
+            try:
+                out[json.loads('"' + raw + '"')] = None
+            except ValueError:
+                raise SystemExit(f"ERROR: HP wording: cannot read the literal {raw[:80]!r}")
+    return out
 
 
 def debrand(text):

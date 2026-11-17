@@ -478,7 +478,9 @@ is.
       79% used** (559.1M volume, 439.1M used). Same as 600067; the reclaim job
       ran (94020K -> 122880K).
 - [ ] Default wallpaper present — *automated*
-- [ ] Default wallpaper looks right on screen
+- [ ] Default wallpaper looks right on screen: from 3.2.0 it is the moon
+      (`28.jpg`). It is 1024x768, not square like the others, so check
+      **portrait** as well as landscape
 - *Known/accepted:* `/media/internal` **accumulates** — the customization service
   only copies in, never removes. Upgrading from an older CE build leaves the old
   `NN.png` wallpapers beside the new `.jpg` set. Decision: do not delete from the
@@ -878,6 +880,12 @@ The 3.2.0 goal is no HP branding anywhere.
       with an empty library says "webOS TouchPad" and no longer mentions
       HP Play; the account lists say "Synergy Services"; Messaging's first
       launch says "your webOS phone"
+- [ ] An app's details (Software Manager, or the launcher's app info) name
+      **webOS Archive** as the vendor, not HP
+- [ ] Help's contents list has **no Care Pack entry**, including with the
+      App Catalog reachable
+- [ ] An Accounts sign-in error points to **www.webosarchive.org**, not
+      hpwebos.com (wrong password on a webOS Account is one way to get one)
 - [ ] Note any other "HP" text or art seen while testing, for the next pass
 
 ## 25. Messaging and chat  *(new in 3.2.0)*

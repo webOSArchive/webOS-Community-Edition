@@ -2,7 +2,7 @@
 	"id"				: "com.palm.app.calendar",
 	"title"				: "Calendar",
 	"version"			: "3.2.0",
-	"vendor"			: "HP, Inc.",
+	"vendor"			: "webOS Archive",
 	"noWindow"			: true,
 	"uiRevision"		: 2,
 	"main"				: "index.html",

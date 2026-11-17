@@ -420,7 +420,7 @@ I  "11  rootfs: $(df -k / | awk 'END{print $(NF-2)"K free, "$(NF-1)" used"}')"
 I  "11  media: wallpapers=$(ls /media/internal/wallpapers 2>/dev/null | wc -l) ringtones=$(ls /media/internal/ringtones 2>/dev/null | wc -l)"
 n=$(ls /media/internal/wallpapers/*.png 2>/dev/null | wc -l)
 [ "$n" = "0" ] && P "11  no orphaned .png wallpapers" || I "11  $n orphaned .png wallpapers (upgrade-from-CE artifact, accepted)"
-have /media/internal/wallpapers/22.jpg && P "11  default wallpaper 22.jpg present" || F "11  default wallpaper 22.jpg MISSING"
+have /media/internal/wallpapers/28.jpg && P "11  default wallpaper 28.jpg present" || F "11  default wallpaper 28.jpg MISSING"
 
 # ---------------------------------------------------------------- 12. video player (3.2.0)
 # The CE Video Player (com.palm.app.videos) and the stock id that hosts the same
@@ -612,8 +612,15 @@ $CA/com.palm.app.musicplayer/source/listViewSongs.js|There are no songs on your 
 /usr/palm/applications/com.palm.app.messaging/app/firstlaunch/FirstLaunchConstants.js|your webOS phone
 /usr/lib/luna/system/luna-systemui/app/SystemManagerAlerts/SystemManagerAlerts.js|not a webOS device
 /usr/palm/applications/com.palm.app.swmanager/main/utilities/common.js|Check out this webOS app
+/usr/palm/applications/com.palm.app.accounts/source/palmID/PalmIDUtilities.js|Visit www.webosarchive.org for more information.
+/usr/palm/applications/com.palm.app.browser/appinfo.json|"webOS Archive"
+/usr/palm/applications/com.palm.app.wifi/resources/de/appinfo.json|"webOS Archive"
+$CA/com.palm.app.email/appinfo.json|"webOS Archive"
+/usr/palm/applications/com.palm.app.help/help/source/HelpApp.js|no check for HP's Care Pack app
 HPW
-[ $ok = 1 ] && P "24  HP wording: 12 de-branded strings in place"
+[ $ok = 1 ] && P "24  HP wording: de-branded strings, support link, vendor and Care Pack change in place"
+n=$(grep -l '"vendor"[[:space:]]*:[[:space:]]*"HP' /usr/palm/applications/*/appinfo.json /usr/lib/luna/system/*/appinfo.json 2>/dev/null | wc -l)
+[ "$n" = "0" ] && P "24  no rootfs app names HP as its vendor" || F "24  $n rootfs appinfo.json file(s) still name HP as vendor"
 have /usr/palm/applications/com.palm.app.deviceinfo/images/ce-about-moon.png \
   && P "24  Device Info About scene has the moon" || F "24  Device Info About scene lacks ce-about-moon.png"
 
