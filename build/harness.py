@@ -72,6 +72,20 @@ TITLE_SKIP_OLD = b"wr"
 # (tools/doctor-art/build-doctor-art.py made them; stock.json has the images they replace).
 DOCTOR_ART_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doctor-art")
 DOCTOR_ART = ("resources/bg1.png", "resources/bg2.png", "resources/bg3.png")
+# The driver step on a Mac (tools/doctor-drivers/CEDriversMgr.java). The Doctor's own installs a
+# 2011 package no current macOS takes. Its one caller is pointed at CE's class, which on a Mac
+# installs the package for the Mac's processor (if novacomd isn't running already) and
+# everywhere else calls the Doctor's own class, unchanged. The old Mac package leaves the JAR.
+DOCTOR_DRIVERS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doctor-drivers")
+DRIVERS_CALLER = "com/palm/nova/installer/recoverytool/runner/SystemCheckRunner$SystemCheckThread.class"
+DRIVERS_OLD_CLASS = b"com/palm/nova/installer/core/DesktopDriversMgr"
+DRIVERS_NEW_CLASS = b"com/palm/nova/installer/core/CEDriversMgr"
+DRIVERS_OLD_MAC_PKG = "resources/NovacomInstaller.pkg.tar.gz"
+DRIVERS_ADD = {
+    "com/palm/nova/installer/core/CEDriversMgr.class": "CEDriversMgr.class",
+    "resources/novacom-installer-x86_64.pkg": "novacom-installer-x86_64.pkg",
+    "resources/novacom-installer-arm64.pkg": "novacom-installer-arm64.pkg",
+}
 TITLE_NEW = b"webOS(tm) Doctor (Build "
 
 # recoverytool.config keys that are safe to rewrite. Audited against every class
@@ -905,6 +919,8 @@ def rebuild_jar(src_jar, out_jar, new_webos_tar, branding=None):
       - CardController.class  (drop the vendor mark from the window title)
       - ConfigFileMgr.class   (drop the customization name from the title's build string)
       - bg1.png, bg2.png, bg3.png (the moon where HP's mark was)
+      - the Mac driver step   (CEDriversMgr.class and the two current packages added, the
+                               caller pointed at it, the 2011 package dropped)
     """
     manifest = (
         "Manifest-Version: 1.0\r\n"
@@ -923,6 +939,7 @@ def rebuild_jar(src_jar, out_jar, new_webos_tar, branding=None):
     tmp_jar = out_jar + ".tmp"
     log(f"repacking JAR -> {out_jar} (via {os.path.basename(tmp_jar)})")
     art, cust2 = {}, None
+    dropped_old_pkg = pointed_caller = False
     if branding:
         with open(os.path.join(DOCTOR_ART_DIR, "stock.json")) as f:
             art_stock = json.load(f)["sha256"]
@@ -951,7 +968,17 @@ def rebuild_jar(src_jar, out_jar, new_webos_tar, branding=None):
                 zout.writestr(zi, manifest)
                 log("  rewrote MANIFEST.MF (unsigned, Main-Class only)")
                 continue
+            if branding and n == DRIVERS_OLD_MAC_PKG:
+                log(f"  dropped {n} (the 2011 Mac driver package)")
+                dropped_old_pkg = True
+                continue
+            if n in DRIVERS_ADD:
+                sys.exit(f"[ce-harness] FATAL: the OEM jar already has {n}")
             data = zin.read(n)
+            if branding and n == DRIVERS_CALLER:
+                data = patch_class_utf8(data, DRIVERS_OLD_CLASS, DRIVERS_NEW_CLASS)
+                pointed_caller = True
+                log("  patched SystemCheckRunner's thread (the driver step is CEDriversMgr's)")
             if n == FLASHER_CLASS:
                 data, off, idx = patch_flasher_bytes(data)
                 log(f"  patched FlasherThread.class (checkToFlash off @ {off})")
@@ -991,6 +1018,18 @@ def rebuild_jar(src_jar, out_jar, new_webos_tar, branding=None):
             zi.compress_type = zipfile.ZIP_DEFLATED if not n.endswith("/") else zipfile.ZIP_STORED
             zi.external_attr = item.external_attr
             zout.writestr(zi, data)
+        if branding:
+            if not (dropped_old_pkg and pointed_caller):
+                sys.exit("[ce-harness] FATAL: the OEM jar's Mac driver step isn't where it was "
+                         f"(old package found: {dropped_old_pkg}, caller found: {pointed_caller})")
+            for entry, fname in sorted(DRIVERS_ADD.items()):
+                with open(os.path.join(DOCTOR_DRIVERS_DIR, fname), "rb") as f:
+                    payload = f.read()
+                zi = zipfile.ZipInfo(entry, date_time=(2026, 11, 19, 0, 0, 0))
+                zi.compress_type = zipfile.ZIP_DEFLATED
+                zi.external_attr = 0o644 << 16
+                zout.writestr(zi, payload)
+                log(f"  added {entry} ({len(payload)} bytes)")
         # add the rebuilt webOS.tar (stored: it's already-compressed content)
         zi = zipfile.ZipInfo(WEBOS_TAR_ENTRY, date_time=(2011, 12, 21, 11, 45, 0))
         zi.compress_type = zipfile.ZIP_STORED
