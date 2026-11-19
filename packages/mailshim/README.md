@@ -21,11 +21,10 @@ is preloaded into the Exchange, IMAP and SMTP services.
 | A server's back-off is kept, and nothing is sent to that host until it passes | `backoff.h`, `/var/preferences/ce-eas-backoff` | a stand-in's 503 with `Retry-After: 120`; the next request stayed on the device; Zoho unaffected |
 | A throttled sign-in says "unavailable", not "check your login" | `easerr.h`, in front of `LSMessageRespond` | "The account is temporarily unavailable" on the Accounts screen |
 | An OAuth handle as the password becomes a token from `palm://com.palm.service.oauth/token` (through `luna-send`, kept until five minutes before it ends) | `ma_token`; a bearer for Exchange, XOAUTH2 for IMAP and SMTP (`mailauth.h`) | Gmail and Outlook.com over IMAP, Gmail's SMTP (`AUTH PLAIN` sent as XOAUTH2), Exchange Online |
-| Exchange Online (16.1 only) for Palm's 12.1 client: version, provisioning, device information, the reply filter, ComposeMail, calendar items | the `CE_MAILSHIM_EAS16` parts of `mailshim.c` | Microsoft 365: sign-in with the tenant's policy, folders, mail, a message sent and delivered, a contact and a weekly event with a location stored |
+| Exchange Online (16.1 only) for Palm's 12.1 client: version, provisioning, device information, the reply filter, ComposeMail, calendar items, attachments as ItemOperations | the `CE_MAILSHIM_EAS16` parts of `mailshim.c`, `attfetch.h` | Microsoft 365: sign-in with the tenant's policy, folders, mail, a message sent and delivered, a contact and a weekly event with a location stored, a 398 KB attachment sent and downloaded byte for byte |
 
-Not yet seen on a TouchPad: an attachment download from Exchange Online (`attfetch.h`), a
-series' exceptions (`calf_split`), a meeting reply (`composemail.h`'s `cm_fix_reply`), and
-Ping push. `DUMP=1` (request and reply bodies to a file) is for development and never in an
+Not yet seen on a TouchPad: a series' exceptions (`calf_split`), a meeting reply
+(`composemail.h`'s `cm_fix_reply`), and Ping push. `DUMP=1` (request and reply bodies to a file) is for development and never in an
 image. Code behind a switch that is off is not in the binary.
 
 ## Where the code comes from

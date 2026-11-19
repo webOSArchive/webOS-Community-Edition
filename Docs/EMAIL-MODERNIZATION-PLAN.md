@@ -275,10 +275,15 @@ TouchPad test passes, so later phases are tested on top of it.
   XOAUTH2) to the Microsoft 365 account and one back (ComposeMail), and each arrived. A
   contact and a weekly event with a location made on the TouchPad were stored by Exchange
   Online. No crash reports.
-- Not yet seen: an attachment download from Exchange Online (a message with one was sent
-  from Gmail and had not arrived when checked), moving or deleting one occurrence of a
-  series, a meeting reply, Ping and IDLE push, signing in again after a revoked sign-in
-  (the modify page), an AADSTS refusal's wording, and a large attachment.
+- An attachment both ways with Exchange Online: a message with a 397,818-byte picture was
+  sent from the Microsoft 365 account to itself, came back with the attachment, and the
+  download (sent as ItemOperations) gave a file with the original's md5. A request that ends
+  its subscription early cancels the download, as on stock. A message with the same
+  attachment sent from Gmail was accepted by Gmail's SMTP and never seen to arrive; why is
+  not known.
+- Not yet seen: moving or deleting one occurrence of a series, a meeting reply, Ping and
+  IDLE push, signing in again after a revoked sign-in, an AADSTS refusal's wording, and an
+  attachment of several MB.
 - The account types are named `com.palm.oauth.*`, not `org.webosarchive.ce.*`: the stock
   `com.palm.google` type is retired in CE and its name is left alone.
 
