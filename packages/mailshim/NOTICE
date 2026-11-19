@@ -1,0 +1,7 @@
+libce-mailshim
+
+mailshim.c, lunacy/*.h and tests/{mailauth,wbxmlfilter,composemail,backoff,calfilter,easerr,attfetch}_test.c
+are from Lunacy (https://github.com/webOSArchive/Lunacy), LunaRuntimes/pdk, at commit f7dfc82.
+Copyright 2026 codepoet and Lunacy's contributors. Licensed under the Apache License,
+Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0). CE's changes are described in
+README.md and marked [CE] in lunacy/calfilter.h.

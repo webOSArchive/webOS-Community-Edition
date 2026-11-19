@@ -216,6 +216,7 @@ def inputs_stamp():
                 "system/usr/palm/sysmgr/images/hp-logo-bright.png",
                 "system/boot/boot-images/BootLogo.tga",
                 "build/full-ce/hp_wording.py",
+                "packages/mailshim/prebuilt/usr/lib/ssl11mail/libce-mailshim.so",
                 "build/full-ce/deviceinfo/about/ce-about-moon.png") + tuple(
                     os.path.relpath(os.path.join(dp, fn), PROJ)
                     for dp, _, fns in sorted(os.walk(os.path.join(PROJ, "packages", "smartkey", "prebuilt")))
@@ -342,6 +343,10 @@ MAIL_PFX = ("/usr/bin/env LD_BIND_NOW=1 LD_LIBRARY_PATH=/usr/lib/ssl11mail "
             "CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt "
             "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt")
 MAIL_OPENSSL_CONF = "OPENSSL_CONF=/usr/lib/ssl11mail/mailssl.cnf "
+# CE's mail shim (packages/mailshim, Docs/EMAIL-MODERNIZATION-PLAN.md): a second
+# preload beside libssl_compat.so, for the services listed. Phase 1: Exchange only.
+MAILSHIM = "/usr/lib/ssl11mail/libce-mailshim.so"
+MAILSHIM_SERVICES = ("eas",)
 
 CERT_EXTS = (".pem", ".cer", ".der", ".crt")
 
@@ -1149,6 +1154,7 @@ def main():
     symlink("usr/lib/ssl11mail/libcrypto.so.0.9.8", "/usr/lib/ssl11/libcrypto.so.1.1")
     wcopy("usr/lib/ssl11mail/libssl_compat.so", os.path.join(mf, "libssl_compat.so"), 0o755)
     w("usr/lib/ssl11mail/mailssl.cnf", MAILSSL_CNF, 0o644)
+    wcopy(MAILSHIM[1:], os.path.join(PROJ, "packages", "mailshim", "prebuilt", MAILSHIM[1:]), 0o755)
     # patch the four mojomail dbus launchers
     for svc in ("eas", "imap", "pop", "smtp"):
         key = f"./usr/share/dbus-1/system-services/com.palm.{svc}.service"
@@ -1159,6 +1165,8 @@ def main():
                 ln = "Exec=" + MAIL_PFX + " " + ln[len("Exec="):]
                 if svc in ("imap", "pop", "smtp"):   # ECDSA/Gmail: TLS1.2+RSA config
                     ln = ln.replace("LD_BIND_NOW=1 ", "LD_BIND_NOW=1 " + MAIL_OPENSSL_CONF, 1)
+                if svc in MAILSHIM_SERVICES:         # the loader takes a colon-separated list
+                    ln = ln.replace("libssl_compat.so ", "libssl_compat.so:" + MAILSHIM + " ", 1)
             out.append(ln)
         w(f"usr/share/dbus-1/system-services/com.palm.{svc}.service", "".join(out), 0o644)
 

@@ -18,7 +18,9 @@ in `preload.c`, and `Docs/email-app-for-ce.md` (one Email app bug). The mail
 part of `preload.c` still starts at line 1260. They are folded into phases 1,
 3 and 4 below.
 
-**Status:** plan only, 2026-11-09. Nothing is built.
+**Status (2026-11-19):** phase 1 is built (`packages/mailshim/`), wired into the bake and
+tested on a TouchPad by installing it by hand on 600102. It is not baked. Phases 2 to 5 are
+not started. Phase 1's results are at the end of its section.
 
 **Release:** all five phases ship in **webOS CE 3.2.0**, as its main feature
 (decided 2026-11-09). So 600102 is not the final 3.2.0 image. The release
@@ -94,6 +96,25 @@ server-side work.
    - Throttling: send a canned 503 with `Retry-After` from a test server.
      Email says "temporarily unavailable", not "check your login".
    - No new rdxd reports from mojomail-eas.
+
+**Results, 2026-11-19 (600102, the library installed by hand, Zoho):**
+
+- Built from Lunacy `f7dfc82`. Lunacy's tests and CE's own pass on the build machine.
+  The 16.1 adapters and OAuth are compiled out (D4).
+- Passed on the TouchPad: the account validates, a wrong password still says 401, folders,
+  contacts and calendar sync, an event added on the device is stored by Zoho, a canned 503
+  with `Retry-After` reads as "unavailable" and holds the next request on the device, and
+  `ce-test-full.sh` section 26. No crash report across a reboot or three service stops.
+- **The TouchPad disagreed with Lunacy's measurement.** Palm writes a zone's changes on the
+  device's own clock, not in UTC, so Lunacy's zone fix did nothing on a real device. CE's
+  `calfilter.h` now reads them as Palm wrote them (`packages/mailshim/README.md` has the
+  limits). Lunacy should be told.
+- Still to do by hand before a bake carries it: send a message from the Zoho account, look
+  at the event in Zoho's web calendar across the October 2027 change ("CE shim London weekly
+  10:00 Oct 2027 (3)", three Tuesdays at 10:00 London time), the throttle message as Email's
+  own screen words it, and KNOWN-ISSUES #14.
+- An OTA or any live update must replace the library by rename, never by copying over it:
+  the running service crashes at exit otherwise.
 
 Phase 1 is one rootfs file plus one changed `.service` line, and the OTA
 rootfs diff carries both. It can go into an interim 3.2.0 bake as soon as its
