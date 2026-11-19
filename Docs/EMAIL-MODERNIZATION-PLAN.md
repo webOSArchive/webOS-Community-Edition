@@ -117,9 +117,11 @@ server-side work.
   Exchange service and came back into its Inbox about a second later.
 - **Seen on the screen (600104):** a sign-in to a server answering 503 shows "Unable to sign
   in: The account is temporarily unavailable. Please try again in a few minutes."
-- Still to do by eye: the event in Zoho's web calendar across the October 2027 change ("CE
-  shim London weekly 10:00 Oct 2027 (3)", three Tuesdays at 10:00 London time), and
-  KNOWN-ISSUES #14, which Zoho says it has fixed.
+- **Seen in Zoho's web calendar (2026-11-19):** the weekly London event made on the TouchPad
+  ("CE shim London weekly 10:00 Oct 2027 (3)") shows at 2:00, 2:00 and 3:00 AM Pacific on 19
+  and 26 October and 2 November 2027: 10:00 in London each time, with the clocks going back
+  on 31 October. Palm's unfixed zone would have put 26 October an hour late.
+- Phase 1's tests are done. Left open: KNOWN-ISSUES #14, which Zoho says it has fixed.
 - An OTA or any live update must replace the library by rename, never by copying over it:
   the running service crashes at exit otherwise.
 
