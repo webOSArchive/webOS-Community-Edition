@@ -19,8 +19,10 @@ part of `preload.c` still starts at line 1260. They are folded into phases 1,
 3 and 4 below.
 
 **Status (2026-11-19):** phase 1 is built (`packages/mailshim/`), wired into the bake and
-tested on a TouchPad by installing it by hand on 600102. It is not baked. Phases 2 to 5 are
-not started. Phase 1's results are at the end of its section.
+tested on a TouchPad by installing it by hand on 600102. Phase 2's token service is built,
+wired into the bake and tested the same way against a local broker; the real broker's mail
+apps are not deployed yet. Neither is baked. Phases 3 to 5 are not started. Each phase's
+results are at the end of its section.
 
 **Release:** all five phases ship in **webOS CE 3.2.0**, as its main feature
 (decided 2026-11-09). So 600102 is not the final 3.2.0 image. The release
@@ -145,11 +147,15 @@ TouchPad test passes, so later phases are tested on top of it.
 2. **Check reachability from a TouchPad:** `/usr/bin/curl` to `oauth.wosa.link`,
    `login.microsoftonline.com` and `oauth2.googleapis.com`. Use real TLS
    verification against CE's trust store.
-3. **`org.webosarchive.ce.oauth`**, a JS service baked into the rootfs. Never
-   name it `com.palm.*`: a `com.palm.*` JS service installed into cryptofs
-   gets a private role with `outbound: []` and hangs. Behaviour:
+3. **`com.palm.service.oauth`**, a JS service baked into the rootfs (renamed
+   2026-11-19 from `org.webosarchive.ce.oauth`). The name has to be
+   `com.palm.*`: `run-js-service` jails a rootfs service of any other name, and
+   a jailed service has no `/var/palm/data` and can send only on the public
+   bus. The old worry (a `com.palm.*` service gets a private role with
+   `outbound: []` and hangs) is about services installed into cryptofs; this
+   one ships its own role files. Behaviour:
    - It runs the broker code flow and holds the tokens, keyed by handle, in
-     `/var/palm/data/org.webosarchive.ce.oauth/accounts.json` (mode 600).
+     `/var/palm/data/com.palm.service.oauth/accounts.json` (mode 600).
    - `token {handle, stale}` returns one of four answers, as the shim's retry
      rules need: a token; `fresh` (under a minute old); empty (the refresh was
      refused); or a distinct "provider unreachable" error.
@@ -163,9 +169,36 @@ TouchPad test passes, so later phases are tested on top of it.
    Docker on the LAN, as Lunacy did. Then test against the real broker with the
    M365 test tenant.
 
+**Results, 2026-11-19:**
+
+- The service is `system/usr/palm/services/com.palm.service.oauth/`, with a role and a
+  launcher for each bus under `system/usr/share/`. Its methods are `listProviders`, `start`,
+  `check` and `forget` for the sign-in pages (`com.palm.app.signin`, Email, Accounts; anyone
+  else is refused) and `token` on the private bus only. The sign-in is two calls, not a
+  subscription: `start` gives the code, and the page polls `check`.
+- `tools/oauth-test/`: `servers.sh` runs Lunacy's fake provider and a scratch copy of the
+  broker; `test.js` runs the service's core against them. 54 checks pass, among them a whole
+  sign-in, a refresh, a revoked sign-in and signing in again.
+- On the TouchPad (600102, installed by hand, under its first name and its own unjailed
+  launcher): `/usr/bin/curl` reaches the four hosts with TLS verified; a sign-in with a
+  code finished; the tokens were stored root-only; `token` answered on the private bus and
+  was absent from the public one; a refused token was refreshed through the broker; a
+  revoked sign-in gave an empty token; signing in again kept the handle.
+- **D3 is decided: `luna-send`.** A token call took about 0.5 s, and 1.4 s when the service
+  had to start. The shim keeps a token until five minutes before it ends, because
+  mojomail-eas sets its credentials on every request. `ma_token` in `mailshim.c` is written
+  and tested on the build machine; it is compiled out until phase 3.
+- **Not yet seen on a device:** the service under its final name and Palm's own launcher
+  (`ce-test-full.sh` section 27 checks it), and telling a mail service that its account
+  signed in again, which needs phase 3's templates. Nothing has run against Google or
+  Microsoft: the real broker has no `google` or `microsoft` app yet.
+- **Never delete `/var/palm/jail/<id>` on a device.** A jail keeps read-write mounts of
+  `/media/internal` and others after its service exits. Doing so emptied the test
+  TouchPad's media partition on 2026-11-19.
+
 ### Phase 3: Sign-in, templates, and OAuth on the wire
 
-1. **Sign-in app** `org.webosarchive.ce.signin`: Lunacy's `MailSignIn.js`
+1. **Sign-in app** `com.palm.app.signin`: Lunacy's `MailSignIn.js`
    (Enyo 1), pointed at the CE service, with broker code entry as the only
    path. It runs inside the accounts flow through `validator.customUI`. It
    validates with the mail service's own `validateAccount` before the account
@@ -256,7 +289,7 @@ strings.
 |---|---|---|
 | D1 | ~~Phase 1 in 3.2.0, or after?~~ | **Decided 2026-11-09:** all phases are in 3.2.0. |
 | D2 | ~~Google on CE: through the broker, or not at all?~~ | **Decided 2026-11-17:** through the broker. Google approved up to 100 users, with a warning at sign-in. Revisit before the count nears 100. |
-| D3 | Token transport from the shim: `luna-send` subprocess, or an in-process `LSCall`? | `luna-send` first, because it is simple and isolated. Measure the latency on the TouchPad. |
+| D3 | ~~Token transport from the shim: `luna-send` subprocess, or an in-process `LSCall`?~~ | **Decided 2026-11-19:** `luna-send`, with the token kept in the shim. Measured at 0.5 s (1.4 s cold) on a TouchPad. |
 | D4 | In interim bakes before phase 3, are the 16.1 adapters compiled out or compiled in but inert? | Compiled out. Nothing reaches a flash unverified. All of them are on in the final 3.2.0 bake. |
 
 ## 6. Later, not planned

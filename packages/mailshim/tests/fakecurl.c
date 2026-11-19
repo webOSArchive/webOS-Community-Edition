@@ -37,7 +37,17 @@ void *fake_get(int option)
 	return NULL;
 }
 
-int curl_easy_getinfo(void *h, int info, ...) { (void)h; (void)info; return 0; }
+long fake_response;           /* what CURLINFO_RESPONSE_CODE says, when set */
+int curl_easy_getinfo(void *h, int info, ...)
+{
+	(void)h;
+	va_list ap;
+	va_start(ap, info);
+	long *out = va_arg(ap, long *);
+	va_end(ap);
+	if (info == 0x200002 && fake_response && out) *out = fake_response;
+	return 0;
+}
 int curl_multi_add_handle(void *multi, void *h) { (void)multi; (void)h; fake_added++; return 0; }
 void curl_easy_cleanup(void *h) { (void)h; fake_cleaned++; }
 

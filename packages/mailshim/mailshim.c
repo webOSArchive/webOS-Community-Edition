@@ -17,7 +17,8 @@
  *                          information, the 16.1 reply filter, ComposeMail, calendar items and
  *                          exceptions, attachments as ItemOperations. Phase 3.
  *   CE_MAILSHIM_OAUTH=1    an OAuth handle as the password becomes a bearer token (Exchange)
- *                          or XOAUTH2 (IMAP, SMTP; mailauth.h). Needs the token service: phase 2.
+ *                          or XOAUTH2 (IMAP, SMTP; mailauth.h). The token comes from
+ *                          palm://com.palm.service.oauth/token (ma_token). Phase 3.
  *   CE_MAILSHIM_DUMP=1     development only: request and reply bodies to a file (lc_dump).
  *
  * The headers in lunacy/ are Lunacy's, unchanged; a switched-off adapter's code is not in the
@@ -25,6 +26,7 @@
  */
 #define _GNU_SOURCE
 #include <dlfcn.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <poll.h>
 #include <pthread.h>
@@ -58,8 +60,8 @@
 #ifndef CE_MAILSHIM_DUMP
 #define CE_MAILSHIM_DUMP 0
 #endif
-#if CE_MAILSHIM_OAUTH
-#error "CE_MAILSHIM_OAUTH needs ma_token's transport to org.webosarchive.ce.oauth, which is phase 2 and not written"
+#if CE_MAILSHIM_OAUTH && !CE_MAILSHIM_EAS16
+#error "CE_MAILSHIM_OAUTH is built with CE_MAILSHIM_EAS16: an OAuth Exchange account is Exchange Online"
 #endif
 
 /* The services' stderr goes nowhere on a TouchPad; /var/log/messages is where one looks.
@@ -212,13 +214,123 @@ static size_t ma_json(char *out, size_t cap, const char *s)
 	return o;
 }
 
-/* The access token for a handle: mailauth_io's token (1, or 2 for one just issued; 0 for a
-   handle the service doesn't know; -1 when no token can be had now - the service unreachable,
-   or the provider for a refresh). Lunacy asks its OAuth service over its own bus socket; CE's
-   asks palm://org.webosarchive.ce.oauth/token and is written with that service (phase 2,
-   decision D3: luna-send first). The reply's rules stay Lunacy's: errorCode -11 is 0, any
-   other failure -1, "fresh":true is 2. */
-static int ma_token(void *ctx, const char *user, const char *handle, int stale, char *buf, size_t cap);
+/*
+ * The access token for a handle: mailauth_io's token (1, or 2 for one just issued; 0 for a
+ * handle the service doesn't know; -1 when no token can be had now - the service unreachable,
+ * or the provider for a refresh).
+ *
+ * Lunacy asks its OAuth service over its own bus socket. CE asks
+ * palm://com.palm.service.oauth/token on the private bus, by running luna-send (plan D3):
+ * about half a second on a TouchPad, a second and a half when the service has to start
+ * (measured 2026-11-19). mojomail-eas sets its credentials for every request, so a token is
+ * kept here for as long as the service says it lasts, less five minutes; a token the server
+ * refused (stale) is always asked for again.
+ */
+#include <signal.h>
+#include <sys/wait.h>
+#ifndef CE_LUNA_SEND
+#define CE_LUNA_SEND "/usr/bin/luna-send"
+#endif
+#define MA_KEPT 4
+static struct ma_kept { char handle[64]; char token[MAILAUTH_TOKEN_MAX]; long until, fresh_until; } ma_kept[MA_KEPT];
+static pthread_mutex_t ma_kept_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/* The wall clock (the monotonic one is in librt on the TouchPad's glibc): a clock set back only
+   keeps a token past its time, which the server then refuses, and a refused token is asked for again. */
+static long ma_clock(void) { return (long)time(NULL); }
+
+/* luna-send's one reply to the token call, into reply; its length, or -1. */
+static long ma_ask(const char *handle, int stale, char *reply, size_t cap)
+{
+	char payload[128];
+	int fds[2];
+	snprintf(payload, sizeof payload, "{\"handle\":\"%s\"%s}", handle, stale ? ",\"stale\":true" : "");
+	if (pipe(fds) != 0) return -1;
+	pid_t pid = fork();
+	if (pid < 0) { close(fds[0]); close(fds[1]); return -1; }
+	if (pid == 0) {
+		/* luna-send without a terminal needs its input from /dev/null. */
+		int null = open("/dev/null", O_RDWR);
+		if (null >= 0) { dup2(null, 0); dup2(null, 2); }
+		dup2(fds[1], 1);
+		for (int fd = 3; fd < 256; fd++) close(fd);   /* the service's sockets aren't luna-send's */
+		unsetenv("LD_PRELOAD");
+		execl(CE_LUNA_SEND, "luna-send", "-n", "1", "palm://com.palm.service.oauth/token", payload, (char *)NULL);
+		_exit(127);
+	}
+	close(fds[1]);
+	size_t got = 0;
+	long deadline = ma_clock() + 40;   /* a refresh is one curl call of at most 25 s in the service */
+	while (got < cap - 1) {
+		long left = deadline - ma_clock();
+		struct pollfd pf = { fds[0], POLLIN, 0 };
+		if (left <= 0 || poll(&pf, 1, (int)(left * 1000)) <= 0) break;
+		ssize_t r = read(fds[0], reply + got, cap - 1 - got);
+		if (r <= 0) break;
+		got += (size_t)r;
+	}
+	close(fds[0]);
+	reply[got] = 0;
+	int status;
+	if (waitpid(pid, &status, WNOHANG) == 0) { kill(pid, SIGKILL); waitpid(pid, &status, 0); }
+	return (long)got;
+}
+
+static int ma_token(void *ctx, const char *user, const char *handle, int stale, char *buf, size_t cap)
+{
+	(void)ctx; (void)user;
+	/* Only what goes safely into the request: the handles the service makes. */
+	size_t hl = strlen(handle);
+	if (hl >= sizeof ma_kept[0].handle || strspn(handle, "abcdefghijklmnopqrstuvwxyz0123456789:") != hl) return 0;
+	long now = ma_clock();
+	pthread_mutex_lock(&ma_kept_lock);
+	struct ma_kept *k = NULL, *spare = &ma_kept[0];
+	for (int i = 0; i < MA_KEPT; i++) {
+		if (strcmp(ma_kept[i].handle, handle) == 0) k = &ma_kept[i];
+		else if (ma_kept[i].until < spare->until) spare = &ma_kept[i];   /* an empty one, or the soonest to end */
+	}
+	if (k && !stale && now < k->until && strlen(k->token) < cap) {
+		strcpy(buf, k->token);
+		int r = now < k->fresh_until ? 2 : 1;
+		pthread_mutex_unlock(&ma_kept_lock);
+		return r;
+	}
+	if (k) { memset(k, 0, sizeof *k); }   /* refused, or run out */
+	pthread_mutex_unlock(&ma_kept_lock);
+
+	static char reply[MAILAUTH_TOKEN_MAX + 4096];
+	static pthread_mutex_t ask_lock = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_lock(&ask_lock);
+	long got = ma_ask(handle, stale, reply, sizeof reply);
+	int r = -1;
+	long expires_in = 0;
+	if (got > 0 && strstr(reply, "\"returnValue\":true")) {
+		const char *t = strstr(reply, "\"accessToken\":\""), *e = strstr(reply, "\"expiresIn\":");
+		if (t) {
+			size_t o = 0;
+			for (t += 15; *t && *t != '"' && o + 1 < cap; t++) {
+				if (*t == '\\' && t[1]) t++;   /* \/ and the like: tokens are printable ASCII */
+				buf[o++] = *t;
+			}
+			buf[o] = 0;
+			r = strstr(reply, "\"fresh\":true") ? 2 : 1;
+			if (e) expires_in = atol(e + 12);
+		}
+	} else if (got > 0 && strstr(reply, "\"errorCode\":-11")) r = 0;   /* no such handle; any other error, or no answer, is for now */
+	if (got > 0) memset(reply, 0, (size_t)got);
+	pthread_mutex_unlock(&ask_lock);
+	if (r > 0 && buf[0] && expires_in > 360 && strlen(buf) < sizeof ma_kept[0].token) {
+		pthread_mutex_lock(&ma_kept_lock);
+		k = spare;
+		memset(k, 0, sizeof *k);
+		snprintf(k->handle, sizeof k->handle, "%s", handle);
+		strcpy(k->token, buf);
+		k->until = now + expires_in - 300;
+		k->fresh_until = r == 2 ? now + 60 : 0;
+		pthread_mutex_unlock(&ma_kept_lock);
+	}
+	return r;
+}
 
 GIOStatus g_io_channel_write_chars(GIOChannel *ch, const char *buf, long count, size_t *written, GError **err)
 {

@@ -4,7 +4,7 @@
 #
 #   packages/mailshim/build.sh      -> prebuilt/usr/lib/ssl11mail/libce-mailshim.so
 #
-# Switches (environment, 0 or 1; see mailshim.c): EAS16, DUMP. An image's build has none on until
+# Switches (environment, 0 or 1; see mailshim.c): EAS16, OAUTH (needs EAS16), DUMP. An image's build has none on until
 # its adapters have passed on a TouchPad (Docs/EMAIL-MODERNIZATION-PLAN.md, D4). OUT=<file>
 # writes somewhere else, for a development build that must not replace the prebuilt.
 #
@@ -18,7 +18,7 @@ W=${W:-$ROOT/build/work/mailshim}
 TC=${TC:-/opt/PalmPDK/arm-gcc/bin/arm-none-linux-gnueabi-}
 CC=${HOST_CC:-cc}
 OUT=${OUT:-$HERE/prebuilt/usr/lib/ssl11mail/libce-mailshim.so}
-DEFS="-DCE_MAILSHIM_EAS16=${EAS16:-0} -DCE_MAILSHIM_DUMP=${DUMP:-0}"
+DEFS="-DCE_MAILSHIM_EAS16=${EAS16:-0} -DCE_MAILSHIM_OAUTH=${OAUTH:-0} -DCE_MAILSHIM_DUMP=${DUMP:-0}"
 CFLAGS="-std=gnu99 -O2 -Wall -Wno-unused-function -fPIC -I$HERE/lunacy"
 
 [ -x "${TC}gcc" ] || { echo "toolchain not found: ${TC}gcc" >&2; exit 1; }
@@ -38,8 +38,14 @@ done
 "$CC" -O2 -Wall -Wno-unused-function -I"$HERE/lunacy" -I"$HERE/tests" "$HERE/tests/glue_test.c" -o "$W/glue_test" \
     -L"$W" -Wl,--no-as-needed -lce-mailshim-host -lfakecurl -Wl,-rpath,"$W"
 TZ=UTC timeout 60 "$W/glue_test" "$W/backoff"
-# Every switch still compiles (the code behind them is not in the binary below unless asked for).
-"$CC" $CFLAGS -shared -DCE_MAILSHIM_EAS16=1 -DCE_MAILSHIM_DUMP=1 "$HERE/mailshim.c" -o "$W/all-switches.so" -ldl -lpthread
+# The OAuth glue (CE_MAILSHIM_OAUTH), with a stand-in for luna-send and the token service.
+"$CC" $CFLAGS -shared -DCE_MAILSHIM_STDERR -DCE_MAILSHIM_EAS16=1 -DCE_MAILSHIM_OAUTH=1 -DCE_MAILSHIM_DUMP=1 \
+    -DCE_BACKOFF_FILE="\"$W/backoff-oauth\"" -DCE_LUNA_SEND="\"$HERE/tests/fake-luna-send.sh\"" \
+    "$HERE/mailshim.c" -o "$W/libce-mailshim-oauth-host.so" -ldl -lpthread
+"$CC" -O2 -Wall "$HERE/tests/oauth_glue_test.c" -o "$W/oauth_glue_test" \
+    -L"$W" -Wl,--no-as-needed -lce-mailshim-oauth-host -lfakecurl -Wl,-rpath,"$W"
+mkdir -p "$W/fake-luna"; rm -f "$W/backoff-oauth"
+CE_FAKE_DIR="$W/fake-luna" timeout 60 "$W/oauth_glue_test"
 
 # ---- the TouchPad's ----------------------------------------------------------------------------
 "${TC}gcc" $CFLAGS -march=armv7-a -mfpu=vfp -mfloat-abi=softfp -fno-strict-aliasing $DEFS -shared \

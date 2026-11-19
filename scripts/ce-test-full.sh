@@ -649,6 +649,35 @@ echo "$r" | grep -q '"errorCode":"CONNECTION_FAILED"' && P "26  Exchange validat
 ep=$(pidof mojomail-eas)
 [ -n "$ep" ] && grep -q libce-mailshim /proc/$ep/maps 2>/dev/null && P "26  mojomail-eas has the shim loaded" || F "26  mojomail-eas running without the shim (pid ${ep:-none})"
 
+# 27. OAuth token service (system/usr/palm/services/com.palm.service.oauth, email plan phase 2).
+# Named com.palm.* so it runs as root outside a jail; it must answer the sign-in pages on the
+# public bus, and keep `token` to the private bus.
+OS=com.palm.service.oauth
+ok=1
+for f in /usr/palm/services/$OS/service.js /usr/palm/services/$OS/oauth-core.js /usr/palm/services/$OS/providers.json \
+         /usr/share/ls2/roles/prv/$OS.json /usr/share/ls2/roles/pub/$OS.json \
+         /usr/share/dbus-1/system-services/$OS.service /usr/share/dbus-1/services/$OS.service; do
+  [ -f "$f" ] || { ok=0; F "27  missing $f"; }
+done
+[ $ok = 1 ] && P "27  OAuth token service files, roles and launchers present"
+[ -e /var/palm/data/$OS/providers.json ] && F "27  a test provider list overrides the image's (/var/palm/data/$OS/providers.json)"
+osend() { (luna-send "$@" </dev/null 2>/dev/null & p=$!; ( sleep 30; kill $p 2>/dev/null ) & wait $p) 2>/dev/null; }
+r=$(osend -P -n 1 -a com.palm.app.signin palm://$OS/listProviders '{}')
+echo "$r" | grep -q '"id":"microsoft365"' && echo "$r" | grep -q '"id":"google"' && P "27  the sign-in page gets the provider list (public bus)" || F "27  listProviders as the sign-in page: ${r:-no answer}"
+r=$(osend -P -n 1 -a com.example.other palm://$OS/listProviders '{}')
+echo "$r" | grep -q '"returnValue":false' && P "27  another app is refused" || F "27  listProviders answered another app: ${r:-no answer}"
+r=$(osend -P -n 1 -a com.palm.app.signin palm://$OS/token '{"handle":"oauth2:00000000000000000000000000000000"}')
+echo "$r" | grep -q 'Unknown method' && P "27  token is not on the public bus" || F "27  token on the public bus: ${r:-no answer}"
+r=$(osend -n 1 palm://$OS/token '{"handle":"oauth2:00000000000000000000000000000000"}')
+echo "$r" | grep -q '"errorCode":-11' && P "27  token answers on the private bus (unknown handle: -11)" || F "27  token on the private bus: ${r:-no answer}"
+op=""; for p in $(pidof node); do grep -q "$OS" /proc/$p/cmdline 2>/dev/null && op=$p; done
+if [ -n "$op" ]; then
+  [ "$(grep '^Uid' /proc/$op/status | awk '{print $2}')" = 0 ] && [ "$(readlink /proc/$op/root)" = / ] \
+    && P "27  the service runs as root, outside a jail" || F "27  the service is jailed or not root (pid $op)"
+else
+  F "27  the service isn't running after being called"
+fi
+
 # ---------------------------------------------------------------- ota. CE OTA trust anchor
 # The only OTA component in the image (600070). No private key on the device, so
 # this cannot test a POSITIVE verification -- it tests that the anchor is the

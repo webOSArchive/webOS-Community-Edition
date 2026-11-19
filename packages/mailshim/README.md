@@ -18,8 +18,9 @@ in `scripts/ce-test-full.sh` section 26, and commit all three together.
 | A server's back-off is kept, and nothing is sent to that host until it passes | `backoff.h`, `/var/preferences/ce-eas-backoff` | a stand-in's 503 with `Retry-After: 120`; the next request stayed on the device; Zoho unaffected |
 | A throttled sign-in says "unavailable", not "check your login" | `easerr.h`, in front of `LSMessageRespond` | `401_UNAUTHORIZED`/1000 became `503_SERVICE_UNAVAILABLE`/1110; a wrong password still says 401 |
 
-Everything else is behind build switches (`EAS16=1`, `DUMP=1`; `CE_MAILSHIM_OAUTH` needs phase
-2's token service and stops the build until then). Code behind a switch that is off is not in
+Everything else is behind build switches (`EAS16=1`, `OAUTH=1`, `DUMP=1`). With `OAUTH`, a
+password that is an OAuth handle becomes a token asked of `palm://com.palm.service.oauth/token`
+through `luna-send` and kept until five minutes before it ends. Code behind a switch that is off is not in
 the binary: the phase 1 library exports only `curl_easy_setopt`, `curl_multi_add_handle`,
 `curl_easy_cleanup` and `LSMessageRespond`.
 

@@ -217,6 +217,8 @@ def inputs_stamp():
                 "system/boot/boot-images/BootLogo.tga",
                 "build/full-ce/hp_wording.py",
                 "packages/mailshim/prebuilt/usr/lib/ssl11mail/libce-mailshim.so",
+                *(f"system/usr/palm/services/{OAUTH_SERVICE}/{f}" for f in OAUTH_SERVICE_FILES),
+                *("system/" + f for f in OAUTH_BUS_FILES),
                 "build/full-ce/deviceinfo/about/ce-about-moon.png") + tuple(
                     os.path.relpath(os.path.join(dp, fn), PROJ)
                     for dp, _, fns in sorted(os.walk(os.path.join(PROJ, "packages", "smartkey", "prebuilt")))
@@ -346,6 +348,14 @@ MAIL_OPENSSL_CONF = "OPENSSL_CONF=/usr/lib/ssl11mail/mailssl.cnf "
 # CE's mail shim (packages/mailshim, Docs/EMAIL-MODERNIZATION-PLAN.md): a second
 # preload beside libssl_compat.so, for the services listed. Phase 1: Exchange only.
 MAILSHIM = "/usr/lib/ssl11mail/libce-mailshim.so"
+# CE's OAuth token service (system/usr/palm/services/...): its files, and its
+# role and launcher on each bus.
+OAUTH_SERVICE = "com.palm.service.oauth"
+OAUTH_SERVICE_FILES = ("oauth-core.js", "providers.json", "service.js", "services.json",
+                       "sources.json")
+OAUTH_BUS_FILES = tuple(f"usr/share/{d}/{OAUTH_SERVICE}.{ext}" for d, ext in (
+    ("ls2/roles/prv", "json"), ("ls2/roles/pub", "json"),
+    ("dbus-1/system-services", "service"), ("dbus-1/services", "service")))
 MAILSHIM_SERVICES = ("eas",)
 
 CERT_EXTS = (".pem", ".cer", ".der", ".crt")
@@ -2740,6 +2750,20 @@ def main():
     if tz_done < 500:
         sys.exit(f"ERROR: {zoneinfos[0]}: only {tz_done} zone files")
     for rel in ("etc/palm/timezone.txt", "usr/palm/ext-timezones.json"):
+        wcopy(rel, os.path.join(SYSTEM, rel), 0o644)
+
+    # 11c) com.palm.service.oauth: OAuth 2 sign-in for mail accounts
+    # (Docs/EMAIL-MODERNIZATION-PLAN.md phase 2), a rootfs JS service new in CE.
+    # Named com.palm.* so that run-js-service starts it as it starts Palm's own:
+    # as root, outside a jail, sending on the private bus. Any other name is
+    # jailed (no /var/palm/data to keep tokens in) and held to the public bus.
+    log("tier: CE OAuth token service (com.palm.service.oauth)")
+    rel = "usr/palm/services/" + OAUTH_SERVICE
+    if system_files(rel) != set(OAUTH_SERVICE_FILES):
+        sys.exit(f"ERROR: system/{rel} holds {sorted(system_files(rel))}, expected {sorted(OAUTH_SERVICE_FILES)}")
+    for f in OAUTH_SERVICE_FILES:
+        wcopy(f"{rel}/{f}", os.path.join(SYSTEM, rel, f), 0o644)
+    for rel in OAUTH_BUS_FILES:
         wcopy(rel, os.path.join(SYSTEM, rel), 0o644)
 
     # 12) rootcertsupdate : FULL build-time replay of the trust-store update.
