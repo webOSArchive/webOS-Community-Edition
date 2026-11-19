@@ -219,6 +219,10 @@ def inputs_stamp():
                 "packages/mailshim/prebuilt/usr/lib/ssl11mail/libce-mailshim.so",
                 *(f"system/usr/palm/services/{OAUTH_SERVICE}/{f}" for f in OAUTH_SERVICE_FILES),
                 *("system/" + f for f in OAUTH_BUS_FILES),
+                *(os.path.relpath(os.path.join(dp, fn), PROJ)
+                  for root in [os.path.join(PROJ, "apps", SIGNIN_APP)] + [
+                      os.path.join(PROJ, "system/usr/palm/public/accounts", t) for t in OAUTH_TEMPLATES]
+                  for dp, _, fns in sorted(os.walk(root)) for fn in sorted(fns)),
                 "build/full-ce/deviceinfo/about/ce-about-moon.png") + tuple(
                     os.path.relpath(os.path.join(dp, fn), PROJ)
                     for dp, _, fns in sorted(os.walk(os.path.join(PROJ, "packages", "smartkey", "prebuilt")))
@@ -346,17 +350,21 @@ MAIL_PFX = ("/usr/bin/env LD_BIND_NOW=1 LD_LIBRARY_PATH=/usr/lib/ssl11mail "
             "SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt")
 MAIL_OPENSSL_CONF = "OPENSSL_CONF=/usr/lib/ssl11mail/mailssl.cnf "
 # CE's mail shim (packages/mailshim, Docs/EMAIL-MODERNIZATION-PLAN.md): a second
-# preload beside libssl_compat.so, for the services listed. Phase 1: Exchange only.
+# preload beside libssl_compat.so, for the services listed: Exchange (time zones,
+# back-off, the Exchange Online adapters, bearer tokens) and IMAP and SMTP (XOAUTH2).
+# It does nothing to an IMAP or SMTP login whose password isn't an OAuth handle.
 MAILSHIM = "/usr/lib/ssl11mail/libce-mailshim.so"
 # CE's OAuth token service (system/usr/palm/services/...): its files, and its
 # role and launcher on each bus.
 OAUTH_SERVICE = "com.palm.service.oauth"
 OAUTH_SERVICE_FILES = ("oauth-core.js", "providers.json", "service.js", "services.json",
                        "sources.json")
+SIGNIN_APP = "com.palm.app.signin"
+OAUTH_TEMPLATES = ("com.palm.oauth.google", "com.palm.oauth.microsoft", "com.palm.oauth.microsoft365")
 OAUTH_BUS_FILES = tuple(f"usr/share/{d}/{OAUTH_SERVICE}.{ext}" for d, ext in (
     ("ls2/roles/prv", "json"), ("ls2/roles/pub", "json"),
     ("dbus-1/system-services", "service"), ("dbus-1/services", "service")))
-MAILSHIM_SERVICES = ("eas",)
+MAILSHIM_SERVICES = ("eas", "imap", "smtp")
 
 CERT_EXTS = (".pem", ".cer", ".der", ".crt")
 
@@ -2765,6 +2773,30 @@ def main():
         wcopy(f"{rel}/{f}", os.path.join(SYSTEM, rel, f), 0o644)
     for rel in OAUTH_BUS_FILES:
         wcopy(rel, os.path.join(SYSTEM, rel), 0o644)
+
+    # 11d) the mail sign-in page (apps/com.palm.app.signin) and the account types
+    # it signs in (system/usr/palm/public/accounts/com.palm.oauth.*): phase 3.
+    log("tier: mail sign-in page and OAuth account types")
+    signin_src = os.path.join(PROJ, "apps", SIGNIN_APP)
+    n_signin = 0
+    for dp, dns, fns in os.walk(signin_src):
+        dns.sort()
+        for fn in sorted(fns):
+            rel = os.path.relpath(os.path.join(dp, fn), signin_src)
+            wcopy(f"usr/palm/applications/{SIGNIN_APP}/{rel}", os.path.join(dp, fn), 0o644)
+            n_signin += 1
+    if not os.path.exists(os.path.join(signin_src, "source", "MailSignIn.js")) or n_signin < 5:
+        sys.exit(f"ERROR: apps/{SIGNIN_APP} is incomplete ({n_signin} files)")
+    for tid in OAUTH_TEMPLATES:
+        rel = f"usr/palm/public/accounts/{tid}"
+        files = system_files(rel)
+        if f"{tid}.json" not in files:
+            sys.exit(f"ERROR: system/{rel} has no {tid}.json")
+        tj = json.load(open(os.path.join(SYSTEM, rel, f"{tid}.json")))
+        if tj.get("templateId") != tid or tj["validator"]["customUI"]["appId"] != SIGNIN_APP:
+            sys.exit(f"ERROR: system/{rel}/{tid}.json: wrong templateId or sign-in page")
+        for f in sorted(files):
+            wcopy(f"{rel}/{f}", os.path.join(SYSTEM, rel, f), 0o644)
 
     # 12) rootcertsupdate : FULL build-time replay of the trust-store update.
     # postinst (3.x path): install scripts to /etc/ssl/scripts, then deploycerts:

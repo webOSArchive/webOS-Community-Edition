@@ -4,9 +4,10 @@
 #
 #   packages/mailshim/build.sh      -> prebuilt/usr/lib/ssl11mail/libce-mailshim.so
 #
-# Switches (environment, 0 or 1; see mailshim.c): EAS16, OAUTH (needs EAS16), DUMP. An image's build has none on until
-# its adapters have passed on a TouchPad (Docs/EMAIL-MODERNIZATION-PLAN.md, D4). OUT=<file>
-# writes somewhere else, for a development build that must not replace the prebuilt.
+# Switches (environment, 0 or 1; see mailshim.c): EAS16 and OAUTH (which needs EAS16), on since
+# their adapters passed on a TouchPad (2026-11-19; Docs/EMAIL-MODERNIZATION-PLAN.md, D4), and
+# DUMP, off: never in an image. OUT=<file> writes somewhere else, for a development build that
+# must not replace the prebuilt.
 #
 # Toolchain: PalmPDK gcc 4.3.3 (/opt/PalmPDK/arm-gcc), as LunaCE and SmartKey. The library needs
 # only libc, libdl and libpthread; curl, glib and luna-service2 are reached through dlsym, so
@@ -18,7 +19,7 @@ W=${W:-$ROOT/build/work/mailshim}
 TC=${TC:-/opt/PalmPDK/arm-gcc/bin/arm-none-linux-gnueabi-}
 CC=${HOST_CC:-cc}
 OUT=${OUT:-$HERE/prebuilt/usr/lib/ssl11mail/libce-mailshim.so}
-DEFS="-DCE_MAILSHIM_EAS16=${EAS16:-0} -DCE_MAILSHIM_OAUTH=${OAUTH:-0} -DCE_MAILSHIM_DUMP=${DUMP:-0}"
+DEFS="-DCE_MAILSHIM_EAS16=${EAS16:-1} -DCE_MAILSHIM_OAUTH=${OAUTH:-1} -DCE_MAILSHIM_DUMP=${DUMP:-0}"
 CFLAGS="-std=gnu99 -O2 -Wall -Wno-unused-function -fPIC -I$HERE/lunacy"
 
 [ -x "${TC}gcc" ] || { echo "toolchain not found: ${TC}gcc" >&2; exit 1; }

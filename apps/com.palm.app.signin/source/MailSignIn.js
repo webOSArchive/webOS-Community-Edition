@@ -160,13 +160,13 @@ enyo.kind({
 
 	showCode: function (r, again) {
 		this.asking = {provider: r.provider, code: r.code, state: r.state, every: Math.max(2, r.pollSeconds || 5) * 1000};
-		var name = this.providerName(r.provider);
-		this.showWaiting(again ? $L("One more code") : $L("Sign in on another device"), again
-			? new enyo.g11n.Template($L("This is a personal #{name} account, which signs in for mail only. On the phone or computer, go to the same address once more and enter this second code:")).evaluate({name: name})
+		// The second code surprised its first user, who took it for the first one failing: say first that it worked.
+		this.showWaiting(again ? $L("That worked. One more code to enter") : $L("Sign in on another device"), again
+			? $L("Your sign-in went through. This is a personal Microsoft account (Outlook.com, Hotmail, MSN or Live), and Microsoft asks those to approve mail access separately. On the phone or computer, go to the same address once more and enter this second code:")
 			: $L("On a phone or computer, go to this address and enter the code:"));
 		this.$.address.setContent(String(r.url || "").replace(/^https?:\/\//, ""));
 		this.$.code.setContent(r.code);
-		this.$.waitNote.setContent($L("This page moves on by itself when you have signed in."));
+		this.$.waitNote.setContent(again ? $L("This is the last step. This page moves on by itself when you have entered it.") : $L("This page moves on by itself when you have signed in."));
 		this.$.address.show();
 		this.$.code.show();
 		this.$.waitNote.show();

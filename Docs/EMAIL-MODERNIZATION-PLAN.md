@@ -21,7 +21,9 @@ part of `preload.c` still starts at line 1260. They are folded into phases 1,
 **Status (2026-11-19):** phase 1 is built (`packages/mailshim/`), wired into the bake and
 tested on a TouchPad by installing it by hand on 600102. Phase 2's token service is built,
 baked in 600104 and tested there against a local broker; the real broker's mail apps are not
-deployed yet. Phase 1's library is baked in 600104 too; its hand tests are still owed. Phases 3 to 5 are not started. Each phase's
+deployed yet. Phase 1's library is baked in 600104 too, and its tests are done. Phase 3 is
+built and works on a TouchPad by hand install (results at the end of its section); it is
+wired into the bake and not baked. Phases 3 to 5 are not started. Each phase's
 results are at the end of its section.
 
 **Release:** all five phases ship in **webOS CE 3.2.0**, as its main feature
@@ -253,6 +255,32 @@ TouchPad test passes, so later phases are tested on top of it.
      for Lunacy (user, 2026-11-17).
    - Gmail: sign-in through the broker (with Google's warning), sync, IDLE
      push, send.
+
+**Results, 2026-11-19 (600104 with phase 3 installed by hand):**
+
+- The pieces: `apps/com.palm.app.signin` (the page), the account types
+  `com.palm.oauth.google`, `com.palm.oauth.microsoft365` and the hidden
+  `com.palm.oauth.microsoft` in `system/usr/palm/public/accounts/`, the token service with
+  Microsoft's device-code flow, and the shim built with the Exchange Online adapters and
+  OAuth, preloaded into the Exchange, IMAP and SMTP services. `bake.py` installs all of it;
+  `ce-test-full.sh` sections 26, 27 and 29 check it.
+- Signed in from Add Account, each with a code entered on another device: Google (the
+  Gmail test account), Microsoft Outlook (the Office 365 test account, with the tenant's
+  security policy) and a personal Microsoft account (an MSN address). The personal account
+  got a second code, as designed: Microsoft refuses Exchange's scope for it only when the
+  first code is redeemed. Its first user took the second code for a failure, so that screen
+  now says first that the sign-in worked.
+- Working accounts: Gmail and the MSN account over IMAP with XOAUTH2; Microsoft 365 over
+  Exchange with folders, mail, contacts and calendar. A message went from Gmail (SMTP,
+  XOAUTH2) to the Microsoft 365 account and one back (ComposeMail), and each arrived. A
+  contact and a weekly event with a location made on the TouchPad were stored by Exchange
+  Online. No crash reports.
+- Not yet seen: an attachment download from Exchange Online (a message with one was sent
+  from Gmail and had not arrived when checked), moving or deleting one occurrence of a
+  series, a meeting reply, Ping and IDLE push, signing in again after a revoked sign-in
+  (the modify page), an AADSTS refusal's wording, and a large attachment.
+- The account types are named `com.palm.oauth.*`, not `org.webosarchive.ce.*`: the stock
+  `com.palm.google` type is retired in CE and its name is left alone.
 
 ### Phase 4: Email and Accounts app changes
 

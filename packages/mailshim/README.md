@@ -10,19 +10,23 @@ The plan is `Docs/EMAIL-MODERNIZATION-PLAN.md`.
 library to `LD_PRELOAD` for the services in `MAILSHIM_SERVICES`. Rebuild, then update the md5
 in `scripts/ce-test-full.sh` section 26, and commit all three together.
 
-## What an image's build does (no switch on)
+## What an image's build does
 
-| | Where | Seen on a TouchPad (600102, 2026-11-19) |
+The image's library is built with `EAS16=1 OAUTH=1` (build.sh's defaults since 2026-11-19) and
+is preloaded into the Exchange, IMAP and SMTP services.
+
+| | Where | Seen on a TouchPad (2026-11-19) |
 |---|---|---|
-| An event's time zone goes out in Windows' form | `calf_fix_zones`, on every `Cmd=Sync` body | London, from a device in Detroit, to Zoho: "last Sunday of October at 2:00, of March at 1:00" |
+| An event's time zone goes out in Windows' form | `calf_fix_zones`, on every `Cmd=Sync` body | London, from a device in Detroit, to Zoho: right across the October 2027 change in Zoho's calendar |
 | A server's back-off is kept, and nothing is sent to that host until it passes | `backoff.h`, `/var/preferences/ce-eas-backoff` | a stand-in's 503 with `Retry-After: 120`; the next request stayed on the device; Zoho unaffected |
-| A throttled sign-in says "unavailable", not "check your login" | `easerr.h`, in front of `LSMessageRespond` | `401_UNAUTHORIZED`/1000 became `503_SERVICE_UNAVAILABLE`/1110; a wrong password still says 401 |
+| A throttled sign-in says "unavailable", not "check your login" | `easerr.h`, in front of `LSMessageRespond` | "The account is temporarily unavailable" on the Accounts screen |
+| An OAuth handle as the password becomes a token from `palm://com.palm.service.oauth/token` (through `luna-send`, kept until five minutes before it ends) | `ma_token`; a bearer for Exchange, XOAUTH2 for IMAP and SMTP (`mailauth.h`) | Gmail and Outlook.com over IMAP, Gmail's SMTP (`AUTH PLAIN` sent as XOAUTH2), Exchange Online |
+| Exchange Online (16.1 only) for Palm's 12.1 client: version, provisioning, device information, the reply filter, ComposeMail, calendar items | the `CE_MAILSHIM_EAS16` parts of `mailshim.c` | Microsoft 365: sign-in with the tenant's policy, folders, mail, a message sent and delivered, a contact and a weekly event with a location stored |
 
-Everything else is behind build switches (`EAS16=1`, `OAUTH=1`, `DUMP=1`). With `OAUTH`, a
-password that is an OAuth handle becomes a token asked of `palm://com.palm.service.oauth/token`
-through `luna-send` and kept until five minutes before it ends. Code behind a switch that is off is not in
-the binary: the phase 1 library exports only `curl_easy_setopt`, `curl_multi_add_handle`,
-`curl_easy_cleanup` and `LSMessageRespond`.
+Not yet seen on a TouchPad: an attachment download from Exchange Online (`attfetch.h`), a
+series' exceptions (`calf_split`), a meeting reply (`composemail.h`'s `cm_fix_reply`), and
+Ping push. `DUMP=1` (request and reply bodies to a file) is for development and never in an
+image. Code behind a switch that is off is not in the binary.
 
 ## Where the code comes from
 

@@ -630,18 +630,18 @@ grep -q gotAddressThreads /usr/palm/applications/com.palm.app.messaging/app/budd
 grep -q "Always set a result" /usr/palm/services/com.palm.messaging.chatthreader/assistants/newmessageassistant.js 2>/dev/null \
   && P "25  chatthreader 1.1.0.3 (non-buddy first message threads)" || F "25  chatthreader predates 1.1.0.3"
 
-# 26. Mail shim (packages/mailshim, Docs/EMAIL-MODERNIZATION-PLAN.md phase 1): preloaded into
-# the Exchange service only, beside libssl_compat.so; the image's build has no switch on.
+# 26. Mail shim (packages/mailshim, Docs/EMAIL-MODERNIZATION-PLAN.md): preloaded beside
+# libssl_compat.so into the Exchange, IMAP and SMTP services (not POP), with the Exchange
+# Online adapters and OAuth on.
 MS=/usr/lib/ssl11mail/libce-mailshim.so
 m=$(md5sum $MS 2>/dev/null | cut -d' ' -f1)
-[ "$m" = "b437bab017c57e2cc5c9c42d2d284c68" ] && P "26  libce-mailshim.so is the phase 1 build" || F "26  libce-mailshim.so not the expected build (md5 ${m:-none})"
-grep -q "LD_PRELOAD=/usr/lib/ssl11mail/libssl_compat.so:$MS " /usr/share/dbus-1/system-services/com.palm.eas.service 2>/dev/null \
-  && P "26  com.palm.eas starts under the mail shim" || F "26  com.palm.eas.service doesn't preload the mail shim"
-for svc in imap smtp pop; do
-  grep -q libce-mailshim /usr/share/dbus-1/system-services/com.palm.$svc.service 2>/dev/null \
-    && F "26  com.palm.$svc preloads the mail shim (phase 1 is Exchange only)"
+[ "$m" = "a20b0de24b3bc7863fa6627b39e81dc4" ] && P "26  libce-mailshim.so is the expected build" || F "26  libce-mailshim.so not the expected build (md5 ${m:-none})"
+for svc in eas imap smtp; do
+  grep -q "LD_PRELOAD=/usr/lib/ssl11mail/libssl_compat.so:$MS " /usr/share/dbus-1/system-services/com.palm.$svc.service 2>/dev/null \
+    && P "26  com.palm.$svc starts under the mail shim" || F "26  com.palm.$svc.service doesn't preload the mail shim"
 done
-P "26  IMAP, SMTP and POP checked for the shim (must not have it yet)"
+grep -q libce-mailshim /usr/share/dbus-1/system-services/com.palm.pop.service 2>/dev/null \
+  && F "26  com.palm.pop preloads the mail shim (not planned)" || P "26  POP is left without the shim"
 # A validator call starts the service: it must answer under the shim, and a host nothing
 # listens on must read as a connection failure, not a crash or a hang.
 r=$( (luna-send -n 1 -a com.palm.app.email palm://com.palm.eas/validateAccount '{"username":"x@example.invalid","password":"x","email":"x@example.invalid","protocol":"EAS","config":{"email":"x@example.invalid","server":"http://127.0.0.1:1","domain":"","username":"x@example.invalid","password":"x"}}' </dev/null & p=$!; ( sleep 30; kill $p 2>/dev/null ) & wait $p) 2>/dev/null)
@@ -697,6 +697,18 @@ if [ -n "$ap" ]; then
 else
   I "28  no saved launcher layout to check yet"
 fi
+
+# 29. Mail sign-in page and the OAuth account types (email plan, phase 3).
+[ -f /usr/palm/applications/com.palm.app.signin/source/MailSignIn.js ] && [ -f /usr/palm/applications/com.palm.app.signin/appinfo.json ] \
+  && P "29  the mail sign-in page is installed" || F "29  /usr/palm/applications/com.palm.app.signin is missing or incomplete"
+r=$( (luna-send -n 1 -a com.palm.app.accounts palm://com.palm.service.accounts/listAccountTemplates '{}' </dev/null & p=$!; ( sleep 30; kill $p 2>/dev/null ) & wait $p) 2>/dev/null)
+for t in com.palm.oauth.google com.palm.oauth.microsoft365 com.palm.oauth.microsoft; do
+  echo "$r" | grep -q "\"templateId\":\"$t\"" && P "29  account type $t is offered" || F "29  account type $t is not in listAccountTemplates"
+done
+echo "$r" | grep -q '"loc_subtitle":"Email (Calendar and Contacts, if available)"' && P "29  Microsoft Outlook says what it brings" || F "29  the Microsoft 365 type has no subtitle"
+grep -q "loc_subtitle" /usr/palm/frameworks/enyo/0.10/framework/lib/accounts/source/add-account.js 2>/dev/null && P "29  Add Account shows a type's own subtitle" || F "29  add-account.js doesn't read loc_subtitle"
+r=$( (luna-send -P -n 1 -a com.palm.app.signin palm://com.palm.service.oauth/listProviders '{}' </dev/null & p=$!; ( sleep 30; kill $p 2>/dev/null ) & wait $p) 2>/dev/null)
+echo "$r" | grep -q '"templateId":"com.palm.oauth.microsoft365"' && echo "$r" | grep -q '"templateId":"com.palm.oauth.google"' && P "29  the token service's providers name those account types" || F "29  listProviders: ${r:-no answer}"
 
 # ---------------------------------------------------------------- ota. CE OTA trust anchor
 # The only OTA component in the image (600070). No private key on the device, so
