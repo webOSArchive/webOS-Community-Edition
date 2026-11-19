@@ -667,7 +667,8 @@ echo "$r" | grep -q '"id":"microsoft365"' && echo "$r" | grep -q '"id":"google"'
 r=$(osend -P -n 1 -a com.example.other palm://$OS/listProviders '{}')
 echo "$r" | grep -q '"returnValue":false' && P "27  another app is refused" || F "27  listProviders answered another app: ${r:-no answer}"
 r=$(osend -P -n 1 -a com.palm.app.signin palm://$OS/token '{"handle":"oauth2:00000000000000000000000000000000"}')
-echo "$r" | grep -q 'Unknown method' && P "27  token is not on the public bus" || F "27  token on the public bus: ${r:-no answer}"
+# (the hub words the refusal differently by bus and name: "Unknown method", "Message status unknown")
+echo "$r" | grep -q '"accessToken"\|"errorCode":-1[12]' && F "27  token answered on the public bus: $r" || P "27  token is not served on the public bus"
 r=$(osend -n 1 palm://$OS/token '{"handle":"oauth2:00000000000000000000000000000000"}')
 echo "$r" | grep -q '"errorCode":-11' && P "27  token answers on the private bus (unknown handle: -11)" || F "27  token on the private bus: ${r:-no answer}"
 op=""; for p in $(pidof node); do grep -q "$OS" /proc/$p/cmdline 2>/dev/null && op=$p; done
