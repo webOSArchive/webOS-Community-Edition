@@ -6,11 +6,13 @@
  * file for the tokens, and the bus.
  *
  *   listProviders {}                    -> {providers: [{id, title, templateId}]}
- *   start  {provider}                   -> {code, url, pollSeconds}: show both; the person signs
- *                                          in at url, on another device, with the code
- *   check  {provider, code}             -> {step: "pending"} until then; once, {step: "done",
+ *   start  {provider}                   -> {code, url, pollSeconds[, state]}: show code and url; the
+ *                                          person signs in at url, on another device, with the code
+ *   check  {provider, code[, state]}    -> {step: "pending"} until then; once, {step: "done",
  *                                          handle, email, config, validator, templateId, ...};
- *                                          or {step: "failed", errorCode, errorText, aadsts}
+ *                                          {step: "again", provider, code, url, state}: another
+ *                                          code to enter, for the provider named; or
+ *                                          {step: "failed", errorCode, errorText, aadsts}
  *   forget {handle}
  *   token  {handle, stale}              -> {accessToken, fresh}; errorCode -11, -12
  *
@@ -197,7 +199,7 @@ function CheckAssistant() {}
 CheckAssistant.prototype.run = function (future) {
 	if (!pageOnly(this, future)) { return; }
 	var args = this.controller.args;
-	getCore().check(args.provider, args.code, function (r) {
+	getCore().check(args.provider, args.code, args.state, function (r) {
 		if (r.returnValue && r.step === "done" && r.existing) { signedInAgain(r); }
 		// A refusal keeps what the provider said (aadsts, providerError), which an exception
 		// would drop: it is a step of its own.

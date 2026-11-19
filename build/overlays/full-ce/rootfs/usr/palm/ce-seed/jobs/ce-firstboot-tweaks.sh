@@ -51,7 +51,7 @@
     fi
     left=0
     found=0
-    for app in com.palm.app.accounts com.palm.app.backup com.palm.app.calculator com.palm.app.cloud-auth com.palm.app.contacts com.palm.app.firstuse com.palm.app.messaging com.palm.app.phone com.palm.app.videoplayer com.palm.app.videos com.webosarchive.usbsettings org.webosinternals.govnah; do
+    for app in com.palm.app.accounts com.palm.app.backup com.palm.app.calculator com.palm.app.cloud-auth com.palm.app.contacts com.palm.app.firstuse com.palm.app.messaging com.palm.app.phone com.palm.app.signin com.palm.app.videoplayer com.palm.app.videos com.webosarchive.usbsettings org.webosinternals.govnah; do
         [ -d "$APPS/usr/palm/applications/$app" ] || continue
         found=$((found+1))
         rm -rf "$APPS/usr/palm/applications/$app"

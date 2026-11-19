@@ -1,4 +1,4 @@
 [D-BUS Service]
 Name=com.palm.smtp
-Exec=/usr/bin/env LD_BIND_NOW=1 OPENSSL_CONF=/usr/lib/ssl11mail/mailssl.cnf LD_LIBRARY_PATH=/usr/lib/ssl11mail LD_PRELOAD=/usr/lib/ssl11mail/libssl_compat.so CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt /usr/bin/mojomail-smtp -c '{"log":{"appender":{"type":"pmlog"},"levels":{"com.palm.smtp":"info"}}}'
+Exec=/usr/bin/env LD_BIND_NOW=1 OPENSSL_CONF=/usr/lib/ssl11mail/mailssl.cnf LD_LIBRARY_PATH=/usr/lib/ssl11mail LD_PRELOAD=/usr/lib/ssl11mail/libssl_compat.so:/usr/lib/ssl11mail/libce-mailshim.so CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt /usr/bin/mojomail-smtp -c '{"log":{"appender":{"type":"pmlog"},"levels":{"com.palm.smtp":"info"}}}'
 Type=dynamic

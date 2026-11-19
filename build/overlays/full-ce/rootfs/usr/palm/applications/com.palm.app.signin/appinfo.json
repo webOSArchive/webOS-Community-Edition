@@ -1,0 +1,12 @@
+{
+	"id": "com.palm.app.signin",
+	"version": "3.2.0",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"title": "Sign In",
+	"icon": "icon.png",
+	"uiRevision": 2,
+	"visible": false,
+	"removable": false
+}

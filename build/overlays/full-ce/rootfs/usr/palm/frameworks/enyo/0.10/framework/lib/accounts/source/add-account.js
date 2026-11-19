@@ -151,6 +151,8 @@ enyo.kind({
 		return this.otherLabel;
 	},
 	subtitleFor: function(t) {
+		// webOS CE: a template may say its own (com.palm.oauth.microsoft365: what it brings depends on the account).
+		if (t && t.loc_subtitle) { return t.loc_subtitle; }
 		var caps = this.capsOf(t), seen = {}, parts = [];
 		for (var i = 0; i < this.subtitleOrder.length && parts.length < 3; i++) {
 			var lbl = this.capLabels[this.subtitleOrder[i]];

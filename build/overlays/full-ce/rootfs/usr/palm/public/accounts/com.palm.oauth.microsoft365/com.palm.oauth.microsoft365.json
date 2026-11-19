@@ -1,0 +1,103 @@
+{
+	"templateId": "com.palm.oauth.microsoft365",
+	"loc_name": "Microsoft Outlook",
+	"loc_subtitle": "Email (Calendar and Contacts, if available)",
+	"icon": {
+		"loc_32x32": "images/microsoft-32x32.png",
+		"loc_48x48": "images/microsoft-48x48.png"
+	},
+	"validator": {
+		"customUI": {
+			"appId": "com.palm.app.signin",
+			"name": "index.html"
+		}
+	},
+	"onCapabilitiesChanged": "palm://com.palm.eas/accountCapabilities",
+	"onCredentialsChanged": "palm://com.palm.eas/accountUpdated",
+	"readPermissions": [
+		"com.palm.app.email",
+		"com.palm.eas",
+		"com.palm.app.calendar",
+		"com.palm.app.contacts",
+		"com.palm.app.tasks",
+		"com.palm.service.contacts",
+		"com.palm.service.contacts.linker",
+		"com.palm.app.signin"
+	],
+	"writePermissions": [
+		"com.palm.app.email",
+		"com.palm.app.calendar",
+		"com.palm.app.contacts",
+		"com.palm.app.tasks",
+		"com.palm.app.signin"
+	],
+	"capabilityProviders": [
+		{
+			"capability": "MAIL",
+			"id": "com.palm.eas.mail",
+			"icon": {
+				"loc_32x32": "images/microsoft-32x32.png",
+				"loc_48x48": "images/microsoft-48x48.png"
+			},
+			"implementation": "palm://com.palm.eas/",
+			"onCreate": "palm://com.palm.eas/accountCreated",
+			"onDelete": "palm://com.palm.eas/accountDeleted",
+			"subKind": "com.palm.email.eas:1",
+			"dbkinds": {
+				"task": "com.palm.email.eas:1"
+			}
+		},
+		{
+			"capability": "CONTACTS",
+			"id": "com.palm.eas.contacts",
+			"icon": {
+				"loc_32x32": "images/microsoft-32x32.png",
+				"loc_48x48": "images/microsoft-48x48.png"
+			},
+			"implementation": "palm://com.palm.eas/",
+			"sync": "palm://com.palm.eas/syncAllContacts",
+			"subKind": "com.palm.contact.eas:1",
+			"dbkinds": {
+				"contact": "com.palm.contact.eas:1"
+			}
+		},
+		{
+			"capability": "REMOTECONTACTS",
+			"id": "com.palm.eas.remotecontacts",
+			"loc_name": "Global Address Lookup",
+			"icon": {
+				"loc_32x32": "images/microsoft-32x32.png",
+				"loc_48x48": "images/microsoft-48x48.png"
+			},
+			"implementation": "palm://com.palm.eas/",
+			"query": "palm://com.palm.eas/queryGal"
+		},
+		{
+			"capability": "CALENDAR",
+			"id": "com.palm.eas.calendar",
+			"icon": {
+				"loc_32x32": "images/microsoft-32x32.png",
+				"loc_48x48": "images/microsoft-48x48.png"
+			},
+			"implementation": "palm://com.palm.eas/",
+			"sync": "palm://com.palm.eas/syncAllCalendars",
+			"subKind": "com.palm.calendarevent.eas:1",
+			"dbkinds": {
+				"calendarevent": "com.palm.calendarevent.eas:1"
+			}
+		},
+		{
+			"capability": "TASKS",
+			"id": "com.palm.eas.tasks",
+			"icon": {
+				"loc_32x32": "images/microsoft-32x32.png",
+				"loc_48x48": "images/microsoft-48x48.png"
+			},
+			"implementation": "palm://com.palm.eas/",
+			"subKind": "com.palm.task.eas:1",
+			"dbkinds": {
+				"task": "com.palm.task.eas:1"
+			}
+		}
+	]
+}

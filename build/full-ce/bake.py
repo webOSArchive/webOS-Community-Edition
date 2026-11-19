@@ -2579,10 +2579,12 @@ def main():
             lib_done.append(f)
     lib_icons = ["images/appcatalog-32x32.png", "images/appcatalog-48x48.png"]
     # what CE changed in the library: its string tables and the phrases
-    # util.js looks up in them (hp_wording.py), and the two catalog icons
+    # util.js looks up in them (hp_wording.py), the two catalog icons, and
+    # add-account.js (a template's own loc_subtitle, for Microsoft Outlook)
     lib_strings = [f for f in lib_done if f not in lib_icons]
     lib_want = sorted(f"resources/{n}.json" for n in
-                      ("de", "en", "en_ca", "es", "es_es", "fr", "fr_ca", "it")) + ["source/util.js"]
+                      ("de", "en", "en_ca", "es", "es_es", "fr", "fr_ca", "it")) + [
+                          "source/add-account.js", "source/util.js"]
     if lib_strings != lib_want or not all(f in lib_done for f in lib_icons):
         sys.exit(f"ERROR: accounts library: expected system/ to differ from the "
                  f"enyo-accounts replay in {lib_want} and the two icons, found {lib_done}")
