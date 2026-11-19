@@ -678,6 +678,25 @@ else
   F "27  the service isn't running after being called"
 fi
 
+# 28. LunaSysMgr and the bus after a restart (LunaCE d758efe, 600104). A LunaSysMgr refused its
+# own service names ran without them and crashed at the first app launch: 14 times after first
+# use on 600100 and 600103. The hub's refusal is logged; there must be none, and the names
+# must belong to the LunaSysMgr running now.
+n=$(cat /var/log/messages /var/log/messages.0 2>/dev/null | grep -c "service name that already exists: com.palm.\(lunastats\|applicationManager\|systemmanager\)")
+[ "$n" = 0 ] && P "28  LunaSysMgr was never refused its bus names (this log)" || F "28  LunaSysMgr was refused its bus names $n time(s): see /var/log/messages"
+strings /usr/bin/LunaSysMgr 2>/dev/null | grep -q "com.palm.lunastats not registered" && P "28  LunaSysMgr has the bus-name fixes" || F "28  LunaSysMgr predates the bus-name fixes (LunaCE d758efe)"
+r=$( (luna-send -n 1 palm://com.palm.applicationManager/running '{}' </dev/null & p=$!; ( sleep 15; kill $p 2>/dev/null ) & wait $p) 2>/dev/null)
+echo "$r" | grep -q '"running"' && P "28  the application manager answers on the bus" || F "28  applicationManager/running: ${r:-no answer}"
+n=$(ls /var/log/rdxd/pending 2>/dev/null | wc -l)
+[ "$n" = 0 ] && P "28  no crash reports" || I "28  $n crash report(s) in /var/log/rdxd/pending (a clean first boot and first use leave none)"
+# Clock and Calculator are platform apps (vendor "webOS Archive" counts): on Apps, not Downloads.
+ap=$(grep -l "pagedesignator=apps" /var/luna/preferences/launcher3/page_* 2>/dev/null | head -1)
+if [ -n "$ap" ]; then
+  grep -q "id=com.palm.app.clock" "$ap" && grep -q "id=com.palm.calculator" "$ap" && P "28  Clock and Calculator are on the Apps tab" || F "28  Clock or Calculator is not on the Apps tab"
+else
+  I "28  no saved launcher layout to check yet"
+fi
+
 # ---------------------------------------------------------------- ota. CE OTA trust anchor
 # The only OTA component in the image (600070). No private key on the device, so
 # this cannot test a POSITIVE verification -- it tests that the anchor is the
