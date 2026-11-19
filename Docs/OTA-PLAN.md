@@ -246,6 +246,23 @@ The rootfs diff can't express these:
     `resources/{de,es,fr,it}.json`. Email stores each account's signature
     when the account is created, so existing accounts keep "HP TouchPad";
     only new accounts get the new default. Leave stored signatures alone.
+    (With step 12's Email, a stored signature that is the one Email shipped
+    with is no longer used: such an account shows and sends the current
+    default. The stored record is still not touched.)
+12. **Email's phase 4 changes and the mail pieces around it.** Email is a
+    cryptofs preload, so the same rule as (11): `ce-ota-finish` lays
+    `mail/source/settings/MasterSettings.js`,
+    `mail/source/settings/AccountSettings.js`, `data/AccountPreferences.js`,
+    `compose/source/Compose.js` and `css/compose.css` from the image's staged
+    Email ipk over the installed app, md5-guarded. Everything else the mail
+    work adds is rootfs and comes with the diff: `libce-mailshim.so` and the
+    three changed `.service` lines, `com.palm.service.oauth` with its roles
+    and launchers, `com.palm.app.signin`, the `com.palm.oauth.*` account
+    types, and the accounts and addressing library files. Two cautions: the
+    shim must be replaced by rename, never copied over (a running mail
+    service that has it mapped crashes at exit), and the mail services and
+    LunaSysMgr have to be restarted to pick the new files up, which the
+    flash's reboot does.
 
 ### 2.3 Delivery tier: armed flash, on purpose
 

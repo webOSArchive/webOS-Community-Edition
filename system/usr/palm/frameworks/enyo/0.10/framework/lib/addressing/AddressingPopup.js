@@ -219,7 +219,11 @@ enyo.kind({
 		this.$.list.refresh();
 	},
 	inputFilterCleared: function() {
-		this.$.list.cancelSearch();
+		// webOS CE: the list is made when the popup first opens; before then there is no search
+		// to cancel (an uncaught TypeError here, found by Lunacy).
+		if (this.$.list) {
+			this.$.list.cancelSearch();
+		}
 		this.close();
 	},
 	inputShowAllContacts: function() {

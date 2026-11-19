@@ -710,6 +710,19 @@ grep -q "loc_subtitle" /usr/palm/frameworks/enyo/0.10/framework/lib/accounts/sou
 r=$( (luna-send -P -n 1 -a com.palm.app.signin palm://com.palm.service.oauth/listProviders '{}' </dev/null & p=$!; ( sleep 30; kill $p 2>/dev/null ) & wait $p) 2>/dev/null)
 echo "$r" | grep -q '"templateId":"com.palm.oauth.microsoft365"' && echo "$r" | grep -q '"templateId":"com.palm.oauth.google"' && P "29  the token service's providers name those account types" || F "29  listProviders: ${r:-no answer}"
 
+# 30. Email's phase 4 changes (apps/com.palm.app.email; a cryptofs preload, so installed at
+# first boot) and the addressing library's guard.
+EM=/media/cryptofs/apps/usr/palm/applications/com.palm.app.email
+if [ -f $EM/appinfo.json ]; then
+  grep -q "signInUI" $EM/mail/source/settings/MasterSettings.js 2>/dev/null && P "30  Email opens an OAuth account's own sign-in page" || F "30  Email's MasterSettings.js lacks the sign-in page change"
+  grep -q "isDefaultSig" $EM/data/AccountPreferences.js 2>/dev/null && grep -q "isDefaultSig" $EM/mail/source/settings/AccountSettings.js 2>/dev/null \
+    && P "30  Email never saves a default signature as a typed one" || F "30  Email lacks the signature fix"
+  grep -q 'DEFAULT_SIG = $L("-- Sent from my webOS TouchPad")' $EM/data/AccountPreferences.js 2>/dev/null && P "30  Email's default signature is the reworded one" || F "30  Email's default signature wasn't reworded"
+else
+  F "30  Email is not installed in cryptofs ($EM)"
+fi
+grep -q 'if (this.$.list) {' /usr/palm/frameworks/enyo/0.10/framework/lib/addressing/AddressingPopup.js 2>/dev/null && P "30  the address field's popup is guarded" || F "30  AddressingPopup.js lacks the guard"
+
 # ---------------------------------------------------------------- ota. CE OTA trust anchor
 # The only OTA component in the image (600070). No private key on the device, so
 # this cannot test a POSITIVE verification -- it tests that the anchor is the

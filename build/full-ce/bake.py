@@ -4829,8 +4829,43 @@ def main():
                 log(f"  edited  {what}: {rel}")
         return edit
 
+    def edit_email(approot):
+        # CE's Email is apps/com.palm.app.email: the stock 3.0.13600 tree with the
+        # email plan's phase 4 changes ("Change login settings" opens an OAuth
+        # account's own sign-in page; a default signature is never saved as a typed
+        # one). It must still be the stock app's files and no others, so a changed
+        # stock ipk fails here instead of shipping a mix. The wording pass then runs
+        # over it as it did over the stock tree. The declared version is left alone.
+        src = os.path.join(PROJ, "apps", "com.palm.app.email")
+        def tree(root):
+            return {os.path.relpath(os.path.join(dp, fn), root) for dp, _, fns in os.walk(root) for fn in fns}
+        ours, theirs = tree(src), tree(approot)
+        if ours != theirs:
+            sys.exit(f"ERROR: apps/com.palm.app.email does not match the stock Email ipk's files: "
+                     f"only in apps/ {sorted(ours - theirs)[:8]}, only in the ipk {sorted(theirs - ours)[:8]}")
+        changed = 0
+        for rel in sorted(ours):
+            with open(os.path.join(src, rel), "rb") as f:
+                mine = f.read()
+            with open(os.path.join(approot, rel), "rb") as f:
+                stock = f.read()
+            if mine != stock:
+                with open(os.path.join(approot, rel), "wb") as f:
+                    f.write(mine)
+                log(f"  edited  Email: {rel}")
+                changed += 1
+        if not 1 <= changed <= 12:
+            sys.exit(f"ERROR: apps/com.palm.app.email changes {changed} files of the stock Email (expected a handful)")
+        with open(os.path.join(approot, "mail/source/settings/MasterSettings.js"), encoding="utf-8") as f:
+            if "signInUI" not in f.read():
+                sys.exit("ERROR: Email's MasterSettings.js lacks the sign-in page change")
+        hpw_staged(hp_wording.EMAIL, "Email")(approot)
+
     repack_staged_ipk("./usr/palm/ipkgs/com.palm.app.email/com.palm.app.email_3.0.13600_all.ipk",
-                      "com.palm.app.email", hpw_staged(hp_wording.EMAIL, "Email"))
+                      "com.palm.app.email", edit_email)
+    # The addressing library's popup, guarded (system/; found by Lunacy in Email's compose).
+    rel = "usr/palm/frameworks/enyo/0.10/framework/lib/addressing/AddressingPopup.js"
+    wcopy(rel, os.path.join(SYSTEM, rel), 0o644)
     repack_staged_ipk("./usr/palm/ipkgs/com.palm.app.musicplayer/"
                       "com.palm.app.musicplayer_3.0.8000_all.ipk",
                       "com.palm.app.musicplayer", hpw_staged(hp_wording.MUSIC, "Music"))

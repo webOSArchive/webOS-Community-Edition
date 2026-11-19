@@ -26,6 +26,7 @@ enyo.kind({
 	windowActivated: function () {
 		if (this.hasNode()) {
 			this.node.style.backgroundImage = 'url("' + this.backgroundImage + '")';
+			this.fitWallpaper();
 		}
 		if (this.$.shade.hasNode()) {
 			this.$.shade.node.style.background = "";
@@ -41,6 +42,18 @@ enyo.kind({
 		if (this.backgroundImage) {
 			this.windowActivated();
 		}
+	},
+	// webOS CE, from Lunacy, to keep the two copies of Email alike: the wallpaper is drawn at
+	// its own size, which on a TouchPad is what the system drew behind the card, and nothing
+	// changes there. On a larger screen one that fills a TouchPad screen is scaled to fill.
+	fitWallpaper: function () {
+		var node = this.node, img = new Image();
+		img.onload = function () {
+			var w = img.naturalWidth, h = img.naturalHeight;
+			var fills = (w >= 1024 && h >= 768) || (w >= 768 && h >= 1024);
+			node.style.backgroundSize = fills ? "cover" : "";
+		};
+		img.src = this.backgroundImage;
 	},
 	updateBackground: function (self, result, response) {
 		var path = result.wallpaper.wallpaperFile;

@@ -418,7 +418,10 @@ enyo.kind({
         // Set sync values in scene
         this.$.lookback.setValue(account.getSyncLookback());
         this.$.syncFreq.setValue(account.getSyncFrequency());
-        this.$.signature.setValue(account.getSignature() || AccountPreferences.addStylingToSig(AccountPreferences.DEFAULT_SIG));
+        // webOS CE: an empty field shows the default actually in use (the carrier defaults'),
+        // not Palm's own, which saving then stored on the account as if typed. From Lunacy.
+        var sig = account.getSignature();
+        this.$.signature.setValue((sig && !AccountPreferences.isDefaultSig(sig)) ? sig : AccountPreferences.defaultSignature());
         this.$.notificationType.setValue(account.getNotificationType() || AccountPreferences.NOTIFICATION_SYSTEM);
 		this.$.showNotification.setState(account.getNotificationsEnabled());
 		this.$.syncDeleteToServer.setState(account.isDeviceDeleteSynced());

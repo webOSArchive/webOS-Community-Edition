@@ -74,7 +74,9 @@ AccountPreferences._correctSignature = function(signature) {
 	signature = signature || AccountPreferences.NO_SIGNATURE_BY_USER;
 	// passed gatekeeper, so we're cool to blank out
 	var carrierDefs = enyo.application.carrierDefaults; 
-	if (carrierDefs && signature === carrierDefs.defaultSignature) {
+	// webOS CE: the default in any form (styled, as Account Settings shows it), and Palm's own
+	// signature, are never saved: an account keeps a signature only when one was typed.
+	if ((carrierDefs && signature === carrierDefs.defaultSignature) || AccountPreferences.isDefaultSig(signature)) {
 		// default signature should never be saved to the database. Different
 		// for each device. 
 		signature = "";
@@ -108,9 +110,7 @@ AccountPreferences.addStylingToSig = function(signature){
  * displayed in the compose view's from dropdown
  */
 AccountPreferences.getSignature = function(accountId) {
-	var carrierDefs =  enyo.application.carrierDefaults;
-	var defSig = AccountPreferences.addStylingToSig((carrierDefs && carrierDefs.defaultSignature) ||
-														AccountPreferences.DEFAULT_SIG);
+	var defSig = AccountPreferences.defaultSignature();
 
 	// DFISH-28123: fix default signature being used when sending from a
 	// synthetic folder (and a custom signature is set on the default account)
@@ -126,7 +126,33 @@ AccountPreferences.getSignature = function(accountId) {
 	if (!account) {
 		return defSig;
 	}
-	return account.getSignature() || defSig;
+	// webOS CE: an account that saved Palm's signature (Account Settings showed it in an empty
+	// field and saved it) gets the default instead.
+	var sig = account.getSignature();
+	return (sig && !AccountPreferences.isDefaultSig(sig)) ? sig : defSig;
+};
+
+/** webOS CE: the default signature, styled: the carrier defaults' when there are some. */
+AccountPreferences.defaultSignature = function() {
+	var carrierDefs = enyo.application.carrierDefaults;
+	return AccountPreferences.addStylingToSig((carrierDefs && carrierDefs.defaultSignature) ||
+		AccountPreferences.DEFAULT_SIG);
+};
+
+/**
+ * webOS CE: whether a signature is a default rather than one the user typed: the current
+ * default, or the one Email shipped with ("Sent from my HP TouchPad", in each language it
+ * shipped in), styled or not.
+ */
+AccountPreferences.isDefaultSig = function(signature) {
+	if (!signature || typeof signature !== "string") {
+		return false;
+	}
+	var text = AccountPreferences.sanitizeStr(signature).trim();
+	var carrierDefs = enyo.application.carrierDefaults;
+	var defaults = AccountPreferences.SHIPPED_SIGS.concat([AccountPreferences.DEFAULT_SIG,
+		AccountPreferences.sanitizeStr((carrierDefs && carrierDefs.defaultSignature) || "").trim()]);
+	return defaults.indexOf(text) >= 0;
 };
 
 
@@ -152,6 +178,14 @@ AccountPreferences.LOOKBACK_FOREVER = 0;
 
 AccountPreferences.NO_SIGNATURE_BY_USER = '<div id="no_signature" style="overflow:hidden;"></div>';
 AccountPreferences.DEFAULT_SIG = $L("-- Sent from my HP TouchPad");
+// webOS CE: the signature as Email shipped it in each language, which accounts set up before
+// 3.2.0 may have saved. The maker's name is joined on so that the image build's wording pass
+// (build/full-ce/hp_wording.py), which renames the default above, leaves these as they were.
+AccountPreferences.SHIPPED_SIGS = (function() {
+	var maker = "H" + "P";
+	return ["-- Sent from my " + maker + " TouchPad", "-- Gesendet von meinem " + maker + " TouchPad",
+		"-- Enviado desde mi " + maker + " TouchPad", "-- Envoy\u00e9 depuis mon " + maker + " TouchPad", "-- Inviato da " + maker + " TouchPad"];
+}());
 
 AccountPreferences.NOTIFICATION_MUTE = "mute";
 AccountPreferences.NOTIFICATION_SYSTEM = "system";

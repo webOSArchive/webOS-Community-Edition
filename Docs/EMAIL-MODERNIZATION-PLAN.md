@@ -302,6 +302,21 @@ strings.
    Lunacy's fix for screens wider than 1024 px
    (`Docs/email-app-for-ce.md`). It changes nothing at 1024 px, so take it
    only to keep the two copies of Email alike.
+**Results, 2026-11-19:**
+
+- Email is now `apps/com.palm.app.email`: the stock 3.0.13600 tree as a baseline commit,
+  then items 1, 3 and 5. The bake lays it over the staged ipk's tree (the file lists must
+  match) before the wording pass, which still renames the default signature. The declared
+  version is unchanged. Item 2 went in with phase 3. Item 4 is in the addressing library
+  (`system/…/lib/addressing/AddressingPopup.js`, stock baseline then the guard).
+- Item 3: CE has the bug (the code is stock). One effect to know: an account that stored the
+  signature Email shipped with ("Sent from my HP TouchPad", in any of its five languages)
+  now shows and sends the current default instead. The stored record is not changed.
+- On a TouchPad (600104, the five files and the library file laid over by hand): Email
+  starts and lists the four accounts. Not yet driven: Change login settings on an OAuth
+  account, the signature field, and the address field.
+- `Docs/OTA-PLAN.md` §2.2 has the step for devices that get 3.2.0 by OTA (12).
+
 6. **Park:** a server Change for an unknown id is stored with `_id: null`. The
    fix belongs in the `mojomail-eas` binary. A shim-level rewrite (a Change for
    an unknown ServerId becomes an Add) needs per-folder state, so it is not

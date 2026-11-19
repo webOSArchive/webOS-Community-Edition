@@ -294,6 +294,23 @@ img {
   border-width: 0 128px;
   margin: 0 -128px;
 }
+/* webOS CE, from Lunacy: the shade is 128px each side of the 768px sheet, which reached the edges of a
+   1024px TouchPad screen and no further: on a wider one the wallpaper showed undarkened beyond
+   it. The image is black, darkening from top to bottom (alpha 51 to 190); the same gradient
+   carries on past it to any edge. At 1024px both of these are off the screen. */
+.desktop-background-gradient:before,
+.desktop-background-gradient:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4096px;
+  background: -webkit-linear-gradient(top, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.306) 25%,
+    rgba(0, 0, 0, 0.471) 50%, rgba(0, 0, 0, 0.635) 75%, rgba(0, 0, 0, 0.745) 100%);
+  pointer-events: none;
+}
+.desktop-background-gradient:before { right: 100%; margin-right: 128px; }
+.desktop-background-gradient:after { left: 100%; margin-left: 128px; }
 .desktop-background-center {
   margin: 0 auto;
   max-width: 768px;

@@ -11,7 +11,12 @@ enyo.kind({
 				{kind:"Preferences", name: "preferences"},
 				{kind: "AccountSettings", name:"accountSettings"},
 				{kind: "CRUDAccounts", name: "crudAccounts"},
-				{kind: "AccountsUI", name: "addAccountView", capability: "MAIL", onAccountsUI_Done: "showPreferences"}
+				{kind: "AccountsUI", name: "addAccountView", capability: "MAIL", onAccountsUI_Done: "showPreferences"},
+				// webOS CE: an account type with its own sign-in page (validator.customUI: Google
+				// and Microsoft Outlook, signed in with OAuth by com.palm.app.signin) changes its
+				// login there, as the Accounts app does (the accounts library's entry-modify.js).
+				// Palm's password form can't sign it in. From Lunacy.
+				{kind: "Accounts.crossAppUI", name: "signInUI", onResult: "signInDone"}
 			]
 		}
 	],
@@ -38,8 +43,21 @@ enyo.kind({
 	},
 	showEditMode: function(accountId) {
 		var accts = enyo.application.accounts;
-		this.$.crudAccounts.loadAccount(accts.getAccount(accountId));
+		// webOS CE: the type's own sign-in page, where it has one.
+		var account = accts.getAccount(accountId);
+		var template = account && accts.accountTemplates && accts.accountTemplates[account.getTemplateId()];
+		if (template && template.validator && template.validator.customUI) {
+			this.signInAccountId = accountId;
+			this.$.settingPane.selectView(this.$.signInUI);
+			this.$.signInUI.launchCrossAppUI(template.validator.customUI, {mode: "modify", account: account.getAccountData(), capability: "MAIL"});
+			return;
+		}
+		this.$.crudAccounts.loadAccount(account);
 		this.$.settingPane.selectView(this.$.crudAccounts);
+	},
+	// webOS CE: the sign-in page is done (signed in again, or cancelled): back to the account.
+	signInDone: function() {
+		this.showAccountSetting(this.signInAccountId);
 	},
 	
 	/**
