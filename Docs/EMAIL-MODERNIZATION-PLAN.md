@@ -320,7 +320,10 @@ strings.
 - **Stock 3.0.5 / non-CE devices:** no feed ipk planned. CE devices get
   upgrades by OTA (`Docs/OTA-PLAN.md`).
 - **Lunacy:** nothing flows back except findings. Tell Lunacy if the TouchPad
-  disagrees with any Lunacy measurement.
+  disagrees with any Lunacy measurement. The findings so far are in
+  [LUNACY-MAIL-FINDINGS.md](LUNACY-MAIL-FINDINGS.md): keeping the client id with each
+  account (needed before the Microsoft app registration changes), Microsoft's device-code
+  flow, and Palm's zone form on a real device.
 
 ## 4. Must not break (each phase's gate)
 

@@ -33,6 +33,22 @@ function CEOAuthCore(env) {
 	var accounts = env.load() || {};
 	var refreshing = {};   // handle -> callbacks waiting for one refresh
 
+	// An account signed in with a provider's own code belongs to the client id it signed in
+	// with: its refresh token works with no other. The id is kept with the account (`client`),
+	// so that a later image with another app registration in providers.json signs new accounts
+	// in with the new one and leaves these working. An account from before the id was kept
+	// signed in with the id of the time, which is the one in providers.json when this first
+	// runs over it.
+	(function () {
+		var h, a, p, changed = false;
+		for (h in accounts) {
+			a = accounts.hasOwnProperty(h) ? accounts[h] : null;
+			p = a && providers[a.provider];
+			if (a && !a.same && !a.broker && !a.client && p && p.device) { a.client = p.device.clientId; changed = true; }
+		}
+		if (changed) { env.save(accounts); }
+	}());
+
 	function ok(more) {
 		var r = { returnValue: true }, k;
 		for (k in more) { if (more.hasOwnProperty(k)) { r[k] = more[k]; } }
@@ -212,6 +228,7 @@ function CEOAuthCore(env) {
 			expires: now + (parseInt(tokens.expires_in, 10) || 3600) * 1000,
 			refresh: String(tokens.refresh_token || ""), broker: !!viaBroker
 		};
+		if (!viaBroker && p.device) { accounts[handle].client = p.device.clientId; }   // whose refresh token it is
 		for (i = 0; i < same.length; i++) {
 			if (same[i] !== handle) { accounts[same[i]] = { provider: providerId, email: email, same: handle }; }
 		}
@@ -255,10 +272,11 @@ function CEOAuthCore(env) {
 		var app = (p && p.brokerApp) || a.provider;
 		var url = broker + "/refresh.php?app=" + enc(app), body = "refresh_token=" + enc(a.refresh);
 		if (!a.broker) {
-			// Signed in with the provider's own code: refreshed with the provider, no secret.
+			// Signed in with the provider's own code: refreshed with the provider, no secret,
+			// as the client the account signed in with (which may no longer be the provider's).
 			if (!p || !p.device) { return finish(null); }
 			url = p.device.tokenUrl;
-			body = "grant_type=refresh_token&client_id=" + enc(p.device.clientId) + "&refresh_token=" + enc(a.refresh) + "&scope=" + enc(p.device.scope);
+			body = "grant_type=refresh_token&client_id=" + enc(a.client || p.device.clientId) + "&refresh_token=" + enc(a.refresh) + "&scope=" + enc(p.device.scope);
 		}
 		env.http("POST", url, body, function (err, t) {
 			if (t && t.access_token) {
@@ -273,8 +291,10 @@ function CEOAuthCore(env) {
 			// Refused (a revoked or expired refresh token) is the end of this sign-in. A
 			// failure to ask isn't: the old token while it lasts, and otherwise none just now,
 			// which the mail service takes as a connection failure and tries again.
-			if (t && (t.status === "invalid_grant" || t.error === "invalid_grant")) {
-				env.log(a.provider + " refused the refresh; the account needs signing in again: " + String(t.error_description || "").slice(0, 300));
+			// unauthorized_client and invalid_client: the app registration the account signed in
+			// with is gone or was changed (Microsoft's AADSTS700016); no later try will work.
+			if (t && (t.status === "invalid_grant" || t.error === "invalid_grant" || t.error === "unauthorized_client" || t.error === "invalid_client")) {
+				env.log(a.provider + " refused the refresh (" + (t.error || t.status) + "); the account needs signing in again: " + String(t.error_description || "").slice(0, 300));
 				a.refresh = ""; a.access = "";
 				save();
 				return finish("");

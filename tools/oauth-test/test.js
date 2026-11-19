@@ -36,7 +36,7 @@ const CONFIG = {
 };
 
 /* A core over a made-up broker: `answers` maps "METHOD url-substring" to what http gives. */
-function world(store) {
+function world(store, config) {
 	const w = { now: 1e12, saved: store || null, requests: [], answers: {}, n: 0, logs: [] };
 	w.core = CEOAuthCore({
 		http(method, url, body, cb) {
@@ -52,7 +52,7 @@ function world(store) {
 		randomHex: (n) => String(++w.n).padStart(n * 2, "0"),
 		log: (t) => w.logs.push(t),
 		decode64: (t) => Buffer.from(t, "base64").toString("utf8"),
-		config: CONFIG
+		config: config || CONFIG
 	});
 	return w;
 }
@@ -228,6 +228,43 @@ async function rules() {
 	w.answers["POST https://ms.test/token"] = { json: { error: "invalid_grant", error_description: "AADSTS700082: The refresh token has expired due to inactivity." }, status: 400 };
 	r = await call(w.core.token, msHandle, false);
 	check(r.returnValue && r.accessToken === "", "device: a refused refresh ends the sign-in");
+
+	// The account keeps the client id it signed in with: a later image with another app
+	// registration signs new accounts in with the new one and leaves this one working.
+	check(w.saved[msHandle].client === "client-1", "device: the account keeps the client id it signed in with");
+	const NEWER = JSON.parse(JSON.stringify(CONFIG));
+	NEWER.providers.exchange.device.clientId = "client-2";
+	NEWER.providers.outlook.device.clientId = "client-2";
+	const kept = JSON.parse(JSON.stringify(w.saved));
+	kept[msHandle].refresh = "ms-rt-old"; kept[msHandle].access = "ms-at-old"; kept[msHandle].expires = 0;
+	let w2 = world(kept, NEWER);
+	w2.n = 100;   // this harness's "random" handles count from 1 in every world
+	w2.answers["POST https://ms.test/token"] = (url, body) => ({ json: form(body).client_id === "client-1"
+		? { access_token: "ms-at-kept", refresh_token: "ms-rt-kept", expires_in: 3600 } : { error: "invalid_grant" }, status: form(body).client_id === "client-1" ? 200 : 400 });
+	r = await call(w2.core.token, msHandle, false);
+	check(r.accessToken === "ms-at-kept" && form(w2.requests[w2.requests.length - 1].body).client_id === "client-1", "device: after the registration changes, an old account still refreshes as its own client");
+	w2.answers["POST https://ms.test/devicecode"] = { json: { user_code: "NEW11111", device_code: "dev-new", verification_uri: "https://login.microsoft.com/device", interval: 5 } };
+	r = await call(w2.core.start, "exchange");
+	check(form(w2.requests[w2.requests.length - 1].body).client_id === "client-2", "device: a new sign-in uses the new client id");
+	w2.answers["POST https://ms.test/token"] = { json: tokens("second@work.example", { access_token: "ms-at-new", refresh_token: "ms-rt-new" }) };
+	r = await call(w2.core.check, "exchange", "NEW11111", "dev-new");
+	check(r.step === "done" && w2.saved[r.handle].client === "client-2" && w2.saved[msHandle].client === "client-1", "device: the new account is the new client's; the old one is unchanged");
+	// The old registration deleted: no retry will help, so the account asks to be signed in again.
+	const deleted = JSON.parse(JSON.stringify(kept));
+	let w3 = world(deleted, NEWER);
+	w3.answers["POST https://ms.test/token"] = { json: { error: "unauthorized_client", error_description: "AADSTS700016: Application with identifier 'client-1' was not found in the directory." }, status: 400 };
+	r = await call(w3.core.token, msHandle, false);
+	check(r.returnValue && r.accessToken === "" && w3.saved[msHandle].refresh === "", "device: a registration that is gone ends the sign-in, not a retry for ever");
+
+	// Signing the old account in again moves it to the new client.
+	w2.answers["POST https://ms.test/token"] = { json: tokens("w@work.example", { access_token: "ms-at-re", refresh_token: "ms-rt-re" }) };
+	r = await call(w2.core.check, "exchange", "NEW11111", "dev-new");
+	check(r.handle === msHandle && r.existing && w2.saved[msHandle].client === "client-2", "device: signing an old account in again makes it the new client's");
+	// An account stored before the id was kept gets the id of the time, once.
+	const older = { "oauth2:before": { provider: "exchange", email: "o@work.example", access: "a", got: 1e12, expires: 0, refresh: "rt-before", broker: false },
+		"oauth2:viabroker": { provider: "google", email: "g@gmail.com", access: "a", got: 1e12, expires: 1e13, refresh: "r", broker: true } };
+	w2 = world(older);
+	check(w2.saved["oauth2:before"].client === "client-1" && w2.saved["oauth2:viabroker"].client === undefined, "device: an account from before the id was kept is given the id of the time; a broker account has none");
 
 	// A personal account: Exchange's scope refused, so the mail-only provider's code follows.
 	w.answers["POST https://ms.test/token"] = { json: { error: "invalid_scope", error_description: "AADSTS70011: The provided value for the input parameter 'scope' is not valid." }, status: 400 };
