@@ -313,8 +313,9 @@ strings.
   signature Email shipped with ("Sent from my HP TouchPad", in any of its five languages)
   now shows and sends the current default instead. The stored record is not changed.
 - On a TouchPad (600104, the five files and the library file laid over by hand): Email
-  starts and lists the four accounts. Not yet driven: Change login settings on an OAuth
-  account, the signature field, and the address field.
+  starts and lists the four accounts. Tried by hand the same day and found good: Change
+  login settings on an OAuth account (the sign-in page opens, with Sign In Again and Remove
+  Account), the signature field, and typing in a compose window's To field.
 - `Docs/OTA-PLAN.md` §2.2 has the step for devices that get 3.2.0 by OTA (12).
 
 6. **Park:** a server Change for an unknown id is stored with `_id: null`. The
