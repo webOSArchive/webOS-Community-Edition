@@ -4,7 +4,7 @@
 	"providers": {
 		"google": {
 			"title": "Google",
-			"templateId": "org.webosarchive.ce.google",
+			"templateId": "com.palm.oauth.google",
 			"brokerApp": "google",
 			"requiredScope": "https://mail.google.com/",
 			"mail": {
@@ -21,7 +21,7 @@
 		},
 		"microsoft": {
 			"title": "Microsoft",
-			"templateId": "org.webosarchive.ce.microsoft",
+			"templateId": "com.palm.oauth.microsoft",
 			"device": {
 				"clientId": "95d7ba4d-1ae2-44d2-a8ef-3b06a31345f6",
 				"deviceUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/devicecode",
@@ -43,7 +43,7 @@
 		},
 		"microsoft365": {
 			"title": "Microsoft Outlook",
-			"templateId": "org.webosarchive.ce.microsoft365",
+			"templateId": "com.palm.oauth.microsoft365",
 			"device": {
 				"clientId": "95d7ba4d-1ae2-44d2-a8ef-3b06a31345f6",
 				"deviceUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/devicecode",

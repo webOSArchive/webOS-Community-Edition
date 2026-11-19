@@ -1,0 +1,15 @@
+com.palm.app.signin: the page that signs Google and Microsoft mail accounts in with OAuth on
+webOS CE (Docs/EMAIL-MODERNIZATION-PLAN.md). The sign-in service is
+system/usr/palm/services/com.palm.service.oauth; the account types are
+system/usr/palm/public/accounts/com.palm.oauth.*.
+
+source/MailSignIn.js, index.html and depends.js are from Lunacy
+(https://github.com/webOSArchive/Lunacy, CoreApps/org.webosarchive.lunacy.signin, at f7dfc82),
+Copyright 2026 codepoet and Lunacy's contributors, Apache License 2.0; changed for CE: one way
+to sign in (a code entered on another device), asked of CE's service.
+
+Images:
+- icon.png: Palm's Email icon (com.palm.app.email, HP webOS 3.x).
+- The account types' google-*.png: the Google account icon of webOS 3.x (Mojo's shared images).
+- The account types' microsoft-*.png: Outlook's icon as Lunacy prepared it; the mark is
+  Microsoft's, used to name the account type.
