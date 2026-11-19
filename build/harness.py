@@ -29,6 +29,7 @@ import hashlib
 import io
 import json
 import os
+import re
 import shutil
 import sys
 import tarfile
@@ -59,6 +60,18 @@ MESSAGES_GLOB = "resources/messages"
 # so dropping the vendor mark here is the whole change. It is a length-prefixed
 # CONSTANT_Utf8 entry, so a SHORTER replacement is fine (see patch_class_utf8).
 TITLE_OLD = b"HP(R) webOS(tm) Doctor (Build "
+# The build string in that title starts with the customization archive's name, capitalised:
+# hp.tar gives "(Build Hp.88.600105 ...)". ConfigFileMgr.getPhoenixBuildVersion() leaves the
+# name out only when it starts with "wr" (a constant used nowhere else), so that constant is
+# given this build's own first two letters instead ("hp", or "at" for att.tar) and the title
+# is "(Build 88.600105 ...)". The archive itself keeps its name, so nothing about flashing
+# changes.
+CONFIGMGR_CLASS = "com/palm/nova/installer/recoverytool/ConfigFileMgr.class"
+TITLE_SKIP_OLD = b"wr"
+# The three backgrounds every screen is drawn over, with the webOS moon where HP's mark was
+# (tools/doctor-art/build-doctor-art.py made them; stock.json has the images they replace).
+DOCTOR_ART_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "doctor-art")
+DOCTOR_ART = ("resources/bg1.png", "resources/bg2.png", "resources/bg3.png")
 TITLE_NEW = b"webOS(tm) Doctor (Build "
 
 # recoverytool.config keys that are safe to rewrite. Audited against every class
@@ -890,6 +903,8 @@ def rebuild_jar(src_jar, out_jar, new_webos_tar, branding=None):
       - recoverytool.config   (VersionStr / RomBuildNumber / build time)
       - messages*.properties  (HP-profile promises + dead support links)
       - CardController.class  (drop the vendor mark from the window title)
+      - ConfigFileMgr.class   (drop the customization name from the title's build string)
+      - bg1.png, bg2.png, bg3.png (the moon where HP's mark was)
     """
     manifest = (
         "Manifest-Version: 1.0\r\n"
@@ -907,6 +922,18 @@ def rebuild_jar(src_jar, out_jar, new_webos_tar, branding=None):
     # completes from intact bytes.
     tmp_jar = out_jar + ".tmp"
     log(f"repacking JAR -> {out_jar} (via {os.path.basename(tmp_jar)})")
+    art, cust2 = {}, None
+    if branding:
+        with open(os.path.join(DOCTOR_ART_DIR, "stock.json")) as f:
+            art_stock = json.load(f)["sha256"]
+        for entry in DOCTOR_ART:
+            with open(os.path.join(DOCTOR_ART_DIR, os.path.basename(entry)), "rb") as f:
+                art[entry] = (f.read(), art_stock[os.path.basename(entry)])
+        with zipfile.ZipFile(src_jar) as zin:
+            m = re.search(r"^CustomizationBuild=(\S+)", zin.read(CONFIG_ENTRY).decode("latin-1"), re.M)
+        if not m or len(m.group(1)) < 2:
+            sys.exit(f"[ce-harness] FATAL: {CONFIG_ENTRY} names no customization archive")
+        cust2 = m.group(1)[:2].encode("ascii")
     with zipfile.ZipFile(src_jar) as zin, \
          zipfile.ZipFile(tmp_jar, "w", zipfile.ZIP_DEFLATED) as zout:
         for item in zin.infolist():
@@ -943,6 +970,19 @@ def rebuild_jar(src_jar, out_jar, new_webos_tar, branding=None):
                     sys.exit(f"[ce-harness] FATAL: {n} has no {sorted(missing)} "
                              f"key(s) — the OEM bundle moved")
                 log(f"  branded {n} ({len(hit)} strings)")
+            elif branding and n == CONFIGMGR_CLASS:
+                if cust2 != TITLE_SKIP_OLD:
+                    data = patch_class_utf8(data, TITLE_SKIP_OLD, cust2)
+                log(f"  patched ConfigFileMgr.class (no customization name in the title's build string: "
+                    f"skips names starting {cust2.decode()!r})")
+            elif branding and n in art:
+                new, want = art[n]
+                got = hashlib.sha256(data).hexdigest()
+                if got != want:
+                    sys.exit(f"[ce-harness] FATAL: {n} is not the image build/doctor-art was made from "
+                             f"(sha256 {got}); run tools/doctor-art/build-doctor-art.py on this jar")
+                data = new
+                log(f"  replaced {n} (the moon where HP's mark was)")
             elif branding and n == CARDCTL_CLASS:
                 data = patch_class_utf8(data, TITLE_OLD, TITLE_NEW)
                 log(f"  patched CardController.class title "

@@ -1,0 +1,8 @@
+{
+ "what": "sha256 of the OEM jar's images these replace",
+ "sha256": {
+  "bg1.png": "01e2ff2c0d7e9d356c5c353eeda0e2deffa0b2bd51dbd7837fc54edd257e77b5",
+  "bg2.png": "0e33ba38d8c409ae337d39dc7ced9ca2e451944b21285f8404b7cff784b04eb2",
+  "bg3.png": "2abbedd0fa4ade39212ccf8920af828545b1e544119fb17d07b8429aa3ff726c"
+ }
+}
