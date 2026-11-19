@@ -8,7 +8,7 @@ bg3.png, and HP's round logo is painted into each one, at the left of the strip 
 bottom of the dark panel. There is no separate logo file to swap. So each background is
 rebuilt: the mark is painted out with the strip's own colour, row by row (the strip has no
 detail there), and the moon from tools/boot-logo/moon-disc.png, the same artwork as the boot
-logo, is set in its place, dimmed to sit in the panel as the mark did.
+logo, is set in its place as it is: lit, with its lettering, not dimmed into a watermark.
 
 build/harness.py puts the results into the JAR in place of the stock images, and checks the
 stock ones against stock.json first, so another OEM jar fails the build instead of getting
@@ -22,7 +22,7 @@ import os
 import sys
 import zipfile
 
-from PIL import Image, ImageEnhance
+from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -30,16 +30,13 @@ OUT = os.path.join(ROOT, "build", "doctor-art")
 MOON = os.path.join(ROOT, "tools", "boot-logo", "moon-disc.png")
 NAMES = ("bg1.png", "bg2.png", "bg3.png")
 CX, CY = 386, 385        # the centre of HP's mark, the same in all three
-ERASE_R = 16             # the mark is 13 px in radius
+ERASE_R = 16             # the mark is 13 px in radius (the moon covers all of this)
 CLEAN_X = range(410, 440)  # the strip beside the mark, for each row's colour
-MOON_SIZE = 30
-MOON_BRIGHTNESS = 0.55
+MOON_SIZE = 38           # the strip is 46 px high
 
 
 def main(jar):
     moon = Image.open(MOON).convert("RGBA").resize((MOON_SIZE, MOON_SIZE), Image.LANCZOS)
-    rgb = ImageEnhance.Brightness(moon.convert("RGB")).enhance(MOON_BRIGHTNESS)
-    moon = Image.merge("RGBA", (*rgb.split(), moon.split()[3]))
     os.makedirs(OUT, exist_ok=True)
     stock = {}
     with zipfile.ZipFile(jar) as z:
