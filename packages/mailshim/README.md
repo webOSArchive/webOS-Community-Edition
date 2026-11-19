@@ -47,7 +47,11 @@ what the service writes where its own zone is UTC. On a TouchPad it breaks them 
 **device's** clock: London's changes came out of a device in Detroit as "the 4th Saturday of
 October and of March at 21:00". Lunacy's code didn't take that for Palm's form and changed
 nothing. `calf_palm_offset` reads each change on the process's local clock, as Palm did.
-Lunacy should take this if its mail service ever runs outside UTC.
+
+Lunacy doesn't need this change. Its mail services run on its own glibc with no `TZ` and no
+`/etc/localtime`, so they are in UTC whatever the Android device's clock says, and in UTC this
+code does exactly what Lunacy's does. The note for Lunacy is only that Palm's zone form
+follows the service's own time zone, so its mail services should stay in UTC.
 
 Measured over 46 zones as the event's and as the device's (1,426 pairs, 2026):
 
