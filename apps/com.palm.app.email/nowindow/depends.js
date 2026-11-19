@@ -1,0 +1,21 @@
+enyo.depends(
+	"../util/stringify.js",
+	"../data/mail.js",
+	"../data/AccountPreferences.js",
+	"../util/util.js",
+	"../util/MojoDBChangeProcessor.js",
+	"../util/Power.js",
+	"../util/EmailProcessor.js",
+	"../facades/Folder.js",
+	"../facades/Email.js",
+	"../facades/Message.js",
+	"../facades/ContactCache.js",
+	"../util/FolderProcessor.js",
+	"../data/EmailAccount.js",
+	"../data/CombinedAccount.js",
+	"../data/AccountList.js",
+	"../util/urlparser.js",
+	"../data/AttachmentManager.js",
+	"../source/DashboardManager.js",
+	"source/Launch.js"
+);

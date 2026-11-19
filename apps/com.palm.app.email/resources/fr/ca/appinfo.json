@@ -1,0 +1,56 @@
+{
+	"icon": "../../../icon.png",
+	"id": "com.palm.app.email",
+	"main": "../../../index.html",
+	"mimeTypes": [
+		{
+			"extension": "eml",
+			"mime": "message/rfc822",
+			"stream": false
+		}
+	],
+	"noWindow": true,
+	"removable": false,
+	"splashicon": "../../../icon-256x256.png",
+	"title": "Courriel",
+	"type": "web",
+	"uiRevision": 2,
+	"universalSearch": {
+		"action": {
+			"displayName": "Nouveau courriel",
+			"launchParam": "text",
+			"url": "com.palm.app.email"
+		},
+		"dbsearch": {
+			"dbQuery": {
+				"desc": true,
+				"from": "com.palm.email:1",
+				"limit": 20,
+				"orderBy": "timestamp",
+				"where": [
+					{
+						"op": "=",
+						"prop": "flags.visible",
+						"val": true
+					},
+					{
+						"collate": "primary",
+						"op": "?",
+						"prop": "searchText",
+						"val": ""
+					}
+				]
+			},
+			"displayFields": [
+				"from.name",
+				"subject"
+			],
+			"displayName": "Courriel",
+			"launchParam": "emailId",
+			"launchParamDbField": "_id",
+			"url": "com.palm.app.email"
+		}
+	},
+	"vendor": "HP",
+	"version": "3.0.13600"
+}

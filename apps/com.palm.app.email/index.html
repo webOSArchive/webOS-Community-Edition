@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="viewport" content="width=device-width initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<title>enyo Mail Launcher</title>
+	<!--<script src="/usr/palm/frameworks/enyo/0.10/framework/enyo.js" launch="debug" type="text/javascript"></script> -->
+	<script src="/usr/palm/frameworks/enyo/0.10/framework/enyo.js" type="text/javascript"></script>
+</head>
+<body>
+<script type="text/javascript">
+	window.fauxMail = false;
+	
+	(function () {
+		console.log("Email app headless index.html loaded");
+		console.info("WINLOG: Email app headless index.html loading");
+		
+		var unloadFunc = function(){
+			console.info("WINLOG: headless window UNLOAD");
+			window.removeEventListener('unload', unloadFunc);
+		};
+		window.addEventListener('unload', unloadFunc);
+		
+		var launcher = enyo.application.launcher = new EmailAppLaunch();
+		
+		enyo.applicationRelaunchHandler = function (params) {
+			enyo.application.launcher.relaunch(params);
+		};
+	
+		launcher.startup();
+	})();
+	
+</script>
+</body>
+</html>

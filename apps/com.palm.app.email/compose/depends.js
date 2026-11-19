@@ -1,0 +1,14 @@
+enyo.depends(
+	"$enyo-lib/addressing/",
+	"../data/mail.js",
+	"../data/AccountPreferences.js",
+	"../util/Mailto/MailtoURIParser.js",
+	"../util/util.js",
+	"../facades/Email.js",
+	"source/Compose.js",
+	"source/Composition.js",
+	"source/EmailRecipient.js",
+	"../controls/",
+	"../css/compose.css",
+    "/usr/palm/frameworks/caja/html-sanitizer-minified.js"
+);

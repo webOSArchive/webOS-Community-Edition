@@ -1,0 +1,11 @@
+enyo.depends
+(
+	"../data/EmailAccount.js",
+	"../data/AttachmentManager.js",
+	"../facades/Attachment.js",
+	"AttachmentsDrawer.js",
+	"FolderListPopup.js",
+	"BasicFadeScroller.js",
+	"Dialogs.js",
+	"../css/controls.css"
+);

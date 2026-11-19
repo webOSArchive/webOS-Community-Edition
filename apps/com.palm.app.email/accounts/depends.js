@@ -1,0 +1,19 @@
+enyo.depends(
+	"../util/prologue.js",
+	"$enyo-lib/networkalerts/",
+  	"../data/mail.js",
+	"../data/EmailAccount.js",
+	"../data/CombinedAccount.js",
+	"source/ProtocolSettings.js",
+	"source/AccountWizard.js",
+	"source/ManualConfig.js",
+	"source/SimpleConfig.js",
+	"source/CRUDAccounts.js",
+	"../util/util.js",
+	"../facades/Email.js",
+	"../controls/",
+	"$enyo-lib/authlib/",
+	"$enyo-lib/accounts/",
+	"../css/compose.css",
+	"accounts.css"
+);

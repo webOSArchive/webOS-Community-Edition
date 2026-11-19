@@ -1,0 +1,20 @@
+{
+	"Are you sure you want to mark all messages in the folder as read?": "Are you sure you wish to mark all messages in the folder as read?",
+	"Are you sure you want to permanently delete these items?": "Are you sure you wish to permanently delete these items?",
+	"Can't add account": "Cannot add account",
+	"Change login settings": "Change log‑in settings",
+	"Check your login and password.": "Check your log-in and password.",
+	"Choose one of the following options": "Choose one of the following options:",
+	"Couldn't save draft. email lost": "Couldn't save draft. Email lost",
+	"Favorites": "Favourites",
+	"Gmail": "Google Mail",
+	"Junk E-mail": "Junk Email",
+	"Login timed out. Check your login and password.": "Log-in timed out. Check your log-in and password.",
+	"Manual Setup": "Manual Set‑up",
+	"Outgoing server setup": "Outgoing server set-up",
+	"Security certificate expired.": "Security certificate reached expiry.",
+	"The above folders can be added to  your list of Favorites.": "The above folders can be added to your list of Favourites.",
+	"Unable to Download Attachment": "Unable to download attachment.",
+	"Web login required.": "Web log-in required.",
+	"summary": "Summary"
+}

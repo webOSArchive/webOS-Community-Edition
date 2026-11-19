@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+	<title>Jasmine Test Runner</title>
+
+	<!-- Just like the app's index.html does -->
+	<script type="text/javascript" src="/usr/palm/frameworks/enyo/0.10/framework/enyo.js"></script>
+
+	<!-- If, e.g., svn co https://subversion.palm.com/main/nova/palm/jasmine ../../ -->
+	<link rel="stylesheet" type="text/css" href="../../jasmine/jasmine.css">
+	<script type="text/javascript" src="../../jasmine/jasmine.js"></script>
+	<script type="text/javascript" src="../../jasmine/jasmine-html.js"></script>
+	
+	<!-- INCLUDE UNIT TEST FILES HERE. These are (currently) limited to stuff that gets loaded by depends.js (e.g., not mail/depends.js). -->	
+	<script type="text/javascript" src="spec/unit/source/CombinedAccountLoad-spec.js"></script>
+	<script type="text/javascript" src="spec/unit/source/AccountList-spec.js"></script>
+
+	<!-- Integration test utilities -->
+	<script type="text/javascript" src="tests/mockingStubs.js"></script>
+	<!-- INCLUDE INTEGRATION TEST FILES HERE. These are not (currently) included in the automated continuous integration testing. -->
+	<script type="text/javascript" src="tests/nowindow-spec.js"></script>
+	<!-- <script type="text/javascript" src="tests/CardLaunch-spec.js"></script> -->
+	<script type="text/javascript" src="tests/Mail-spec.js"></script>
+</head>
+
+<body>
+	<script type="text/javascript">
+		jasmine.getEnv().addReporter(new jasmine.TrivialReporter());
+		jasmine.getEnv().execute();
+	</script>
+</body>
+</html>
