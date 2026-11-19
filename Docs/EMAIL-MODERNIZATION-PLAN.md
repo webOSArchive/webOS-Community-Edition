@@ -112,10 +112,12 @@ server-side work.
   `calfilter.h` now reads them as Palm wrote them (`packages/mailshim/README.md` has the
   limits). Lunacy needs no change: its mail services run in UTC whatever Android's clock
   says, where both versions behave the same. It should only keep them in UTC.
-- Still to do by hand before a bake carries it: send a message from the Zoho account, look
-  at the event in Zoho's web calendar across the October 2027 change ("CE shim London weekly
-  10:00 Oct 2027 (3)", three Tuesdays at 10:00 London time), the throttle message as Email's
-  own screen words it, and KNOWN-ISSUES #14.
+- **On the baked image (600104, 2026-11-19):** the Zoho account was added again by bus call
+  and syncs; a message sent from it (`com.palm.smtp/sendMail`) went out through the shimmed
+  Exchange service and came back into its Inbox about a second later.
+- Still to do by eye: the event in Zoho's web calendar across the October 2027 change ("CE
+  shim London weekly 10:00 Oct 2027 (3)", three Tuesdays at 10:00 London time), the throttle
+  message as Email's own screen words it, and KNOWN-ISSUES #14.
 - An OTA or any live update must replace the library by rename, never by copying over it:
   the running service crashes at exit otherwise.
 
