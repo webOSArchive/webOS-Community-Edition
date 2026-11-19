@@ -20,8 +20,8 @@ part of `preload.c` still starts at line 1260. They are folded into phases 1,
 
 **Status (2026-11-19):** phase 1 is built (`packages/mailshim/`), wired into the bake and
 tested on a TouchPad by installing it by hand on 600102. Phase 2's token service is built,
-wired into the bake and tested the same way against a local broker; the real broker's mail
-apps are not deployed yet. Neither is baked. Phases 3 to 5 are not started. Each phase's
+baked in 600104 and tested there against a local broker; the real broker's mail apps are not
+deployed yet. Phase 1's library is baked in 600104 too; its hand tests are still owed. Phases 3 to 5 are not started. Each phase's
 results are at the end of its section.
 
 **Release:** all five phases ship in **webOS CE 3.2.0**, as its main feature
@@ -188,10 +188,12 @@ TouchPad test passes, so later phases are tested on top of it.
   had to start. The shim keeps a token until five minutes before it ends, because
   mojomail-eas sets its credentials on every request. `ma_token` in `mailshim.c` is written
   and tested on the build machine; it is compiled out until phase 3.
-- **Not yet seen on a device:** the service under its final name and Palm's own launcher
-  (`ce-test-full.sh` section 27 checks it), and telling a mail service that its account
-  signed in again, which needs phase 3's templates. Nothing has run against Google or
-  Microsoft: the real broker has no `google` or `microsoft` app yet.
+- **Seen on a device under its final name (600104, baked, 2026-11-19):** `ce-test-full.sh`
+  section 27 passes (files, roles, both buses, `token` private only, root outside a jail), and
+  a sign-in with a code, a token and a revoked sign-in ran against the local broker.
+- **Not yet seen:** telling a mail service that its account signed in again, which needs
+  phase 3's templates. Nothing has run against Google or Microsoft: the real broker has no
+  `google` or `microsoft` app yet.
 - **Never delete `/var/palm/jail/<id>` on a device.** A jail keeps read-write mounts of
   `/media/internal` and others after its service exits. Doing so emptied the test
   TouchPad's media partition on 2026-11-19.
