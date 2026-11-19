@@ -7,10 +7,14 @@
  * ("oauth2:" and 32 hex digits) that names its tokens in this service. libce-mailshim.so
  * (packages/mailshim) asks token() for the access token at each login and sends that instead.
  *
- * The logic is Lunacy's card/OAuth.kt, with one way to sign in: through the broker
- * (webOSArchive's oauth-broker-for-webos). The TouchPad's browser can't show a provider's
- * page, so the person signs in on another device with a short code, and the broker, which
- * holds the client secret, hands over the tokens and refreshes them.
+ * The logic is Lunacy's card/OAuth.kt. The TouchPad's browser can't show a provider's page, so
+ * the person always signs in on another device with a short code. Two ways, by provider:
+ * - through the broker (webOSArchive's oauth-broker-for-webos; a provider with `brokerApp`):
+ *   the broker gives the code, holds the client secret, hands over the tokens and refreshes
+ *   them. Google: its own code flow doesn't allow the mail scope.
+ * - the provider's own device-code flow (RFC 8628; a provider with `device`): the provider
+ *   gives the code, and this service redeems and refreshes with it directly, as a public client
+ *   with no secret. Microsoft: the same app registration Lunacy signs in with on the device.
  *
  * Kept free of the service framework and of Node's newer APIs, so tools/oauth-test runs
  * this same file on the build machine. env:
@@ -76,16 +80,68 @@ function CEOAuthCore(env) {
 	function listProviders() {
 		var list = [], id;
 		for (id in providers) {
-			if (providers.hasOwnProperty(id) && providers[id].brokerApp) {
+			if (providers.hasOwnProperty(id) && (providers[id].brokerApp || providers[id].device)) {
 				list.push({ id: id, title: providers[id].title || id, templateId: providers[id].templateId || "" });
 			}
 		}
 		return ok({ providers: list });
 	}
 
-	/** Asks the broker for a code: {code, url, pollSeconds}. The person enters the code at url on another device. */
+	/** The provider refused the scope for the account, not the sign-in (Microsoft, Exchange's scope for a personal account: AADSTS70011). */
+	function scopeRefused(j) {
+		return !!j && (j.error === "invalid_scope" || String(j.error_description || "").indexOf("AADSTS70011") !== -1);
+	}
+
+	/**
+	 * Asks the provider itself for a code (device-code flow). `state` is the provider's device
+	 * code, which check() needs back: the page keeps it, so this service keeps nothing between
+	 * the two calls. more: fields added to the answer.
+	 */
+	function startDevice(providerId, more, cb) {
+		var d = providers[providerId].device;
+		env.http("POST", d.deviceUrl, "client_id=" + enc(d.clientId) + "&scope=" + enc(d.scope), function (err, j) {
+			if (!j || !j.user_code || !j.device_code) {
+				var why = err || (j && (j.error_description || j.error)) || "no code";
+				return cb(error((providers[providerId].title || providerId) + " didn't give a sign-in code: " + why, -9,
+					{ providerError: j && j.error, aadsts: aadsts(why) }));
+			}
+			var r = ok({ provider: providerId, code: String(j.user_code), url: j.verification_uri || j.verification_url || "",
+				state: String(j.device_code), pollSeconds: Math.max(2, Math.min(30, parseInt(j.interval, 10) || 5)) }), k;
+			for (k in more) { if (more.hasOwnProperty(k)) { r[k] = more[k]; } }
+			cb(r);
+		});
+	}
+
+	/**
+	 * Asks the provider whether the code's sign-in has finished. A provider that refuses its
+	 * scope for the account and names a `fallback` (Microsoft's Exchange sign-in, for a personal
+	 * account) starts that provider's sign-in instead: {step: "again", provider, code, url,
+	 * state}, a second code for the person to enter.
+	 */
+	function checkDevice(providerId, state, cb) {
+		var p = providers[providerId], d = p.device;
+		if (!state) { return cb(error("No sign-in is waiting for that", -6)); }
+		env.http("POST", d.tokenUrl, "grant_type=" + enc("urn:ietf:params:oauth:grant-type:device_code") + "&client_id=" + enc(d.clientId) +
+			"&device_code=" + enc(state), function (err, j, status) {
+			if (err || !j) { return cb(ok({ step: "pending", unreachable: true })); }
+			if (j.access_token) { return cb(done(providerId, j, false)); }
+			if (j.error === "authorization_pending" || j.error === "slow_down") { return cb(ok({ step: "pending", slower: j.error === "slow_down" })); }
+			if (scopeRefused(j) && p.fallback && providers[p.fallback] && providers[p.fallback].device) {
+				env.log(providerId + " refused for this account; signing in to " + p.fallback + " instead");
+				return startDevice(p.fallback, { step: "again" }, cb);
+			}
+			var why = j.error_description || j.error || "no token";
+			var text = j.error === "expired_token" ? "The code ran out before sign-in finished"
+				: (j.error === "authorization_declined" || j.error === "access_denied") ? "The sign-in was declined"
+				: "Sign-in failed: " + why;
+			cb(error(text, j.error === "expired_token" ? -10 : -8, { providerError: j.error, aadsts: aadsts(why), httpStatus: status }));
+		});
+	}
+
+	/** Asks for a code: {provider, code, url, pollSeconds[, state]}. The person enters the code at url on another device. */
 	function start(providerId, cb) {
 		var p = providers[providerId];
+		if (p && p.device) { return startDevice(providerId, {}, cb); }
 		if (!p || !p.brokerApp) { return cb(error("Unknown provider", -2)); }
 		env.http("GET", broker + "/get-code.php?app=" + enc(p.brokerApp), null, function (err, j) {
 			var code = j && j.code;
@@ -96,13 +152,15 @@ function CEOAuthCore(env) {
 	}
 
 	/**
-	 * Asks the broker whether the code's sign-in has finished: {step: "pending"} while it
-	 * hasn't (and while the broker can't be reached), then once {step: "done", provider, handle,
-	 * email, existing, config, validator, templateId}, or an error. The broker hands the tokens
-	 * over once only, so a "done" not acted on is a sign-in to start again.
+	 * Asks whether the code's sign-in has finished: {step: "pending"} while it hasn't (and
+	 * while the broker or provider can't be reached), then once {step: "done", provider, handle,
+	 * email, existing, config, validator, templateId}, or an error. state: what start() gave,
+	 * for a provider that gave one. The tokens are handed over once only, so a "done" not acted
+	 * on is a sign-in to start again.
 	 */
-	function check(providerId, code, cb) {
+	function check(providerId, code, state, cb) {
 		var p = providers[providerId];
+		if (p && p.device) { return checkDevice(providerId, String(state || ""), cb); }
 		if (!p || !p.brokerApp) { return cb(error("Unknown provider", -2)); }
 		code = String(code || "").replace(/[^A-Za-z0-9]/g, "");
 		if (!code) { return cb(error("No code", -2)); }
@@ -122,12 +180,12 @@ function CEOAuthCore(env) {
 				if (!id) { return cb(error("The sign-in helper used an app this device doesn't know: " + j.broker_app, -10)); }
 				env.log(providerId + " refused for this account; signed in to " + id + " instead");
 			}
-			cb(done(id, j));
+			cb(done(id, j, true));
 		});
 	}
 
 	/** Stores a new sign-in's tokens and says what the sign-in page needs to make the account. */
-	function done(providerId, tokens) {
+	function done(providerId, tokens, viaBroker) {
 		var p = providers[providerId], email = emailOf(tokens), now = env.now();
 		if (!email) { return error((p.title || providerId) + " didn't say which account this is", -8); }
 		// Google lets the person untick a permission on its consent page; a token without the
@@ -152,13 +210,13 @@ function CEOAuthCore(env) {
 		accounts[handle] = {
 			provider: providerId, email: email, access: String(tokens.access_token), got: now,
 			expires: now + (parseInt(tokens.expires_in, 10) || 3600) * 1000,
-			refresh: String(tokens.refresh_token || ""), broker: true
+			refresh: String(tokens.refresh_token || ""), broker: !!viaBroker
 		};
 		for (i = 0; i < same.length; i++) {
 			if (same[i] !== handle) { accounts[same[i]] = { provider: providerId, email: email, same: handle }; }
 		}
 		save();
-		env.log("signed in to " + providerId + " through the broker");
+		env.log("signed in to " + providerId + (viaBroker ? " through the broker" : " with its own code"));
 		var config = p.mail ? copy(p.mail) : {};
 		config.email = email;
 		config.username = email;
@@ -195,7 +253,14 @@ function CEOAuthCore(env) {
 		}
 		var p = providers[a.provider];
 		var app = (p && p.brokerApp) || a.provider;
-		env.http("POST", broker + "/refresh.php?app=" + enc(app), "refresh_token=" + enc(a.refresh), function (err, t) {
+		var url = broker + "/refresh.php?app=" + enc(app), body = "refresh_token=" + enc(a.refresh);
+		if (!a.broker) {
+			// Signed in with the provider's own code: refreshed with the provider, no secret.
+			if (!p || !p.device) { return finish(null); }
+			url = p.device.tokenUrl;
+			body = "grant_type=refresh_token&client_id=" + enc(p.device.clientId) + "&refresh_token=" + enc(a.refresh) + "&scope=" + enc(p.device.scope);
+		}
+		env.http("POST", url, body, function (err, t) {
 			if (t && t.access_token) {
 				a.access = String(t.access_token);
 				a.got = env.now();

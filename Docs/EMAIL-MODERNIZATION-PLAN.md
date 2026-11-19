@@ -201,13 +201,18 @@ TouchPad test passes, so later phases are tested on top of it.
   the same Google project). From the TouchPad: a sign-in with a code as the Gmail test
   account, an access token that logged in to imap.gmail.com with XOAUTH2 (through
   `/usr/bin/curl`; 443 messages in the Inbox), and a refresh through the broker.
-- **Microsoft will not use the broker (decided 2026-11-19).** The registration is a public
-  client with no secret, and the user will not set up a second, confidential one. Microsoft's
-  own device-code flow does the same job with the existing client id: the token service asks
-  Microsoft for the code, the person enters it at login.microsoft.com/device, and the service
-  redeems and refreshes directly. Microsoft issued a code for the client id and the Exchange
-  scope when asked; redeeming one is untested and may need "Allow public client flows" on
-  the registration. The broker's `microsoft` and `microsoft365` apps stay unconfigured.
+- **Microsoft signs in with its own device-code flow, not the broker (2026-11-19).** The
+  registration is a public client with no secret, and a second, confidential one is not
+  wanted. The token service asks Microsoft for the code (`device` in `providers.json`), the
+  person enters it at login.microsoft.com/device, and the service redeems and refreshes
+  directly with the same client id Lunacy uses. A provider's `fallback` (Exchange to
+  mail-only, for a personal account) is a second code. The broker's `microsoft` and
+  `microsoft365` apps stay unconfigured.
+  Seen on the TouchPad with the Office 365 test account: the code redeemed with no secret
+  and no change to the registration, a refresh worked, and Exchange Online answered the
+  token `200` with `MS-ASProtocolVersions: 16.1`. A second account of the tenant got `403`
+  with its token (its Exchange licence is in doubt). Not yet tried: a personal Outlook.com
+  account, so where Microsoft refuses Exchange's scope in this flow is still unknown.
 - **Not yet seen:** telling a mail service that its account signed in again, which needs
   phase 3's templates.
 - **Never delete `/var/palm/jail/<id>` on a device.** A jail keeps read-write mounts of
