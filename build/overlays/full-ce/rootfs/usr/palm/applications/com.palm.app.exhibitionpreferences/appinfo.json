@@ -1,0 +1,12 @@
+{
+	"id": "com.palm.app.exhibitionpreferences",
+	"version": "1.0.0",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"title": "Exhibition",
+	"appmenu":"Preferences",
+	"icon": "icon.png",
+	"uiRevision": 2,
+	"splashicon":"icon-256x256.png"
+}

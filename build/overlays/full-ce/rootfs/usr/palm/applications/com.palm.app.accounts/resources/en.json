@@ -1,6 +1,6 @@
 {
-	"Account locked, Please try again in 15 min. Visit http://hpwebos.com/support for more information.": "Account locked. Please try again in 15 min. Visit http://hpwebos.com/support for more information.",
+	"Account locked, Please try again in 15 min. Visit www.webosarchive.org for more information.": "Account locked. Please try again in 15 min. Visit www.webosarchive.org for more information.",
 	"Login": "Log‑in",
-	"This email address is alreday in use by another account. Visit http://hpwebos.com/support for more information.": "This email address is already in use by another account. Visit http://hpwebos.com/support for more information.",
-	"We sent an email to #{email}. If you don't receive the email shortly check your junk email folder.<P>Follow the link in that email to reset your password.<P>If you are unable to reset your password, visit http://hpwebos.com/support for more help.": "We sent an email to #{email}. If you don't receive the email shortly, check your junk email folder.<P>Follow the link in that email to reset your password.<P>If you are unable to reset your password, visit http://hpwebos.com/support for more help."
+	"This email address is alreday in use by another account. Visit www.webosarchive.org for more information.": "This email address is already in use by another account. Visit www.webosarchive.org for more information.",
+	"We sent an email to #{email}. If you don't receive the email shortly check your junk email folder.<P>Follow the link in that email to reset your password.<P>If you are unable to reset your password, visit www.webosarchive.org for more help.": "We sent an email to #{email}. If you don't receive the email shortly, check your junk email folder.<P>Follow the link in that email to reset your password.<P>If you are unable to reset your password, visit www.webosarchive.org for more help."
 }

@@ -27,8 +27,8 @@
         log "systemservice never answered -- retrying on the next trigger"
         exit 0
     fi
-    if echo "$R" | grep -q '"22.jpg"'; then
-        log "wallpaper is already 22.jpg -- nothing to do"
+    if echo "$R" | grep -q '"28.jpg"'; then
+        log "wallpaper is already 28.jpg -- nothing to do"
         mkdir -p /var/luna/preferences && touch "$FLAG"
         exit 0
     fi
@@ -45,20 +45,20 @@
         mkdir -p /var/luna/preferences && touch "$FLAG"
         exit 0
     fi
-    SRC=/media/internal/wallpapers/22.jpg
+    SRC=/media/internal/wallpapers/28.jpg
     i=0
     while [ ! -f "$SRC" ] && [ $i -lt 30 ]; do sleep 4; i=$((i+1)); done
     if [ ! -f "$SRC" ]; then
         log "$SRC not present yet -- retrying on the next trigger"
         exit 0
     fi
-    lsq palm://com.palm.systemservice/wallpaper/importWallpaper '{"target":"/media/internal/wallpapers/22.jpg","scale":1.0}' >/dev/null
-    lsq palm://com.palm.systemservice/setPreferences '{"wallpaper":{"wallpaperName":"22.jpg","wallpaperFile":"/media/internal/.wallpapers/22.jpg","wallpaperThumbFile":"/media/internal/.wallpapers/thumbs/22.jpg"}}' >/dev/null
+    lsq palm://com.palm.systemservice/wallpaper/importWallpaper '{"target":"/media/internal/wallpapers/28.jpg","scale":1.0}' >/dev/null
+    lsq palm://com.palm.systemservice/setPreferences '{"wallpaper":{"wallpaperName":"28.jpg","wallpaperFile":"/media/internal/.wallpapers/28.jpg","wallpaperThumbFile":"/media/internal/.wallpapers/thumbs/28.jpg"}}' >/dev/null
     # verify it actually took before claiming the job is done
     V=$(lsq palm://com.palm.systemservice/getPreferences '{"keys":["wallpaper"]}')
     rm -f /tmp/ce-wp.out
-    if echo "$V" | grep -q '"22.jpg"'; then
-        log "default wallpaper set to 22.jpg"
+    if echo "$V" | grep -q '"28.jpg"'; then
+        log "default wallpaper set to 28.jpg"
         mkdir -p /var/luna/preferences && touch "$FLAG"
     else
         log "wallpaper did NOT stick (pref: $V) -- NOT flagging, will retry"

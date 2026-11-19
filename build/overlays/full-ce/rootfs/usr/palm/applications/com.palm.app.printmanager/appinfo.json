@@ -1,0 +1,13 @@
+{
+	"id": "com.palm.app.printmanager",
+	"version": "1.0.0",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"title": "Print Manager",
+	"icon": "images/icon64/printer_pref.png",
+	"splashicon": "images/icon256/printer_pref.png",
+	"noWindow": "true",
+	"uiRevision": 2,
+	"appmenu": "Preferences"
+}

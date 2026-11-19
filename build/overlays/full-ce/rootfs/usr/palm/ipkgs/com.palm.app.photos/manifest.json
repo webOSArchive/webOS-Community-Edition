@@ -1,0 +1,8 @@
+{
+"vendor": "webOS Archive" ,
+"version": "3.0.8001" ,
+"loc_name": "Photos & Videos" ,
+"ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.photos/com.palm.app.photos_3.0.8001_all.ipk" ,
+"id": "com.palm.app.photos" ,
+"iconUrl": "file:///usr/palm/ipkgs/com.palm.app.photos/com.palm.app.photos-icon.png" 
+}

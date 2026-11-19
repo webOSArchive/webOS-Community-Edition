@@ -1,0 +1,11 @@
+{
+	"Airplane Mode": "Airplane Mode",
+	"Allow #{application} to access photos, videos, and music on your device?": "Allow #{application} to access photos, videos, and music on your device?",
+	"Connection to #{deviceName} was disrupted during send. Try again?": "Connection to #{deviceName} was disrupted during sending. Try again?",
+	"Device May Not Charge": "Device May Not Charge",
+	"Downloading can be resumed when internet connection is restored or when there is enough space on your device.": "Downloading can be resumed when Internet connection is restored or when there is enough space on your device.",
+	"No data was recoverable. The USB drive has been reformatted. <br> Always eject your device from your desktop computer before disconnecting.": "No data was recoverable. The USB drive has been reformatted. <br> Always eject your device from your desktop computer before disconnecting.",
+	"This device can't be paired because it's not a webOS device.": "This device can't be paired because it's not a webOS device.",
+	"Turn off Airplane Mode": "Turn off Airplane Mode",
+	"Your device is connected to a charging source that provides less than the recommended voltage or current. To reliably charge, use the power adapter and USB cable that came with your device.": "Your device is connected to a charging source that provides less than the recommended voltage or current. To reliably charge, use the power adapter and USB cable that came with your device."
+}

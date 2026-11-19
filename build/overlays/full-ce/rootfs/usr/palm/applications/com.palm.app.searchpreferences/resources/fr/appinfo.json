@@ -1,0 +1,11 @@
+{
+	"icon": "../../icon.png",
+	"id": "com.palm.app.searchpreferences",
+	"main": "../../index.html",
+	"splashicon": "../../icon-256x256.png",
+	"title": "Tapez maintenant",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "1.0.0"
+}

@@ -1,7 +1,7 @@
 {
 	"id": "com.palm.calculator",
 	"version": "3.2.0",
-	"vendor": "HP",
+	"vendor": "webOS Archive",
 	"type": "web",
 	"main": "index.html",
 	"title": "Calculator",

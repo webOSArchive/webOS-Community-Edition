@@ -172,7 +172,7 @@ enyo.kind({
     setSendRecoverEmailSuccess: function(inSender, inResponse){
 		this.$.spinnerOverlay.close();
         this.close();
-        var template = new enyo.g11n.Template($L("We sent an email to #{email}. If you don't receive the email shortly check your junk email folder.<P>Follow the link in that email to reset your password.<P>If you are unable to reset your password, visit http://hpwebos.com/support for more help."));
+        var template = new enyo.g11n.Template($L("We sent an email to #{email}. If you don't receive the email shortly check your junk email folder.<P>Follow the link in that email to reset your password.<P>If you are unable to reset your password, visit www.webosarchive.org for more help."));
         this.$.recoverText.setContent(template.evaluate({
             email: enyo.string.escapeHtml(this.email)
         }));

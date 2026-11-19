@@ -1,0 +1,11 @@
+{
+	"id": "com.palm.mojo-systemui",
+	"version": "1.0.0",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"title": "Mojo SystemUI",
+	"icon": "icon.png",
+	"noWindow":true,
+	"visible":false
+}

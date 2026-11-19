@@ -294,21 +294,21 @@ var AccountsUtil = (function () {
 		
 		getSynergyTitle: function(capability) {
 			if (!capability || enyo.isArray(capability))
-				return accountsRb.$L("HP Synergy Services");
+				return accountsRb.$L("Synergy Services");
 				
 			switch (capability)
 			{
-				case "CALENDAR":     return accountsRb.$L("Calendar HP Synergy Services");
-				case "DOCUMENTS":    return accountsRb.$L("Documents HP Synergy Services");
-				case "CONTACTS":     return accountsRb.$L("Contacts HP Synergy Services");
-				case "MAIL":         return accountsRb.$L("Email HP Synergy Services");
-				case "MEMOS":        return accountsRb.$L("Memos HP Synergy Services");
-				case "MESSAGING":    return accountsRb.$L("Messaging HP Synergy Services");
-				case "PHONE":        return accountsRb.$L("Phone HP Synergy Services");
-				case "PHOTO.UPLOAD": return accountsRb.$L("Photo HP Synergy Services");
-				case "TASKS":        return accountsRb.$L("Tasks HP Synergy Services");
+				case "CALENDAR":     return accountsRb.$L("Calendar Synergy Services");
+				case "DOCUMENTS":    return accountsRb.$L("Documents Synergy Services");
+				case "CONTACTS":     return accountsRb.$L("Contacts Synergy Services");
+				case "MAIL":         return accountsRb.$L("Email Synergy Services");
+				case "MEMOS":        return accountsRb.$L("Memos Synergy Services");
+				case "MESSAGING":    return accountsRb.$L("Messaging Synergy Services");
+				case "PHONE":        return accountsRb.$L("Phone Synergy Services");
+				case "PHOTO.UPLOAD": return accountsRb.$L("Photo Synergy Services");
+				case "TASKS":        return accountsRb.$L("Tasks Synergy Services");
 				default:
-					return accountsRb.$L("HP Synergy Services");
+					return accountsRb.$L("Synergy Services");
 			}
 		},
 
@@ -342,7 +342,7 @@ var AccountsUtil = (function () {
 		LOADING_ACCOUNTS:			accountsRb.$L("Loading Accounts..."),
 		SIM_REMOVED_TEMPLATE:		accountsRb.$L("#{phoneNumber} - SIM Removed"),
 		TEXT_WELCOME:				accountsRb.$L("Welcome!"),
-		TEXT_GET_STARTED_PROFILE_ACCOUNT: accountsRb.$L("Get started with your HP webOS account:"),
+		TEXT_GET_STARTED_PROFILE_ACCOUNT: accountsRb.$L("Get started with your webOS Account:"),
 		TEXT_GET_STARTED_EXISTING_ACCOUNTS: accountsRb.$L("Get started with your existing accounts:"),
 		TEXT_OR_ADD_NEW_ACCOUNT:	accountsRb.$L("Or add a new account:"),
 		TEXT_FIND_MORE:				accountsRb.$L("Find More ..."),

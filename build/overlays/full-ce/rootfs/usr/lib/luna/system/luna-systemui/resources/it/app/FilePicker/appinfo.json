@@ -1,0 +1,9 @@
+{
+	"id": "com.palm.systemui",
+	"main": "../../../../filepicker.html",
+	"noWindow": true,
+	"title": "FilePicker",
+	"type": "web",
+	"vendor": "webOS Archive",
+	"version": "1.0.0"
+}

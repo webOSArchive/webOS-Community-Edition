@@ -3,17 +3,26 @@
  * Everything here is namespaced under #ce-about-main / .ce-* so it cannot
  * reach the stock scenes. */
 
-/* .palm-page-header is absolutely positioned and pinned to the top of the
- * scene, so content has to be pushed clear of it or the first element renders
- * underneath. 82px is what the stock erase scene uses (.prefs-device-erase-main). */
-#ce-about-main {
-	margin: 82px 0px 24px 0px;
+/* The header carries no icon and no title, only CE's moon (the boot logo, cut
+ * out for a light page; tools/boot-logo builds it), centred and about twice an
+ * icon's size, so it hangs from the strip into the page. It is a child of the
+ * header, which the app's overrides.css fixes to the top, so the two stay
+ * together when the page scrolls. */
+#ce-about-main .palm-page-header #ce-about-moon {
+	position: absolute;
+	top: 6px;
+	left: 50%;
+	margin-left: -46px;
+	width: 92px;
+	height: 92px;
+	background: url(../images/ce-about-moon.png) center center no-repeat;
 }
 
-/* The header title is text-transform:capitalize by default, which turns
- * "webOS CE" into "WebOS CE". */
-#ce-about-main .palm-page-header .title {
-	text-transform: none;
+/* The header is fixed, so content has to be pushed clear of it or the first
+ * element renders underneath. The stock erase scene uses 82px for the strip
+ * alone (.prefs-device-erase-main); this clears the moon, which ends at 98px. */
+#ce-about-main {
+	margin: 112px 0px 24px 0px;
 }
 
 #ce-about-body {
@@ -21,6 +30,12 @@
 	padding: 4px 16px 0px 16px;
 	max-width: 720px;
 	color: #444444;
+}
+
+/* The header icon is CE's boot logo, cut out for a light page (tools/boot-logo
+ * builds it), in place of Device Info's own. */
+#ce-about-main .palm-page-header .icon.ce-about-moon {
+	background: url(../images/ce-about-moon.png) center center no-repeat;
 }
 
 #ce-about-version {

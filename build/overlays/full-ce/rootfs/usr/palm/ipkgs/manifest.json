@@ -4,7 +4,7 @@
   "ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.enyo-findapps_6.1.2923_all.ipk",
   "iconUrl": "file:///usr/palm/ipkgs/findapps-icon.png",
   "loc_name": "App Catalog-Enyo",
-  "vendor": "HP",
+  "vendor": "webOS Archive",
   "version": "6.1.2923"
  },
  {
@@ -36,7 +36,7 @@
   "ipkgUrl": "file:///usr/palm/ipkgs/payment/com.palm.payment_2.2.12_all.ipk",
   "iconUrl": "file:///usr/palm/ipkgs/findapps-icon.png",
   "loc_name": "App InApp Payment",
-  "vendor": "HP",
+  "vendor": "webOS Archive",
   "version": "2.2.12"
  },
  {
@@ -44,7 +44,7 @@
   "ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.maps/com.palm.app.maps_4.0.1_all.ipk",
   "iconUrl": "file:///usr/palm/ipkgs/com.palm.app.maps/com.palm.app.maps-icon.png",
   "loc_name": "Maps",
-  "vendor": "HP",
+  "vendor": "webOS Archive",
   "version": "4.0.1"
  },
  {
@@ -52,7 +52,7 @@
   "ipkgUrl": "file:///usr/palm/ipkgs/com.palm.calculator/com.palm.calculator_1.0.0_all.ipk",
   "iconUrl": "file:///usr/palm/ipkgs/com.palm.calculator/com.palm.calculator-icon.png",
   "loc_name": "Calculator",
-  "vendor": "HP",
+  "vendor": "webOS Archive",
   "version": "1.0.0"
  },
  {
@@ -60,7 +60,7 @@
   "ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.clock/com.palm.app.clock_1.0.0_all.ipk",
   "iconUrl": "file:///usr/palm/ipkgs/com.palm.app.clock/com.palm.app.clock-icon.png",
   "loc_name": "Clock",
-  "vendor": "HP",
+  "vendor": "webOS Archive",
   "version": "1.0.0"
  },
  {
@@ -68,7 +68,7 @@
   "ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.calendar/com.palm.app.calendar_3.0.11004_all.ipk",
   "iconUrl": "file:///usr/palm/ipkgs/com.palm.app.calendar/com.palm.app.calendar-icon.png",
   "loc_name": "Calendar",
-  "vendor": "HP",
+  "vendor": "webOS Archive",
   "version": "3.0.11004"
  },
  {
@@ -84,7 +84,7 @@
   "ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.email/com.palm.app.email_3.0.13500_all.ipk",
   "iconUrl": "file:///usr/palm/ipkgs/com.palm.app.email/com.palm.app.email-icon.png",
   "loc_name": "Email",
-  "vendor": "HP",
+  "vendor": "webOS Archive",
   "version": "3.0.13500"
  },
  {
@@ -92,7 +92,7 @@
   "ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.musicplayer/com.palm.app.musicplayer_3.0.8000_all.ipk",
   "iconUrl": "file:///usr/palm/ipkgs/com.palm.app.musicplayer/com.palm.app.musicplayer-icon.png",
   "loc_name": "Music",
-  "vendor": "HP",
+  "vendor": "webOS Archive",
   "version": "3.0.8000"
  },
  {
@@ -108,7 +108,7 @@
   "ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.photos/com.palm.app.photos_3.0.8001_all.ipk",
   "iconUrl": "file:///usr/palm/ipkgs/com.palm.app.photos/com.palm.app.photos-icon.png",
   "loc_name": "Photos & Videos",
-  "vendor": "HP",
+  "vendor": "webOS Archive",
   "version": "3.0.8001"
  }
 ]

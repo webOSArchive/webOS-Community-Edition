@@ -1,0 +1,11 @@
+{
+	"title": "Just Type",
+	"type": "web",
+	"main": "index.html",
+	"id": "com.palm.app.searchpreferences",
+	"icon": "icon.png",
+	"splashicon": "icon-256x256.png",
+	"version": "1.0.0",
+	"vendor": "webOS Archive",
+	"uiRevision": 2
+}

@@ -104,7 +104,7 @@ enyo.kind({
 			return;
 		}
 		if (!url) {
-			this.showNotice("No video to play");
+			this.showNotice($L("No video to play"));
 			return;
 		}
 		this.open(url, title, p.initialPos || 0, !p.noAutoPlay);
@@ -120,9 +120,9 @@ enyo.kind({
 			onSuccess: function (s, r) {
 				var v = r && r.results && r.results[0];
 				if (v && v.path) { self.open(v.path, v.title, v.playbackPosition || v.lastPlayTime || 0, true); }
-				else { self.showNotice("Video not found"); }
+				else { self.showNotice($L("Video not found")); }
 			},
-			onFailure: function () { self.showNotice("Video not found"); }
+			onFailure: function () { self.showNotice($L("Video not found")); }
 		}).call({ids: [id]});
 	},
 
@@ -214,11 +214,24 @@ enyo.kind({
 		else if (s.phase === "error") { st = "error"; }
 		else if (s.buffering) { st = "buffering"; }
 		else if (s.busy) { st = "…"; }
-		if (st !== this.lastStatus) { this.lastStatus = st; this.$.status.setContent(st); }
+		if (st !== this.lastStatus) { this.lastStatus = st; this.$.status.setContent(this.statusText(st)); }
 		var spin = st === "loading" || st === "seeking" || st === "recovering" || st === "buffering";
 		if (spin !== this.spinning) {
 			this.spinning = spin;
 			if (spin) { this.$.spinner.show(); } else { this.$.spinner.hide(); }
+		}
+	},
+
+	// st is the internal key (compared above); this is only what the header shows.
+	// Literal $L() calls, so a string scan of the source finds every key.
+	statusText: function (st) {
+		switch (st) {
+			case "loading": return $L("loading");
+			case "seeking": return $L("seeking");
+			case "recovering": return $L("recovering");
+			case "error": return $L("error");
+			case "buffering": return $L("buffering");
+			default: return st;
 		}
 	},
 
@@ -259,16 +272,16 @@ enyo.kind({
 		if (e === "deadline:load" && never) {
 			// the data arrives but the decoder never starts: seen with H.264 High
 			// profile, whatever the transport (2026-09-14)
-			return "This video didn't start.\nIt may use a format this TouchPad can't decode, such as H.264 High profile.";
+			return $L("This video didn't start.\nIt may use a format this TouchPad can't decode, such as H.264 High profile.");
 		}
 		if (s.isHttp && /^error:[23]$/.test(e) && never) {
-			return "Can't connect to the video source.";
+			return $L("Can't connect to the video source.");
 		}
-		if (/^error:2$/.test(e)) { return "The connection to the server was lost."; }
-		if (/^error:3$/.test(e)) { return "This video can't be decoded on this device."; }
-		if (/^error:4$/.test(e)) { return "This video format isn't supported."; }
-		if (/^deadline:/.test(e)) { return "The video stopped responding and couldn't be restarted."; }
-		return "Couldn't play this video.";
+		if (/^error:2$/.test(e)) { return $L("The connection to the server was lost."); }
+		if (/^error:3$/.test(e)) { return $L("This video can't be decoded on this device."); }
+		if (/^error:4$/.test(e)) { return $L("This video format isn't supported."); }
+		if (/^deadline:/.test(e)) { return $L("The video stopped responding and couldn't be restarted."); }
+		return $L("Couldn't play this video.");
 	},
 
 	showNotice: function (text) {

@@ -1,0 +1,19 @@
+{
+	"icon": "../../../images/icon.png",
+	"id": "com.palm.app.vpn",
+	"keywords": [
+		"Configuración",
+		"Preferencias",
+		"Inalámbrico",
+		"VPN",
+		"Redes"
+	],
+	"main": "../../../index.html",
+	"noWindow": "true",
+	"splashicon": "../../../images/icon-256x256.png",
+	"title": "VPN",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "2.0.0"
+}

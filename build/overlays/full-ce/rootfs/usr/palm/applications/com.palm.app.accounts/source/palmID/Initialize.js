@@ -16,7 +16,7 @@
 //
 // LICENSE@@@
 
-var INITIALIZE_ERRORTEXT = $L("Must be connected to a network to communicate with HP's Cloud Services. Check your network connection, or try again later.")
+var INITIALIZE_ERRORTEXT = $L("Must be connected to a network to communicate with Cloud Services. Check your network connection, or try again later.")
 
 enyo.kind({
 	name: "MyApps.PalmID.Initialize",

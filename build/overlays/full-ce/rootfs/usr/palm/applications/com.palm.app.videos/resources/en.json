@@ -1,0 +1,16 @@
+{
+	"buffering": "buffering",
+	"Can't connect to the video source.": "Can't connect to the video source.",
+	"Couldn't play this video.": "Couldn't play this video.",
+	"error": "error",
+	"loading": "loading",
+	"No video to play": "No video to play",
+	"recovering": "recovering",
+	"seeking": "seeking",
+	"The connection to the server was lost.": "The connection to the server was lost.",
+	"The video stopped responding and couldn't be restarted.": "The video stopped responding and couldn't be restarted.",
+	"This video can't be decoded on this device.": "This video can't be decoded on this device.",
+	"This video didn't start.\nIt may use a format this TouchPad can't decode, such as H.264 High profile.": "This video didn't start.\nIt may use a format this TouchPad can't decode, such as H.264 High profile.",
+	"This video format isn't supported.": "This video format isn't supported.",
+	"Video not found": "Video not found"
+}

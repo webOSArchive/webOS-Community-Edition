@@ -1,0 +1,6 @@
+[
+	{ "library": { "name": "foundations", "version": "1.0" } },
+	{ "library": { "name": "mojoservice", "version": "1.0" } },
+	{ "source": "oauth-core.js" },
+	{ "source": "service.js" }
+]

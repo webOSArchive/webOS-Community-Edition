@@ -1,0 +1,8 @@
+{
+"vendor": "webOS Archive" ,
+"version": "3.0.8000" ,
+"loc_name": "Music" ,
+"ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.musicplayer/com.palm.app.musicplayer_3.0.8000_all.ipk" ,
+"id": "com.palm.app.musicplayer" ,
+"iconUrl": "file:///usr/palm/ipkgs/com.palm.app.musicplayer/com.palm.app.musicplayer-icon.png" 
+}

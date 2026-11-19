@@ -1,0 +1,24 @@
+{
+	"hardwareFeaturesNeeded": [
+		"wifi"
+	],
+	"icon": "../../icon.png",
+	"id": "com.palm.app.wifi",
+	"keywords": [
+		"Configuration",
+		"Préférences",
+		"Sans fil",
+		"WiFi",
+		"Réseaux",
+		"wlan",
+		"wi-fi",
+		"wifi"
+	],
+	"main": "../../index.html",
+	"splashicon": "../../icon-256x256.png",
+	"title": "Wi-Fi",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "1.5.0"
+}

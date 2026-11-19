@@ -1,0 +1,34 @@
+{
+	"_comment": "OAuth providers for mail accounts (oauth-core.js, Docs/EMAIL-MODERNIZATION-PLAN.md). brokerApp names the app at the broker, which holds the client id and secret; nothing secret is here. templateId is the account type the sign-in makes; mail is the account's server settings.",
+	"broker": "https://oauth.wosa.link",
+	"providers": {
+		"google": {
+			"title": "Google",
+			"templateId": "org.webosarchive.ce.google",
+			"brokerApp": "google",
+			"requiredScope": "https://mail.google.com/",
+			"mail": {
+				"server": "imap.gmail.com", "port": 993, "encryption": "ssl",
+				"smtpConfig": { "server": "smtp.gmail.com", "port": 465, "encryption": "ssl", "useSmtpAuth": true }
+			}
+		},
+		"microsoft": {
+			"title": "Microsoft",
+			"templateId": "org.webosarchive.ce.microsoft",
+			"brokerApp": "microsoft",
+			"_mail": "IMAP and SMTP, for personal accounts (Outlook.com). The account type is hidden from Add Account: the broker falls back to this app when Microsoft refuses Exchange's scope.",
+			"mail": {
+				"server": "outlook.office365.com", "port": 993, "encryption": "ssl",
+				"smtpConfig": { "server": "smtp.office365.com", "port": 587, "encryption": "tls", "useSmtpAuth": true }
+			}
+		},
+		"microsoft365": {
+			"title": "Microsoft Outlook",
+			"templateId": "org.webosarchive.ce.microsoft365",
+			"brokerApp": "microsoft365",
+			"_mail": "Exchange ActiveSync, on Palm's mojomail-eas through libce-mailshim.so's adapters. Work and school accounts; a personal one comes back from the broker as microsoft.",
+			"validator": "palm://com.palm.eas/validateAccount",
+			"mail": { "server": "https://outlook.office365.com", "domain": "", "port": 0, "encryption": "none" }
+		}
+	}
+}

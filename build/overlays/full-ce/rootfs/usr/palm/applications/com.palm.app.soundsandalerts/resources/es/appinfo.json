@@ -1,0 +1,20 @@
+{
+	"icon": "../../icon.png",
+	"id": "com.palm.app.soundsandalerts",
+	"keywords": [
+		"Audio",
+		"Música",
+		"Volumen",
+		"Vibrar",
+		"Silencioso",
+		"Configuración",
+		"Preferencias"
+	],
+	"main": "../../index.html",
+	"splashicon": "../../icon-256x256.png",
+	"title": "Sonidos y tonos",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "1.0.0"
+}

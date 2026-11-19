@@ -25,25 +25,25 @@
 	"PAMS1007": $L("Please provide answers to the security question."),
 	"PAMS1008": $L("Email address is already in use."),
 	"PAMS1018": $L("Answer is incorrect. Try again."),
-	"PAMS1033": $L("Unable to update user's password. Visit http://hpwebos.com/support for more information."),
+	"PAMS1033": $L("Unable to update user's password. Visit www.webosarchive.org for more information."),
 	
 	"PAMS1100": $L("The password you entered is incorrect."),
-	"PAMS1101": $L("Account locked, Please try again in 15 min. Visit http://hpwebos.com/support for more information."),
-	"PAMS1106": $L("We couldn't find a webOS account. Visit http://hpwebos.com/support for more information."), 
-	"PAMS1108": $L("Could not sign in to your account. Visit http://hpwebos.com/support for more information."),
+	"PAMS1101": $L("Account locked, Please try again in 15 min. Visit www.webosarchive.org for more information."),
+	"PAMS1106": $L("We couldn't find a webOS account. Visit www.webosarchive.org for more information."), 
+	"PAMS1108": $L("Could not sign in to your account. Visit www.webosarchive.org for more information."),
 	"PAMS1123": $L("Cannot change to the same email address."),
 	
-	"PAMS1201": $L("Account protected from password change. Visit http://hpwebos.com/support for more information."),
-	"PAMS1202": $L("Account protected from email change. Visit http://hpwebos.com/support for more information."),
-	"PAMS1203": $L("This email address is alreday in use by another account. Visit http://hpwebos.com/support for more information."),
+	"PAMS1201": $L("Account protected from password change. Visit www.webosarchive.org for more information."),
+	"PAMS1202": $L("Account protected from email change. Visit www.webosarchive.org for more information."),
+	"PAMS1203": $L("This email address is alreday in use by another account. Visit www.webosarchive.org for more information."),
 	
 	"PAMS1114": $L("Account is already verified."),
 
 	"PAMS9998": $L("The United States Government prohibits HP from allowing you to use this email address to set up a webOS account."),
 	"ACCCOUNT_EXPANDED_INVALIDEMAIL": $L("The United States Government restricts exports to certain countries, including the country where your email address domain is issued. You can visit www.palm.com/us/company/legal for additional information."),
-	"ACCOUNT_NOT_DEFINED_ERROR" : $L("We were unable to locate your account information. Visit http://hpwebos.com/support for more information."),
+	"ACCOUNT_NOT_DEFINED_ERROR" : $L("We were unable to locate your account information. Visit www.webosarchive.org for more information."),
 
-	"-9999": $L("Must be connected to a network to communicate with HP's Cloud Services. Check your network connection, or try again."),
+	"-9999": $L("Must be connected to a network to communicate with Cloud Services. Check your network connection, or try again."),
 
 	"USERNAME_TAKEN": $L("That username is already taken."),
 	"USERNAME_INVALID": $L("Usernames are 3-32 characters: letters, numbers, and . _ - only, starting with a letter or number."),

@@ -1,0 +1,9 @@
+[
+{"id":"com.palm.payment",
+ "ipkgUrl":"file:///usr/palm/ipkgs/payment/com.palm.payment_2.2.13_all.ipk",
+ "iconUrl":"file:///usr/palm/ipkgs/findapps-icon.png",
+ "loc_name": "InApp Payment",
+ "vendor": "webOS Archive",
+ "version": "2.2.13"
+}
+]

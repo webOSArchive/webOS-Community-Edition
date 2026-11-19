@@ -1,0 +1,12 @@
+{
+	"id": "com.palm.app.dateandtime",
+	"version": "1.0.0",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"title": "Date & Time",
+	"icon": "icon.png",
+	"splashicon": "icon-256x256.png",
+	"keywords":["Clock", "Settings", "Preferences", "Time zone"],
+	"uiRevision": 2
+}

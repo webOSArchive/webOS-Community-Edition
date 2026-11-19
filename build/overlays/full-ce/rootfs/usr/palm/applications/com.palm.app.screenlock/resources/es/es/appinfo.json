@@ -1,0 +1,21 @@
+{
+	"icon": "../../../icon.png",
+	"id": "com.palm.app.screenlock",
+	"keywords": [
+		"Imagen de fondo",
+		"Seguridad",
+		"Escritorio",
+		"Brillo",
+		"Desproteger",
+		"Gestos",
+		"Configuración",
+		"Preferencias"
+	],
+	"main": "../../../index.html",
+	"splashicon": "../../../icon-256x256.png",
+	"title": "Pantalla y bloqueo",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "1.0.0"
+}

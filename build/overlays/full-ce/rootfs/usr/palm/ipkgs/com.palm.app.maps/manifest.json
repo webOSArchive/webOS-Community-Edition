@@ -2,7 +2,7 @@
  "id": "com.palm.app.maps",
  "version": "4.0.1",
  "loc_name": "Maps",
- "vendor": "HP",
+ "vendor": "webOS Archive",
  "ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.maps/com.palm.app.maps_4.0.1_all.ipk",
  "iconUrl": "file:///usr/palm/ipkgs/com.palm.app.maps/com.palm.app.maps-icon.png"
 }

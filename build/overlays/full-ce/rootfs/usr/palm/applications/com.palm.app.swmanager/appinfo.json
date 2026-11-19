@@ -1,0 +1,12 @@
+{
+	"id": "com.palm.app.swmanager",
+	"version": "3.0.3400",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"title": "Software Manager",
+	"icon": "icon.png",
+	"splashicon": "icon-256x256.png",
+	"noWindow": true,
+	"uiRevision": 2
+}

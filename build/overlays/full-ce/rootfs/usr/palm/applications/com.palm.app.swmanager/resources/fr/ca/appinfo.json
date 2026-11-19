@@ -1,0 +1,12 @@
+{
+	"icon": "../../../icon.png",
+	"id": "com.palm.app.swmanager",
+	"main": "../../../index.html",
+	"noWindow": true,
+	"splashicon": "../../../icon-256x256.png",
+	"title": "Gestionnaire de logiciels",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "3.0.3400"
+}

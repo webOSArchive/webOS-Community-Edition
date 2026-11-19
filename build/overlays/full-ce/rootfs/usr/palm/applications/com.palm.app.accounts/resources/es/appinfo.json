@@ -6,7 +6,7 @@
 	"title": "Cuentas",
 	"type": "web",
 	"uiRevision": 2,
-	"vendor": "HP",
+	"vendor": "webOS Archive",
 	"version": "3.1.0",
 	"trustLevel": "trusted",
 	"requiredPermissions": [

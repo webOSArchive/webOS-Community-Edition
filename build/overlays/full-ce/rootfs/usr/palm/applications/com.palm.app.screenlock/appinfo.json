@@ -1,0 +1,12 @@
+{
+	"title": "Screen & Lock",
+	"type": "web",
+	"main": "index.html",
+	"id": "com.palm.app.screenlock",
+	"icon": "icon.png",
+	"splashicon": "icon-256x256.png",
+	"uiRevision": 2,
+	"keywords":["Wallpaper", "Security", "Desktop", "Brightness", "Unlock", "Gestures", "Settings", "Preferences"],
+	"version":"1.0.0",
+	"vendor":"webOS Archive"
+}

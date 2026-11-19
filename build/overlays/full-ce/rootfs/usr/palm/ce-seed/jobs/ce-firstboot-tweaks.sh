@@ -10,17 +10,17 @@
     # any payload but the one it was written against.
     FACT=""
     [ -f "$CUSTO" ] && FACT=$(sed -n 's|.*/media/internal/wallpapers/\([^"]*\)".*|\1|p' "$CUSTO" | head -1)
-    if [ -n "$FACT" ] && [ "$FACT" != "22.jpg" ]; then
+    if [ -n "$FACT" ] && [ "$FACT" != "28.jpg" ]; then
         # ce-remove-preloads fires on this same event and also flips /
         # rw->ro; take the shared lock so neither remounts under the other.
         L=/tmp/.ce-rootfs-rw.lock
         n=0
         while ! mkdir $L 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n+1)); done
         mount -o remount,rw / 2>/dev/null || true
-        sed -i "s|/$FACT|/22.jpg|g; s|\"$FACT\"|\"22.jpg\"|g" "$CUSTO"
+        sed -i "s|/$FACT|/28.jpg|g; s|\"$FACT\"|\"28.jpg\"|g" "$CUSTO"
         mount -o remount,ro / 2>/dev/null || true
         rmdir $L 2>/dev/null || true
-        grep -q '22.jpg' "$CUSTO" \
+        grep -q '28.jpg' "$CUSTO" \
             || echo "$(date 2>/dev/null) FAILED to patch customization.json" \
                  >> /var/log/ce-firstboot-tweaks.log 2>/dev/null
     fi

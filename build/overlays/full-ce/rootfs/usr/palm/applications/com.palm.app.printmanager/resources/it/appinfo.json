@@ -1,0 +1,13 @@
+{
+	"appmenu": "Preferenze",
+	"icon": "../../images/icon64/printer_pref.png",
+	"id": "com.palm.app.printmanager",
+	"main": "../../index.html",
+	"noWindow": "true",
+	"splashicon": "../../images/icon256/printer_pref.png",
+	"title": "Gestione stampanti",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "1.0.0"
+}

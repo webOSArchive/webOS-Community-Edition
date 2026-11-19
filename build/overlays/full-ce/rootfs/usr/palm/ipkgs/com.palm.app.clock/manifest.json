@@ -1,0 +1,8 @@
+{
+"vendor": "webOS Archive" ,
+"version": "3.0.1904" ,
+"loc_name": "Clock" ,
+"ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.clock/com.palm.app.clock_3.0.1904_all.ipk" ,
+"id": "com.palm.app.clock" ,
+"iconUrl": "file:///usr/palm/ipkgs/com.palm.app.clock/com.palm.app.clock-icon.png" 
+}

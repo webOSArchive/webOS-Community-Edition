@@ -1,0 +1,12 @@
+{
+	"appmenu": "Préférences",
+	"icon": "../../icon.png",
+	"id": "com.palm.app.updates",
+	"main": "../../index.html",
+	"splashicon": "../../icon-256x256.png",
+	"title": "Mise à jour du système",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "1.1.0"
+}

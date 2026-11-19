@@ -1,6 +1,6 @@
 {
 	"A verification email was sent to #{email}.": "A verification e-mail was sent to #{email}.",
-	"Account protected from email change. Visit http://hpwebos.com/support for more information.": "Account protected from e-mail change. Visit http://hpwebos.com/support for more information.",
+	"Account protected from email change. Visit www.webosarchive.org for more information.": "Account protected from e-mail change. Visit www.webosarchive.org for more information.",
 	"Cannot change to the same email address.": "Cannot change to the same e-mail address.",
 	"EMAIL": "E-MAIL",
 	"Email": "E-Mail",
@@ -17,9 +17,9 @@
 	"Resend Verification Email": "Resend Verification E-Mail",
 	"The United States Government prohibits HP from allowing you to use this email address to set up a webOS account.": "The United States Government prohibits HP from allowing you to use this e-mail address to set up a webOS account.",
 	"The United States Government restricts exports to certain countries, including the country where your email address domain is issued. You can visit www.palm.com/us/company/legal for additional information.": "The United States Government restricts exports to certain countries, including the country where your e-mail address domain is issued. You can visit www.palm.com/us/company/legal for additional information.",
-	"This email address is alreday in use by another account. Visit http://hpwebos.com/support for more information.": "This e-mail address is alreday in use by another account. Visit http://hpwebos.com/support for more information.",
+	"This email address is alreday in use by another account. Visit www.webosarchive.org for more information.": "This e-mail address is alreday in use by another account. Visit www.webosarchive.org for more information.",
 	"VERIFY EMAIL": "VERIFY E-MAIL",
 	"Verify Email": "Verify E-Mail",
-	"We sent an email to #{email}. If you don't receive the email shortly check your junk email folder.<P>Follow the link in that email to reset your password.<P>If you are unable to reset your password, visit http://hpwebos.com/support for more help.": "We sent an e-mail to #{email}. If you don't receive the e-mail shortly, check your junk e-mail folder.<P>Follow the link in that e-mail to reset your password.<P>If you are unable to reset your password, visit http://hpwebos.com/support for more help.",
+	"We sent an email to #{email}. If you don't receive the email shortly check your junk email folder.<P>Follow the link in that email to reset your password.<P>If you are unable to reset your password, visit www.webosarchive.org for more help.": "We sent an e-mail to #{email}. If you don't receive the e-mail shortly, check your junk e-mail folder.<P>Follow the link in that e-mail to reset your password.<P>If you are unable to reset your password, visit www.webosarchive.org for more help.",
 	"Your email address and password are too similar, please select a new password.": "Your e-mail address and password are too similar, please select a new password."
 }

@@ -1,0 +1,21 @@
+{
+	"icon": "../../../icon.png",
+	"id": "com.palm.app.screenlock",
+	"keywords": [
+		"Fond d’écran",
+		"Sécurité",
+		"Bureau",
+		"Luminosité",
+		"Déverrouiller",
+		"Gestes",
+		"Configuration",
+		"Préférences"
+	],
+	"main": "../../../index.html",
+	"splashicon": "../../../icon-256x256.png",
+	"title": "Écran et verrouillage",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "1.0.0"
+}

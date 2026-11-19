@@ -1,0 +1,8 @@
+{
+"vendor": "webOS Archive" ,
+"version": "3.0.11007" ,
+"loc_name": "Calendar" ,
+"ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.calendar/com.palm.app.calendar_3.0.11007_all.ipk" ,
+"id": "com.palm.app.calendar" ,
+"iconUrl": "file:///usr/palm/ipkgs/com.palm.app.calendar/com.palm.app.calendar-icon.png" 
+}

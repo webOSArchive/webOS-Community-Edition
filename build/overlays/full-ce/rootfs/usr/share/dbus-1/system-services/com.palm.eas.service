@@ -1,4 +1,4 @@
 [D-BUS Service]
 Name=com.palm.eas
-Exec=/usr/bin/env LD_BIND_NOW=1 LD_LIBRARY_PATH=/usr/lib/ssl11mail LD_PRELOAD=/usr/lib/ssl11mail/libssl_compat.so CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt /usr/bin/mojomail-eas -c '{"log":{"appender":{"type":"pmlog"},"levels":{"com.palm.eas":"info"}}}' Palm Palm/1.0.1
+Exec=/usr/bin/env LD_BIND_NOW=1 LD_LIBRARY_PATH=/usr/lib/ssl11mail LD_PRELOAD=/usr/lib/ssl11mail/libssl_compat.so:/usr/lib/ssl11mail/libce-mailshim.so CURL_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt /usr/bin/mojomail-eas -c '{"log":{"appender":{"type":"pmlog"},"levels":{"com.palm.eas":"info"}}}' Palm Palm/1.0.1
 Type=dynamic

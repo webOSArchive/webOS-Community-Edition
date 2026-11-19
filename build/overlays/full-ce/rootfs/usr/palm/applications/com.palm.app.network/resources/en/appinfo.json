@@ -1,0 +1,14 @@
+{
+	"icon": "../../icon.png",
+	"id": "com.palm.app.network",
+	"main": "../../index.html",
+	"miniicon": "../../images/net_portal_24.png",
+	"noWindow": "true",
+	"splashicon": "../../images/net_portal_256.png",
+	"title": "Networking App",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "2.0.0",
+	"visible": false
+}

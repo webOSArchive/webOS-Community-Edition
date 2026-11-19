@@ -1,0 +1,67 @@
+{
+	"icon": "../../../icon.png",
+	"id": "com.palm.app.browser",
+	"keywords": [
+		"web",
+		"Navigateur",
+		"Blazer",
+		"Internet"
+	],
+	"main": "../../../index.html",
+	"splashicon": "../../../icon-256x256.png",
+	"tapToShareSupported": true,
+	"title": "Web",
+	"type": "web",
+	"uiRevision": 2,
+	"universalSearch": {
+		"dbsearch": {
+			"batchQuery": true,
+			"dbQuery": [
+				{
+					"method": "search",
+					"params": {
+						"query": {
+							"from": "com.palm.browserbookmarks:1",
+							"limit": 20,
+							"where": [
+								{
+									"collate": "primary",
+									"op": "?",
+									"prop": "searchText",
+									"val": ""
+								}
+							]
+						}
+					}
+				},
+				{
+					"method": "search",
+					"params": {
+						"query": {
+							"from": "com.palm.browserhistory:1",
+							"limit": 50,
+							"where": [
+								{
+									"collate": "primary",
+									"op": "?",
+									"prop": "searchText",
+									"val": ""
+								}
+							]
+						}
+					}
+				}
+			],
+			"displayFields": [
+				"title",
+				"url"
+			],
+			"displayName": "Signets et historique",
+			"launchParam": "url",
+			"launchParamDbField": "url",
+			"url": "com.palm.app.browser"
+		}
+	},
+	"vendor": "webOS Archive",
+	"version": "1.0.0"
+}

@@ -1,0 +1,16 @@
+{
+	"icon": "../../../images/help-icon-64.png",
+	"id": "com.palm.app.help",
+	"keywords": [
+		"Ayuda"
+	],
+	"main": "../../../index.html",
+	"miniicon": "../../../images/chat-icon-grey-24.png",
+	"noWindow": true,
+	"splashicon": "../../../images/help-icon-256.png",
+	"title": "Ayuda",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "2.0.0"
+}

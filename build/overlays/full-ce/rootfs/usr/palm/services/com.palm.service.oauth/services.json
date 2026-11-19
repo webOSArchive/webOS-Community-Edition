@@ -1,0 +1,19 @@
+{
+	"id": "com.palm.service.oauth",
+	"description": "OAuth 2 sign-in for mail accounts (webOS CE)",
+	"engine": "node",
+	"commandTimeout": 60,
+	"activityTimeout": 30,
+	"services": [{
+		"name": "com.palm.service.oauth",
+		"description": "OAuth 2 sign-in for mail accounts",
+		"assistant": "OAuthService",
+		"commands": [
+			{ "name": "listProviders", "assistant": "ListProvidersAssistant", "public": true },
+			{ "name": "start", "assistant": "StartAssistant", "public": true },
+			{ "name": "check", "assistant": "CheckAssistant", "public": true },
+			{ "name": "forget", "assistant": "ForgetAssistant", "public": true },
+			{ "name": "token", "assistant": "TokenAssistant" }
+		]
+	}]
+}

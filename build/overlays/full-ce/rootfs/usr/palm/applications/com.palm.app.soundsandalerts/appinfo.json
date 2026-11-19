@@ -1,0 +1,12 @@
+{
+	"id": "com.palm.app.soundsandalerts",
+	"version": "1.0.0",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"title": "Sounds & Ringtones",
+	"icon": "icon.png",
+	"splashicon": "icon-256x256.png",
+	"keywords": ["Audio", "Music", "Volume", "Vibrate", "Silent", "Settings", "Preferences"],
+	"uiRevision": 2
+}

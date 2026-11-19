@@ -1,0 +1,12 @@
+{
+	"icon": "../../images/icon-64x64.png",
+	"id": "com.palm.app.crotest",
+	"main": "../../index.html",
+	"splashicon": "../../images/icon-256x256.png",
+	"title": "Diagnose",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "2.0.1",
+	"visible": false
+}

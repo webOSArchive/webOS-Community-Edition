@@ -1,0 +1,8 @@
+{
+"vendor": "webOS Archive" ,
+"version": "3.0.13600" ,
+"loc_name": "Email" ,
+"ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.email/com.palm.app.email_3.0.13600_all.ipk" ,
+"id": "com.palm.app.email" ,
+"iconUrl": "file:///usr/palm/ipkgs/com.palm.app.email/com.palm.app.email-icon.png" 
+}

@@ -1,0 +1,18 @@
+{
+  "icon": "../../icon.png",
+  "id": "com.palm.app.videos",
+  "keywords": [
+    "video",
+    "player",
+    "movie",
+    "stream"
+  ],
+  "main": "../../index.html",
+  "splashicon": "../../icon-256x256.png",
+  "theme": "palm-dark",
+  "title": "Videoplayer",
+  "type": "web",
+  "uiRevision": 2,
+  "vendor": "webOS Archive",
+  "version": "3.2.0"
+}

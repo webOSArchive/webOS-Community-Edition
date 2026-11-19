@@ -1,0 +1,17 @@
+{
+	"icon": "../../../icon.png",
+	"id": "com.palm.app.dateandtime",
+	"keywords": [
+		"Reloj",
+		"Configuración",
+		"Preferencias",
+		"Zona horaria"
+	],
+	"main": "../../../index.html",
+	"splashicon": "../../../icon-256x256.png",
+	"title": "Fecha y hora",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "1.0.0"
+}

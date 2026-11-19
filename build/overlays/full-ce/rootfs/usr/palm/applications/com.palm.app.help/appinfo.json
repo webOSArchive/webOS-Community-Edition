@@ -1,0 +1,14 @@
+{
+	"id": "com.palm.app.help",
+	"version": "2.0.0",
+	"vendor": "webOS Archive",
+	"type": "web",
+	"main": "index.html",
+	"noWindow": true,
+	"title": "Help",
+	"icon": "images/help-icon-64.png",
+	"miniicon": "images/chat-icon-grey-24.png",
+	"splashicon": "images/help-icon-256.png",
+	"uiRevision": 2,
+	"keywords": [ "help" ]
+}

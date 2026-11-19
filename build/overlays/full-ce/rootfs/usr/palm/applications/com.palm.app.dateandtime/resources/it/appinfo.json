@@ -1,0 +1,17 @@
+{
+	"icon": "../../icon.png",
+	"id": "com.palm.app.dateandtime",
+	"keywords": [
+		"Sveglia",
+		"Impostazioni",
+		"Preferenze",
+		"Fuso orario"
+	],
+	"main": "../../index.html",
+	"splashicon": "../../icon-256x256.png",
+	"title": "Data e ora",
+	"type": "web",
+	"uiRevision": 2,
+	"vendor": "webOS Archive",
+	"version": "1.0.0"
+}

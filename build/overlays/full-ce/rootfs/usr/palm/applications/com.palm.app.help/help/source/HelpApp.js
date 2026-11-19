@@ -41,7 +41,7 @@ enyo.kind({
 		// Check debug info
 		this.loadUrlOverride();
 		this.online = enyo.application.online;
-		this.$.carePackManager.checkAppAvailablility();
+		// webOS CE: no check for HP's Care Pack app, so its page is never offered
 		// Show the Live Chat button if in prefs and matching locale
 		if (this.$.preferences.get("chat") === "yes" && this.$.preferences.get("locale") === enyo.application.locale) {
 			this.setChatEnabled(false);
