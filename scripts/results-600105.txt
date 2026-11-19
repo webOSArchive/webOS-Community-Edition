@@ -2,6 +2,10 @@
 # 164 pass, 0 fail. Run before the mail accounts were added; afterwards Gmail, a personal
 # Microsoft account (IMAP) and Microsoft 365 (Exchange) were signed in from Add Account and
 # synced with no errors and no crash reports.
+# Zoho (the legacy "Microsoft Exchange" type, by password), added by bus call under the same
+# shim: validated; a wrong password still answered 401; 11 folders and 4 contacts synced; a
+# message sent to itself came back into the Inbox; a weekly London event made on the device
+# was stored by Zoho, its zone written in Windows' form. No crash reports.
 ===== webOS CE automated pass — expecting BUILDMARK=600105 — Thu Nov 19 14:28:40 PST 2026 =====
 [PASS] id  BUILDMARK=600105
 [PASS] id  version string webOS CE 3.2.0
