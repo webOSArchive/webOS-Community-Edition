@@ -197,9 +197,19 @@ TouchPad test passes, so later phases are tested on top of it.
 - **Seen on a device under its final name (600104, baked, 2026-11-19):** `ce-test-full.sh`
   section 27 passes (files, roles, both buses, `token` private only, root outside a jail), and
   a sign-in with a code, a token and a revoked sign-in ran against the local broker.
+- **Google, for real (2026-11-19):** the broker's `google` app is deployed (a Web client in
+  the same Google project). From the TouchPad: a sign-in with a code as the Gmail test
+  account, an access token that logged in to imap.gmail.com with XOAUTH2 (through
+  `/usr/bin/curl`; 443 messages in the Inbox), and a refresh through the broker.
+- **Microsoft will not use the broker (decided 2026-11-19).** The registration is a public
+  client with no secret, and the user will not set up a second, confidential one. Microsoft's
+  own device-code flow does the same job with the existing client id: the token service asks
+  Microsoft for the code, the person enters it at login.microsoft.com/device, and the service
+  redeems and refreshes directly. Microsoft issued a code for the client id and the Exchange
+  scope when asked; redeeming one is untested and may need "Allow public client flows" on
+  the registration. The broker's `microsoft` and `microsoft365` apps stay unconfigured.
 - **Not yet seen:** telling a mail service that its account signed in again, which needs
-  phase 3's templates. Nothing has run against Google or Microsoft: the real broker has no
-  `google` or `microsoft` app yet.
+  phase 3's templates.
 - **Never delete `/var/palm/jail/<id>` on a device.** A jail keeps read-write mounts of
   `/media/internal` and others after its service exits. Doing so emptied the test
   TouchPad's media partition on 2026-11-19.
