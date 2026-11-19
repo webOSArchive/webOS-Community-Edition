@@ -998,6 +998,7 @@ def main():
         "./usr/sbin/setcpushares-task",
         "./usr/bin/mojomail-imap",
         "./etc/event.d/LunaSysMgr",
+        "./etc/palm/luna.conf",
         "./etc/jail_pdk.conf",
         "./etc/palm-build-info",
         HELP_SRC + "UrlManager.js",
@@ -3207,6 +3208,20 @@ def main():
       "[Main]\nPreferAppKeywordsForAppPlacement=true\n"
       "IgnoreLegacyCustomizationFiles=true\n", 0o644)
     bake_launcher_layout(tmp, sdata("./usr/palm/default-dock-positions.json"))
+
+    # 15b2) full brightness until the user sets one. A TouchPad's backlight has
+    # dimmed with age, and the stock first value (40 of 100) makes a fresh
+    # flash look tired. LunaCE reads [Display] DefaultBrightness (99679cf); a
+    # brightness the user has set is a saved preference and still wins, so
+    # the slider works as before and nobody's own setting changes.
+    log("tier: full brightness by default (luna.conf [Display] DefaultBrightness=100)")
+    lconf = sdata("./etc/palm/luna.conf").decode()
+    if lconf.count("\n[Display]\n") != 1 or "DefaultBrightness" in lconf:
+        sys.exit("ERROR: luna.conf: expected one [Display] section and no DefaultBrightness key")
+    w("etc/palm/luna.conf", lconf.replace("\n[Display]\n", "\n[Display]\nDefaultBrightness=100\n", 1), 0o644)
+    with open(os.path.join(LUNACE, "bin", "LunaSysMgr-LunaCE-topaz"), "rb") as f:
+        if b"DefaultBrightness" not in f.read():
+            sys.exit("ERROR: this LunaSysMgr doesn't read [Display] DefaultBrightness (needs LunaCE 99679cf)")
     # N\name renames a page: AppMonitor::pageNameFromDesignator prefers the
     # map's name over the designator and displays it .toUpper() ("games" ->
     # "GAMES"); the page-restore path renames saved pages too. The FAVORITES

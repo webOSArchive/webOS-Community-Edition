@@ -723,6 +723,18 @@ else
 fi
 grep -q 'if (this.$.list) {' /usr/palm/frameworks/enyo/0.10/framework/lib/addressing/AddressingPopup.js 2>/dev/null && P "30  the address field's popup is guarded" || F "30  AddressingPopup.js lacks the guard"
 
+# 31. Full brightness until the user sets one (luna.conf [Display] DefaultBrightness, LunaCE 99679cf).
+grep -q "^DefaultBrightness=100" /etc/palm/luna.conf 2>/dev/null && P "31  luna.conf asks for full brightness by default" || F "31  luna.conf has no DefaultBrightness=100"
+strings /usr/bin/LunaSysMgr 2>/dev/null | grep -q "DefaultBrightness" && P "31  LunaSysMgr reads the default brightness setting" || F "31  LunaSysMgr predates DefaultBrightness (LunaCE 99679cf)"
+r=$( (luna-send -n 1 palm://com.palm.display/control/getProperty '{"properties":["maximumBrightness"]}' </dev/null & p=$!; ( sleep 15; kill $p 2>/dev/null ) & wait $p) 2>/dev/null)
+b=$(echo "$r" | sed -n 's/.*"maximumBrightness": *\([0-9]*\).*/\1/p')
+s=$( (luna-send -n 1 palm://com.palm.preferences/appProperties/getAppProperty '{"appId":"com.palm.display","key":"maximumBrightness"}' </dev/null & p=$!; ( sleep 15; kill $p 2>/dev/null ) & wait $p) 2>/dev/null)
+if echo "$s" | grep -q '"returnValue": *true'; then
+  I "31  brightness is $b, which someone set on this device (the default applies only until then)"
+else
+  [ "$b" = 100 ] && P "31  brightness is 100 with nothing saved" || F "31  brightness is ${b:-unknown} with nothing saved, expected 100"
+fi
+
 # ---------------------------------------------------------------- ota. CE OTA trust anchor
 # The only OTA component in the image (600070). No private key on the device, so
 # this cannot test a POSITIVE verification -- it tests that the anchor is the
