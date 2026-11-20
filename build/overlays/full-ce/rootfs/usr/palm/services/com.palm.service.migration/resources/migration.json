@@ -1,0 +1,8 @@
+{
+    "imports": [
+        {
+            "path": "import_ar_data.js",
+            "build": "Blowfish"
+        }
+    ]
+}
