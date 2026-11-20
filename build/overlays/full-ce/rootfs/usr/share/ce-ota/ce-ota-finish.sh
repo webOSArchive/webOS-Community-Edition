@@ -231,20 +231,37 @@ app_matches_ipk() {   # is every file of the ipk installed with the same bytes?
 install_ipk() {
     _dir=/media/internal/.ce-ota-finish
     grep -q " /media/internal " /proc/mounts || _dir=/tmp/.ce-ota-finish
-    mkdir -p $_dir && cp "$1" $_dir/install.ipk 2>/dev/null || { log "apps: no room for a copy of $1"; return 1; }
+    # Its own file name each time. The installer deletes the file about a
+    # second AFTER it reports SUCCESS; with one shared name it deleted the
+    # next app's copy, and that install failed at once (seen on a TouchPad:
+    # two of five).
+    _f=$_dir/$(basename "$1")
+    mkdir -p $_dir && cp "$1" "$_f" 2>/dev/null || { log "apps: no room for a copy of $1"; return 1; }
+    # A reply file of its own, removed first: the loop below once read the
+    # previous install's SUCCESS before this request had started, and killed it.
+    _out="$T/inst.$(basename "$1").out"
+    rm -f "$_out"
     luna-send -n 8 palm://com.palm.appinstaller/installNoVerify \
-        "{\"target\":\"$_dir/install.ipk\",\"subscribe\":true}" < /dev/null > "$T/inst.out" 2>&1 &
+        "{\"target\":\"$_f\",\"subscribe\":true}" < /dev/null > "$_out" 2>&1 &
     _p=$!
     _i=0
-    while [ $_i -lt 90 ] && kill -0 $_p 2>/dev/null; do
-        grep -q '"status":"SUCCESS"\|FAILED' "$T/inst.out" 2>/dev/null && break
+    while [ $_i -lt 90 ]; do
         sleep 2
+        grep -q '"status":"SUCCESS"\|FAILED' "$_out" 2>/dev/null && break
+        kill -0 $_p 2>/dev/null || break
         _i=$((_i+1))
     done
     kill $_p 2>/dev/null
-    log "apps: installer said: $(tr -d '\n' < "$T/inst.out" 2>/dev/null | sed 's/.*"status":"\([A-Z_]*\)".*/\1/' | cut -c1-60)"
-    rm -rf $_dir
-    grep -q '"status":"SUCCESS"' "$T/inst.out" 2>/dev/null
+    # Let the installer finish with the file before anything else is asked of it.
+    _i=0
+    while [ $_i -lt 30 ] && [ -e "$_f" ]; do sleep 1; _i=$((_i+1)); done
+    rm -f "$_f"; rmdir $_dir 2>/dev/null
+    if grep -q '"status":"SUCCESS"' "$_out" 2>/dev/null; then
+        log "apps: installer said: SUCCESS"
+        return 0
+    fi
+    log "apps: installer said: $(tr -d '\n' < "$_out" 2>/dev/null | cut -c1-300)"
+    return 1
 }
 
 # A staged ipk whose bytes changed under an unchanged file name: the stock
