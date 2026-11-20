@@ -316,6 +316,20 @@ left the build machine; 600109 is 600108 with the first two fixes below.
 4. `/` is at 84% after the update. Compare with a flashed 600109.
 5. Not looked at on the screen yet: the launcher, the keyboard, Email, the
    boot logo itself.
+6. **LunaSysMgr crashed once on the updated device** (08:01, second boot, about
+   13 minutes up, when the user minimized the first card: Device Info). The
+   stack is `MinimizeState::onEntry` → `CardWindowManager::markFirstCardDone`
+   → `fclose(NULL)`: LunaCE opens `/var/luna/preferences/used-first-card` for
+   writing and closes it without checking the result. The first-card alert had
+   fired, so at its start LunaSysMgr had not seen the marker either, although
+   the payload had put it there at 07:38, root-owned and writable, and the same
+   open works from a root shell. Why LunaSysMgr could neither see nor open it
+   is **not known**. Two minutes earlier the changed `ce-ota-finish` had
+   reinstalled Clock through the installer in that LunaSysMgr; no link is
+   shown. The missing check is a LunaCE bug whatever the cause
+   (`Src/lunaui/cards/CardWindowManager.cpp:1306`). The report is kept in
+   `out/ota/device-600109-applied/lunasysmgr-minicore.txt`. Watch for it on
+   the 600110 run: minimize a card on the first boot after the update.
 
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
