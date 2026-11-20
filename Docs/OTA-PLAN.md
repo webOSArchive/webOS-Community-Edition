@@ -434,6 +434,54 @@ This device carried one file no image has, `/etc/udev/rules.d/99-cmdrkeen-pad.ru
 extra, the payload leaves it alone, and it is still there afterwards: the
 first sight of an owner's own change to `/` passing through an update.
 
+### 2.0f A0, the armed-flash rehearsal: what it is and the order to take it (2026-11-20)
+
+Read in the stock scripts (`/usr/share/ota-scripts/make-update-uimage`,
+`ota.sh`, `pre-update`, `post-update`, `mmipkg`) and `PmUpdater`'s strings. No
+OTA client is needed for a rehearsal: the stock chain runs from three session
+files and a flag.
+
+**The chain.** (1) ipks on the device, and
+`/var/lib/software/SessionFiles/{urls,update_list.txt,install_list.txt}` naming
+them (`install_list.txt` with the `/rootfs` prefix), plus the flag
+`/var/lib/software/updating`. (2) `make-update-uimage` builds the update
+ramdisk **from files already on the device** (35 packages named in
+`uimage-packages`, 517 files, found through their ipkg `.list`), checks the
+result's md5 against `/boot/updatefs-info`, writes `/boot/update-uimage` and
+points `/boot/uImage` at it. (3) Reboot: the ramdisk's `ota.sh` checks the
+filesystems, runs `pre-update`, mounts everything under `/rootfs` (§2.0b), runs
+`PmUpdater` (validate, `mmipkg install`, a retry count; after the last retry it
+marks the device bricked), then `post-update`, and reboots.
+
+**Checked now, on the build machine:** the 35 packages' `.list` files and all
+517 files are byte-identical in stock 3.0.5, 600070 and 600112, as are
+`updatefs-info` and `uimage-packages`. So CE has not disturbed what the
+ramdisk is built from, and the md5 check in step (2) should pass on a CE
+device as it would on stock.
+
+**Not known until it runs:** what `PmUpdater` validates the ipks against
+(`ValidatePackages`; the client's `direct-update.sh` writes only names and
+paths); whether an ipk may sit on `/media/internal` (the update volume is 16 MB
+and the payload is 22 MB; the ramdisk does mount `/media/internal`); what
+`pre-update` does to a lived-in `/var` (it removes mail attachments and
+`/var/luna/files` after saving them to a tar it restores later).
+
+**Order, each step on a TouchPad that can be re-flashed:**
+
+1. **Arm and disarm, no reboot.** Stage a one-file ipk, write the session files
+   and the flag, run `make-update-uimage`, read `/var/log/uimage.log`, look at
+   `/boot/update-uimage`; then put `/boot/uImage` back and remove the flag.
+   Proves step (2) on CE with nothing at stake.
+2. **The same, then reboot.** Watch the ramdisk over novacom (it carries
+   novacomd), keep `/var/log/ota.log`. Recovery if it sticks is three commands
+   (`../webos-update-exploration/OTA-UPDATE-GUIDE.md`, "Device Stuck in OTA
+   Ramdisk"): restore the `uImage` link, remove the flag, reboot. Otherwise the
+   Doctor.
+3. **The real payload**, staged on `/media/internal`, then `device-check.py`
+   and `ce-ota-finish` as in §2.0d.
+4. Only then the client: signature check before arming, the tier field, and
+   the server gate (§1.4).
+
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
 | Change | Paths | Notes |
