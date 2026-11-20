@@ -3,7 +3,10 @@
 **Status, 2026-11-20:** the payload generator, the device check and `ce-ota-finish`
 exist. An unsigned 600070 → 600109 payload was applied by hand to a running 3.1.0
 TouchPad five times; the last two, the same 600070 → 600112 payload on two
-devices, were clean end to end (§2.0a to §2.0e). The update ramdisk has not been tried and nothing is signed. The rest of
+devices, were clean end to end (§2.0a to §2.0e). **The same payload has also gone
+through the update ramdisk** (`make-update-uimage`, `PmUpdater`, `mmipkg`) on one
+TouchPad, armed by hand (§2.0g). Nothing is signed, and the OTA client has not
+driven any of it. The rest of
 this document is the plan of 2026-10-04. The OTA reference stays
 `../webos-update-exploration/OTA-3.1.0.md` (trust model, client, server; read-only
 from this repo). This document is the image side's plan for the two payloads, and
@@ -481,6 +484,64 @@ and the payload is 22 MB; the ramdisk does mount `/media/internal`); what
    and `ce-ota-finish` as in §2.0d.
 4. Only then the client: signature check before arming, the tier field, and
    the server gate (§1.4).
+
+### 2.0g A0 done: the armed flash works on CE, with the real payload (2026-11-20)
+
+One TouchPad, freshly flashed to 600070 (the second one, `c68faf11…`), three
+passes through the stock chain of §2.0f, no OTA client involved. **Open item #4
+of `OTA-3.1.0.md` is closed for CE 3.1.0 → 3.2.0 on this device.** Logs are in
+`out/ota/rehearsal/` on the build machine.
+
+1. **Arming.** With a one-file ipk in `/var/lib/update`, the three session
+   files and the flag, `make-update-uimage` built the ramdisk from the device's
+   own files, passed its md5 check, wrote `/boot/update-uimage` (9.6 MB: the
+   kernel in `/boot`, which on CE is UberKernel, plus a 5.4 MB filesystem) and
+   pointed `uImage` at it. 19 seconds.
+2. **First reboot: rejected, and backed out cleanly.** The ramdisk checked the
+   filesystems, ran `pre-update`, and `PmUpdater` refused the update
+   (`E0060004`, "Empty urls file"). `ota.sh` removed the flag, restored the
+   `uImage` link and rebooted to an untouched 3.1.0. So a refused update costs
+   two reboots and nothing else.
+3. **The `urls` file is not a list of URLs.** Read from `PmUpdater`'s code: one
+   header line, a second line that is exactly `version=1`, then **five lines
+   for each package**. It only counts the records and compares the count with
+   the package list; what the five lines say is not looked at. `PmUpdater -v`
+   on a running device validates without installing, which is how the format
+   was confirmed before the next reboot. The client's `direct-update.sh` writes
+   plain URLs and would be refused the same way.
+4. **Second reboot: the one-file ipk installed.** `PmUpdater` → `mmipkg -r
+   install` → `postinst` chrooted in `/rootfs`. The `postinst` recorded what it
+   saw: `/`, `/boot`, `/var`, `/var/log`, `/var/lib/update` and
+   `/media/internal` all mounted read-write, `/boot` writable, no
+   `/media/cryptofs`. That is §2.0b's reading of `ota.sh`, now seen. About 70
+   seconds in the ramdisk.
+5. **Third reboot: the real 600070 → 600112 payload**, staged on
+   `/media/internal/ce-ota/` (`update_list.txt` names that path,
+   `install_list.txt` the same under `/rootfs`). `mmipkg` ran `preinst`,
+   unpacked 1,313 members in five seconds, ran `postinst`; status `0`. The
+   device booted as 600112. `ce-ota-finish`: logo written and verified, five
+   apps reinstalled and verified, flagged in 61 seconds; Photos' service on
+   the bus; no crash report. `device-check.py` against the 600112 image shows
+   what the by-hand run on this same device showed, plus only
+   `/boot/update-uimage` and the rehearsal's own marker file. `mmipkg`
+   regenerated `status` with 670 entries and left no record of the payload's
+   package.
+
+**Still to deal with, found here:**
+
+- `/boot/update-uimage` stays behind (9.6 MB of a 31 MB partition; 17 MB were
+  free before). The next arming overwrites it. `ce-ota-finish` could remove it.
+- The payload ipk stays on `/media/internal` (22 MB). Something should delete
+  it after a verified update.
+- `post-update` runs `com.palm.service.migration`'s scripts on the way out
+  (Yahoo IM fix-ups, Skype removal, and others). They ran here on a device with
+  almost no data. **Read what each one does to a lived-in device** before this
+  goes to anyone's own TouchPad.
+- `pre-update` on a lived-in `/var` is still unseen (this device had no mail).
+- Not rehearsed: a failure inside `mmipkg` (the retry count, and the "bricked"
+  state after the last retry), a power cut, a low battery at arming.
+- The session files and the arming were done by hand. The client has to write
+  the `urls` file in the form above, and stage on `/media/internal`.
 
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
