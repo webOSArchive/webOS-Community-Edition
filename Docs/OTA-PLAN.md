@@ -132,8 +132,16 @@ tag is needed. It writes `delta.json`/`delta.txt` (every difference), the payloa
 sha256, and the sha256 of 600070's `org.webosarchive.ce-files.md5sums` for the
 pre-flight of §2.4). It refuses to write a payload unless applying it to the old
 image's member table gives the new image's exactly. For 600107 that check passes
-for all 21,989 members. **The check is on paper: the payload has not been
-unpacked by a real `tar`, and has not run on a device.**
+for all 21,989 members.
+
+The payload was also unpacked on the build machine: 600070's rootfs extracted
+with GNU `tar` under `fakeroot`, then `preinst`, the data tar and `postinst` with
+their paths pointed at that tree. Every file's content, every symlink and every
+path then matched 600107. That run found one thing the member tables could not:
+an empty `com.palm.app.contacts/tests`, a directory no tar names, which
+`postinst` now removes. Not checked there: owners, and 59 read-only files'
+modes, which `fakeroot` does not keep on disk. **The device's `tar` is not GNU
+`tar`, and the payload has not run on a device.**
 
 | | |
 |---|---|
@@ -141,7 +149,7 @@ unpacked by a real `tar`, and has not run on a device.**
 | File bytes delivered | 53.3 MB |
 | Payload ipk | 20.1 MB (gzip). More than `/var/lib/update`'s 16 MB, so staging on `/media/internal` (§1.4) is required |
 | `preinst` | unlinks the 104 zoneinfo paths, so `tar` cannot write a new file through an old hard link into its sibling |
-| `postinst` | 9 file removals, 1 `rmdir`, then removes the package's own `.control`/`.list`/`.preinst`/`.postinst` |
+| `postinst` | 9 file removals, 2 `rmdir`, then removes the package's own `.control`/`.list`/`.preinst`/`.postinst` |
 
 **What the measurement changes in this plan:**
 
@@ -198,8 +206,8 @@ device: `ls -l` link counts and `md5sum` of both.
 **The trail from here**, in order:
 
 1. ~~Generator, with the convergence check on paper.~~ Done.
-2. Unpack the payload over an extracted 600070 rootfs with a real `tar` (as root
-   or in a user namespace) and compare with 600107: the same check, off paper.
+2. ~~Unpack the payload over an extracted 600070 rootfs with a real `tar` and
+   compare with 600107.~~ Done, with the limits above.
 3. A read-only device check: dump path, mode, link target and md5 of `/` over
    novacom and compare it with an image's member table. One script serves the
    pre-flight (§2.4, device against 600070), the convergence test (§1.3, device

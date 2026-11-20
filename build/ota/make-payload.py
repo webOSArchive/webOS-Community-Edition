@@ -289,7 +289,7 @@ def build_info(blob):
     return dict(l.split("=", 1) for l in blob.decode().splitlines() if "=" in l)
 
 
-def plan_ops(delta):
+def plan_ops(delta, old, new):
     """Split the delta into what the three install stages do.
 
     mmipkg (read in the 3.1.0 rootfs) runs, chrooted into the device's rootfs:
@@ -316,6 +316,18 @@ def plan_ops(delta):
             if d["new"]["type"] not in ("file", "dir", "symlink", "hardlink"):
                 sys.exit("unsupported member type for /%s: %s" % (p, d["new"]["type"]))
             data.append(p)
+    # Directories neither tar names (tar made them for the files under them)
+    # that hold nothing in the new image: found by unpacking a payload with a
+    # real tar, which left com.palm.app.contacts/tests behind, empty.
+    def ancestors(paths):
+        out = set()
+        for q in paths:
+            while "/" in q:
+                q = q.rsplit("/", 1)[0]
+                out.add(q)
+        return out
+    gone = ancestors(old) - ancestors(new) - set(new) - set(post_rmdir)
+    post_rmdir += sorted(gone)
     post_rmdir.sort(key=lambda x: -x.count("/"))        # deepest first
     return {"preinst_unlink": pre, "data": data, "postinst_rm": post_rm,
             "postinst_rmdir": post_rmdir, "postinst_meta": post_meta}
@@ -430,7 +442,7 @@ def cmd_build(args):
         if rec.startswith("%s/%s." % (IPKG_INFO, pkg)):
             sys.exit("package id %s already exists in the old image" % pkg)
 
-    ops = plan_ops(delta)
+    ops = plan_ops(delta, old, new)
     data_members = collect_data(args.new, set(ops["data"]))
 
     # Proof before anything is written: old image + payload == new image.
