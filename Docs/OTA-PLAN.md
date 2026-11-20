@@ -331,6 +331,37 @@ left the build machine; 600109 is 600108 with the first two fixes below.
    `out/ota/device-600109-applied/lunasysmgr-minicore.txt`. Watch for it on
    the 600110 run: minimize a card on the first boot after the update.
 
+### 2.0b Second run: 600070 → 600110 on a second TouchPad (2026-11-20)
+
+Same procedure, with `/boot` remounted read-write beside `/`. A clean run end to
+end:
+
+- Pre-flight as on the first device. Every step of the apply exited 0, with no
+  `tar` warning. After it, the device differed from the 600110 image only as a
+  flashed device does (110 more directories no tar names, nothing else).
+- First boot: `ce-ota-finish` wrote the boot logo to NVRAM and **verified it**
+  ("tokens unchanged", battery 93%) within the first minute, then placed one
+  seed file, reinstalled Clock, Email, Music, Calendar and Photos through the
+  installer ("SUCCESS", each verified), removed the stock Calculator, copied
+  the wallpaper and flagged itself: 70 seconds from its first line to its last.
+  No NVRAM backup left behind.
+- `org.webosarchive.photos.service` answers on the public bus.
+- The video handler registered at boot. Preware is 1.9.22. No new crash report
+  (the one on the device is 3.1.0's first-use LunaSysMgr at exit, from before
+  the update).
+
+**`/` read-write on the first boot (§2.0a open item 3) is Preware's own
+install script:** `control/postinst` line 9 runs `mount -o remount,rw /` and
+never remounts it. The stock preload pass installed Preware 1.9.22 at 35
+seconds into the boot. A flash installs Preware the same way, so this is not
+the update's doing, and the next boot is read-only again. Whether CE should
+remount after that install is a separate question.
+
+Still open from §2.0a: `/boot` and `/var` in the ramdisk (1), the first-card
+crash (6), which this run has not yet been asked to repeat: nobody has minimized
+a card on this device. LunaCE `045427d` checks the failed open and logs its
+errno; it is not in 600110.
+
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
 | Change | Paths | Notes |
