@@ -681,7 +681,21 @@ as the image's: only `"vendor"` differs (`HP` in the feed, `webOS Archive` in
 the image). The image stages Photos under the stock version number 3.0.8001,
 so that the preload pass does not reinstall it at every boot, and Preware
 compares its feed's 3.2.0 with that. A flashed device gets the same offer. The
-same must hold for Calendar. Not changed.
+same must hold for Calendar.
+
+**Fixed in the tree (not baked, not yet on a device):** a new job,
+`ce-preload-versions` (`build/full-ce/ce-ota/ce-preload-versions.sh`), records
+each staged preload under the version its own `appinfo.json` declares, when it
+is recorded under exactly the staged file's version and the app's own is
+higher. It runs once at every boot, waits for the preload pass at first use,
+and `ce-ota-finish` runs it after reinstalling apps. It never writes the
+status file while an install is running. On a fake tree: Calendar 3.0.11007
+became 3.2.0 and nothing else changed. `ce-ota-finish`'s rule for "this app is
+ours to replace" changed with it: recorded under the staged file's version,
+or under a version no higher than the staged app's own. **To see on a
+device:** Preware no longer offers Photos or Calendar; and the stock preload
+pass does not reinstall them at the next boot (read in `app-install`: it
+installs only when the staged version is not lower than the recorded one).
 
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 

@@ -2486,6 +2486,33 @@ def main():
     w(MIG[2:], (json.dumps(mig, indent=4) + "\n").encode("utf-8"), 0o644)
     log(f"  migration.json: {len(dropped)} HP data migrations will not run on an update")
 
+    # ce-preload-versions: Calendar and Photos are staged under their stock
+    # version numbers, so ipkg records those and Preware offers its feed's
+    # 3.2.0 as an update to an app the device already has. The script records
+    # each staged preload under the version its own appinfo.json declares. See
+    # its header. At first use it waits for the preload pass to finish.
+    wcopy("usr/palm/ce-seed/ce-preload-versions.sh",
+          os.path.join(OTA_SRC, "ce-preload-versions.sh"), 0o755)
+    w("etc/event.d/ce-preload-versions",
+      "# ce-preload-versions -- webOS CE: record staged preloads (Calendar, Photos)\n"
+      "# under the version they really are, so Preware does not offer the feed's\n"
+      "# copy of the same app as an update. No flag: one cheap pass at every boot.\n"
+      "\n"
+      "start on stopped finish\n"
+      "start on first-use-finished\n"
+      "\n"
+      "console none\n"
+      "\n"
+      "script\n"
+      "    [ -f /var/luna/preferences/ran-first-use ] || [ \"$UPSTART_EVENT\" = first-use-finished ] || exit 0\n"
+      "    if [ \"$UPSTART_EVENT\" = first-use-finished ]; then\n"
+      "        exec sh /usr/palm/ce-seed/ce-preload-versions.sh wait\n"
+      "    fi\n"
+      "    sleep 90\n"
+      "    exec sh /usr/palm/ce-seed/ce-preload-versions.sh\n"
+      "end script\n", 0o644)
+    log("  ce-preload-versions job installed")
+
     w("etc/event.d/ce-ota-finish",
       "# ce-ota-finish -- webOS CE: finish an update on the first boot of the new\n"
       "# image: the cryptofs apps and seed files an OTA payload cannot reach, and\n"

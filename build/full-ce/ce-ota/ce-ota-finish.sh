@@ -288,8 +288,14 @@ step_apps() {
             log "apps: ${_pkg:-$_rel} is not installed -- left alone"
             continue
         fi
-        if [ "$_inst" != "$_ver" ]; then
-            log "apps: $_pkg is at $_inst, the image stages $_ver -- left alone"
+        # Ours to replace when it is recorded under the staged file's version, or
+        # under a version no higher than the one the staged app itself declares
+        # (ce-preload-versions records that one; so does the feed's copy of the
+        # same release). A higher version is the owner's newer install.
+        _own=$(ar p "$_ipk" data.tar.gz 2>/dev/null | tar xzOf - "./usr/palm/applications/$_pkg/appinfo.json" 2>/dev/null \
+               | sed -n 's/.*"version"[^"]*"\([^"]*\)".*/\1/p' | head -1)
+        if [ "$_inst" != "$_ver" ] && ! { [ -n "$_own" ] && ver_le "$_inst" "$_own"; }; then
+            log "apps: $_pkg is at $_inst, the image stages $_ver (${_own:-?}) -- left alone"
             continue
         fi
         if app_matches_ipk "$_ipk"; then
@@ -473,6 +479,8 @@ if [ "$(cat $FLAG 2>/dev/null)" != "$MARK" ]; then
     _fail=0
     step_seed  || _fail=$((_fail+1))
     step_apps  || _fail=$((_fail+1))
+    # the installer has just recorded the staged files' versions again
+    [ -x /usr/palm/ce-seed/ce-preload-versions.sh ] && sh /usr/palm/ce-seed/ce-preload-versions.sh
     step_feeds || _fail=$((_fail+1))
     step_gst   || _fail=$((_fail+1))
     step_media || _fail=$((_fail+1))
