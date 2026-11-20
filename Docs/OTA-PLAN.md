@@ -195,24 +195,51 @@ modes, which `fakeroot` does not keep on disk. **The device's `tar` is not GNU
 8. **AT&T:** no 3.2.0 AT&T image exists yet. Its payload needs one, diffed
    against 600071.
 
-**Found in the image, not an OTA matter:** 600107's rootfs tar names 104
-zoneinfo paths twice, first as the stock hard link and then as the new file.
-Four of the links point at files with other content (`US/Pacific-New`,
-`Canada/East-Saskatchewan`, which 2026f no longer has). If the Doctor's `tar`
-writes through an existing link instead of replacing it, those two stale files
-get new bytes that their md5sums record does not expect. Check on a flashed
-device: `ls -l` link counts and `md5sum` of both.
+**A flashed device is not the rootfs tar** (read-only check of the test TouchPad,
+600105, against its own image with `build/ota/device-check.py`, two minutes over
+novacom, nothing written):
+
+- The check found the two files that TouchPad carries by hand (`LunaSysMgr`,
+  `luna.conf`) and no other changed file except `/usr/lib/ipkg/status`. So it
+  can tell a drifted device from a clean one.
+- The Doctor installs `hp.tar`'s four customization ipks on top of the rootfs
+  (`audiod-config-eu`, `crotest-images`, `palmcustomizationinfo-hp`,
+  `sweatshop-hp-topaz`): 670 control files against the tar's 666, about 105
+  files the tar does not have, and a `status` regenerated to match. `hp.tar` is
+  byte-identical in 600070, 600105 and 600107, so the rootfs diff is still the
+  right payload. `mmipkg` will regenerate `status` with those four in it, which
+  is what a flashed device has.
+- `ce-reclaim-customization-media` has removed the staged wallpapers and
+  ringtones (18 files). The payload adds `28.jpg` beside them, where the reclaim
+  job, already flagged done, will leave it: 148 KB that a flashed device does
+  not keep. `ce-ota-finish` should copy it to `/media/internal/wallpapers` and
+  remove it, or the job's flag should be cleared.
+- About 290 directories exist that no tar names. Expected: `tar` makes them.
+- **The payload has two paths under `/var`**, which is its own volume:
+  `/var/imwrap.sh` (changed) and `/var/luna/preferences/used-first-card`
+  (added). Whether the update ramdisk has the var volume mounted under
+  `/rootfs/var` is not known. If not, they land on the root volume, hidden
+  under the mount, and `ce-ota-finish` has to place them. A0 must look.
+- So the convergence test (§1.3) compares an OTA'd device with a **flashed
+  device's listing**, not with the tar alone. `device-check.py` saves the
+  listing (`device.json`); comparing two listings is the piece still to write.
+
+**Checked and cleared:** 600107's rootfs tar names 104 zoneinfo paths twice,
+first as the stock hard link and then as the new file. On the flashed TouchPad
+the Doctor's `tar` replaced each link instead of writing through it
+(`America/Los_Angeles` has the 2026f bytes and one link; `US/Pacific-New` kept
+its own). `US/Pacific-New` and `Canada/East-Saskatchewan` are 2011 files that
+2026f no longer has, and they stay in the image.
 
 **The trail from here**, in order:
 
 1. ~~Generator, with the convergence check on paper.~~ Done.
 2. ~~Unpack the payload over an extracted 600070 rootfs with a real `tar` and
    compare with 600107.~~ Done, with the limits above.
-3. A read-only device check: dump path, mode, link target and md5 of `/` over
-   novacom and compare it with an image's member table. One script serves the
-   pre-flight (§2.4, device against 600070), the convergence test (§1.3, device
-   against the target, so no second device is needed), and tells us today what a
-   lived-in flashed device differs in.
+3. ~~A read-only device check.~~ `build/ota/device-check.py IMAGE` is written
+   and was run once (above). Still to do: compare two device listings, for the
+   convergence test; and run it on a 3.1.0 device against 600070, which is the
+   pre-flight of §2.4 and shows what a device in the field differs in.
 4. `ce-ota-finish`: generated from the staged-ipk list, plus §2.2 steps 3 to 6
    and 10 by hand. Then a bake that contains it, which becomes the target.
 5. A0, the bench rehearsal of the armed flash with a trivial payload (§2.3).

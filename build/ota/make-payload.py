@@ -143,17 +143,20 @@ def scan(path, blobs=None, dups=None):
         }
         if ti.isreg():
             h = hashlib.sha256()
+            m = hashlib.md5()           # what a device can compute (device-check.py)
             f = tf.extractfile(ti)
             keep = [] if blobs is not None and (
                 STAGED_IPK.match(norm(ti.name)) or norm(ti.name) == BUILD_INFO) else None
             for chunk in iter(lambda: f.read(1 << 20), b""):
                 h.update(chunk)
+                m.update(chunk)
                 if keep is not None:
                     keep.append(chunk)
             if keep is not None:
                 blobs[norm(ti.name)] = b"".join(keep)
             rec["size"] = ti.size
             rec["sha256"] = h.hexdigest()
+            rec["md5"] = m.hexdigest()
         elif ti.issym() or ti.islnk():
             rec["target"] = ti.linkname
         elif ti.ischr() or ti.isblk():
@@ -419,6 +422,7 @@ def simulate(old, ops, data_members, pkg):
         if ti.isreg():
             rec["size"] = ti.size
             rec["sha256"] = hashlib.sha256(body).hexdigest()
+            rec["md5"] = hashlib.md5(body).hexdigest()
         elif ti.issym() or ti.islnk():
             rec["target"] = ti.linkname
         state[norm(ti.name)] = rec
