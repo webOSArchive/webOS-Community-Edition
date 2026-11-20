@@ -183,9 +183,10 @@ modes, which `fakeroot` does not keep on disk. **The device's `tar` is not GNU
    The image's own `status` has that same form (666 stanzas for 666 control
    files), so once `postinst` has removed the package's records the regenerated
    file should equal a flashed image's. To be seen on the bench.
-5. **The §2.2 (3) trap is still in 600107.** `ce-register-video-handler` and
+5. **The §2.2 (3) trap is in 600107.** `ce-register-video-handler` and
    `ce-register-ipk-handler` start only on `first-use-finished`. Both scripts log
-   "will retry next boot" on failure and never do. Decision 4 (§4) is still open.
+   "will retry next boot" on failure and never do. Decided 2026-11-20 (decision 4,
+   §4): both also start on `stopped finish`, from the next bake (2fd151f).
 6. **Not yet decided for a device that arrives by OTA:** the new default launcher
    layout (a device keeps its saved layout, so new apps land where LunaSysMgr
    puts them), SmartKey's learned words from XT9, and the 28.jpg wallpaper
@@ -240,8 +241,9 @@ its own). `US/Pacific-New` and `Canada/East-Saskatchewan` are 2011 files that
    and was run once (above). Still to do: compare two device listings, for the
    convergence test; and run it on a 3.1.0 device against 600070, which is the
    pre-flight of §2.4 and shows what a device in the field differs in.
-4. `ce-ota-finish`: generated from the staged-ipk list, plus §2.2 steps 3 to 6
-   and 10 by hand. Then a bake that contains it, which becomes the target.
+4. ~~`ce-ota-finish`.~~ Written (§2.2), not baked. Next: a bake that contains
+   it (with App Catalog 6.3.3000 and Preware 1.9.22), which becomes the target;
+   then the payload for that mark, applied to a clean 3.1.0 device.
 5. A0, the bench rehearsal of the armed flash with a trivial payload (§2.3).
 6. A1 to A3 as in §2.3. Signing and the manifest belong to the OTA repo.
 
@@ -282,6 +284,52 @@ is held open by BrowserServer and WebAppMgr: one more reason Path A takes the
 armed flash.
 
 ### 2.2 What `ce-ota-finish` must do for 3.2.0
+
+**Written 2026-11-20, not baked, never run on a device:**
+`build/full-ce/ce-ota/ce-ota-finish.sh`, installed by `bake.py` as
+`/usr/share/ce-ota/ce-ota-finish.sh` with the job `/etc/event.d/ce-ota-finish`
+(`start on stopped finish`). It was run on the build machine against a fake
+device tree with stand-ins for `app-install`, `luna-send`, `ipkg` and `mount`
+(update, repeat run, flashed device). How it differs from the list below:
+
+- **It knows no version.** It compares the image it runs in with
+  `/usr/share/ce-ota/finish/from-*.list`: the md5 of every staged ipk and every
+  cryptofs seed file of each image a device can come from (600070 and 600071,
+  made by `make-payload.py finish-list`). So the same script serves later
+  releases; a new origin is a new list.
+- **A flashed device does nothing.** With no `ran-first-use` at boot, the job
+  writes both flags and exits.
+- **Steps 1, 8, 9, 11 and 12, and Clock:** a staged ipk whose bytes changed
+  under the same file name is reinstalled with the stock
+  `app-install -force-reinstall -install-only -package <ipk>`, the pass that
+  installs it after a flash, and then checked file by file against the ipk. It
+  is left alone when the app is not installed or is at another version (the
+  feed's Calendar 3.2.0, for one). This replaces laying files over the app, so
+  removed files go too. **To see on a device:** that the reinstall registers
+  Photos' new service on the bus, and what it does to an Email that is
+  running. An app already running keeps its old code until Luna restarts; the
+  job says so in its log and does not restart Luna.
+- **Step 2 and the rest of the seed** (48 files: the Synergy runtime, the
+  Tweaks files): placed when new, replaced when the device still has what an
+  older image seeded, left when the owner changed or removed them.
+- **Step 3:** not in this job. Both handler jobs now start at boot (2fd151f).
+- **Steps 4 and 5:** done for Videos, Calculator and Media TLS, only for a feed
+  copy at this image's version or older. Needs a device that installed the
+  feed versions to test.
+- **Step 6:** done. **Step 7:** not done (see the running-app note above).
+- **Step 10:** done as specified, with one addition: before writing, it looks
+  for this image's `BootLogo.tga` in NVRAM and flags without writing when it
+  is there. The battery level is read from sysfs by guessed paths; if none
+  reads, the logo is not written and the log says so.
+- **The wallpaper (§2.0):** staged media missing from `/media/internal` is
+  copied, and the reclaim job's flag is cleared so it removes the staged copy
+  on the next boot.
+- **Not handled:** the two payload paths under `/var` (§2.0), until the bench
+  shows where the ramdisk puts them. A staged ipk with a new file name (Preware
+  1.9.22) is left to the stock preload pass; whether that pass runs on an
+  ordinary boot is to be seen on the device.
+
+The steps as planned on 2026-10-04:
 
 The rootfs diff can't express these:
 

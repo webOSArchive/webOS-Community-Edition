@@ -2442,6 +2442,37 @@ def main():
                  f"  refusing to bake an unexpected trust anchor")
     wcopy("usr/share/ce-ota/keys/ce-ota-signing.pub", ota_key, 0o644)
     wcopy("usr/bin/ce-ota-verify", os.path.join(OTA_SRC, "ce-ota-verify"), 0o755)
+
+    # ce-ota-finish: what an OTA cannot do from the update ramdisk (cryptofs
+    # apps and seed, the NVRAM boot logo, leftovers of feed installs). A real
+    # script file, not a job literal: build/full-ce/ce-ota/ce-ota-finish.sh.
+    # It works out what changed on the device from this image and the lists
+    # of the images a device can have come from (make-payload.py finish-list),
+    # and on a flashed device it flags itself done on the first boot.
+    # Docs/OTA-PLAN.md section 2.2.
+    wcopy("usr/share/ce-ota/ce-ota-finish.sh",
+          os.path.join(OTA_SRC, "ce-ota-finish.sh"), 0o755)
+    ota_lists = sorted(n for n in os.listdir(os.path.join(OTA_SRC, "finish"))
+                       if n.startswith("from-") and n.endswith(".list"))
+    if not ota_lists:
+        sys.exit("ERROR: no build/full-ce/ce-ota/finish/from-*.list for ce-ota-finish")
+    for n in ota_lists:
+        wcopy("usr/share/ce-ota/finish/" + n, os.path.join(OTA_SRC, "finish", n), 0o644)
+    w("etc/event.d/ce-ota-finish",
+      "# ce-ota-finish -- webOS CE: finish an update on the first boot of the new\n"
+      "# image: the cryptofs apps and seed files an OTA payload cannot reach, and\n"
+      "# the boot logo in NVRAM. Exits at once when there is nothing to do, and\n"
+      "# on a flashed device flags itself done before first use.\n"
+      "\n"
+      "start on stopped finish\n"
+      "\n"
+      "console none\n"
+      "\n"
+      "script\n"
+      "    exec sh /usr/share/ce-ota/ce-ota-finish.sh\n"
+      "end script\n", 0o644)
+    log(f"  ce-ota-finish job installed ({len(ota_lists)} origin list(s): "
+        + ", ".join(n[5:-5] for n in ota_lists) + ")")
     log(f"  key fingerprint (DER SPKI sha256) verified: {got[:16]}…")
 
     # 11c) Device Info: "HP webOS Account" -> "webOS Account".

@@ -24,3 +24,15 @@ identically on 3.0.5 and 3.1.0.
 wrong or corrupted key fails the build rather than shipping.
 
 The private half lives only on the signing host and is in neither repository.
+
+## ce-ota-finish (added 2026-11-20)
+
+| File | Baked to |
+|------|----------|
+| `ce-ota-finish.sh` | `/usr/share/ce-ota/ce-ota-finish.sh`, run by `/etc/event.d/ce-ota-finish` |
+| `finish/from-<mark>.list` | `/usr/share/ce-ota/finish/` |
+
+What an OTA cannot do from the update ramdisk: see the script's header and
+`Docs/OTA-PLAN.md` §2.2. One list per image a device can come from, made with
+`build/ota/make-payload.py finish-list <that image's JAR>`. Released images do
+not change, so a list is made once.
