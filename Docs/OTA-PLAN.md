@@ -2,8 +2,8 @@
 
 **Status, 2026-11-20:** the payload generator, the device check and `ce-ota-finish`
 exist. An unsigned 600070 → 600109 payload was applied by hand to a running 3.1.0
-TouchPad four times; the last, 600070 → 600112, was clean end to end (§2.0a to
-§2.0d). The update ramdisk has not been tried and nothing is signed. The rest of
+TouchPad five times; the last two, the same 600070 → 600112 payload on two
+devices, were clean end to end (§2.0a to §2.0e). The update ramdisk has not been tried and nothing is signed. The rest of
 this document is the plan of 2026-10-04. The OTA reference stays
 `../webos-update-exploration/OTA-3.1.0.md` (trust model, client, server; read-only
 from this repo). This document is the image side's plan for the two payloads, and
@@ -418,6 +418,21 @@ crash report at all on the device.
 On the 600111 device (§2.0c) the user opened a card and swiped it away: no
 crash. The first-card crash of §2.0a has not been seen again; its cause is
 still not known, and 600111 onward logs the errno if that open fails.
+
+### 2.0e Fifth run: the same 600112 payload on the other TouchPad, clean (2026-11-20)
+
+The identical ipk (sha256 `3ef1f512…`) on the first TouchPad, re-flashed to
+600070. Same result as §2.0d in every line: pre-flight clean, every step exit
+0, only unnamed directories new against the image, logo written and verified
+(battery 83%), Clock, Music, Calendar, Photos and Email each "SUCCESS" and
+verified in a different order from §2.0d, flagged after 79 seconds, Photos'
+service on the bus, no crash report. Two clean runs of one payload on two
+devices.
+
+This device carried one file no image has, `/etc/udev/rules.d/99-cmdrkeen-pad.rules`
+(an app the owner installed on 3.1.0 wrote it). The pre-flight lists it as
+extra, the payload leaves it alone, and it is still there afterwards: the
+first sight of an owner's own change to `/` passing through an update.
 
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
