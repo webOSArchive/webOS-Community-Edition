@@ -357,10 +357,24 @@ seconds into the boot. A flash installs Preware the same way, so this is not
 the update's doing, and the next boot is read-only again. Whether CE should
 remount after that install is a separate question.
 
-Still open from §2.0a: `/boot` and `/var` in the ramdisk (1), the first-card
-crash (6), which this run has not yet been asked to repeat: nobody has minimized
+**`/boot` and `/var` in the ramdisk: answered by reading `ota.sh`** (stock,
+`/usr/share/ota-scripts/ota.sh` lines 238 to 252, the same file in 600070).
+Before it calls `PmUpdater` it mounts, all read-write: `store-root` on
+`/rootfs`, the boot partition on `/rootfs/boot`, `store-var` on `/rootfs/var`,
+`store-log`, `store-update` on `/rootfs/var/lib/update` and `store-media` on
+`/rootfs/media/internal`; `/dev`, `/proc`, `/sys` and `/tmp` are bound in.
+So the payload's `/boot/boot-images.tar.gz` and its two `/var` paths land where
+they belong, and the `tar` failure of the first run belongs to the by-hand
+procedure only (a running device has `/boot` read-only). No change to the
+payload. `/media/cryptofs` is not mounted there, as §1.2 assumed. The branch of
+`post-update` that re-makes `/var` runs only when `/dev/store/filecache` does
+not exist, which is never on a TouchPad. A0 still has to see all of this
+happen.
+
+Still open from §2.0a: the first-card crash (6), which this run has not yet been asked to repeat: nobody has minimized
 a card on this device. LunaCE `045427d` checks the failed open and logs its
-errno; it is not in 600110.
+errno; it is in 600111, with SmartKey's new ranking. 600111's payload is built
+(`out/ota/600070-600111/`) and has not run.
 
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
