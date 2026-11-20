@@ -83,23 +83,19 @@ lsq() {
 # Its own flag: a low battery must not hold the other steps back, nor make
 # them run twice.
 logo_in_nvram() {     # is this BootLogo.tga stored, whole, in the NVRAM partition?
-    # A copy first: node cannot size a block device.
-    dd if=/dev/mmcblk0p12 of="$T/nv.img" bs=1M 2>/dev/null || return 1
-    CE_IMG="$1" CE_NV="$T/nv.img" node -e '
-var fs = require("fs");
-var img = fs.readFileSync(process.env.CE_IMG), nv = fs.readFileSync(process.env.CE_NV);
-var n = img.length, last = nv.length - n, found = false;
-if (n < 1024 || nv.length < 1048576) process.exit(2);
-for (var i = 0; i <= last && !found; i++) {
-    if (nv[i] !== img[0] || nv[i + n - 1] !== img[n - 1]) continue;
-    var j = 1;
-    while (j < n && nv[i + j] === img[j]) j++;
-    found = (j === n);
-}
-process.exit(found ? 0 : 1);' 2>/dev/null
-    _r=$?
-    rm -f "$T/nv.img"
-    return $_r
+    # trenchcoat lays each image at a 4 KB boundary (24576 after this path,
+    # 32768 after a Doctor flash), so only those are tried. Searching every
+    # byte in node took three and a half minutes on a TouchPad.
+    _sz=$(wc -c < "$1" 2>/dev/null)
+    [ -n "$_sz" ] && [ "$_sz" -gt 1024 ] || return 2
+    _blocks=$(( (_sz + 4095) / 4096 ))
+    _o=0
+    while [ $_o -lt 256 ]; do
+        dd if=/dev/mmcblk0p12 bs=4096 skip=$_o count=$_blocks 2>/dev/null \
+            | dd bs=1 count=$_sz 2>/dev/null | cmp -s - "$1" && return 0
+        _o=$((_o+1))
+    done
+    return 1
 }
 
 battery_percent() {
@@ -124,6 +120,7 @@ step_logo() {
     [ -n "$_tga" ] || { log "logo: no BootLogo.tga in boot-images.tar.gz"; return 1; }
     if logo_in_nvram "$_tga"; then
         echo "$MARK" > $LOGO_FLAG
+        rm -f /var/ce-ota-nvram-backup.img
         log "logo: NVRAM already holds this image's boot logo"
         return 0
     fi
@@ -136,11 +133,12 @@ step_logo() {
     _bak=/var/ce-ota-nvram-backup.img
     dd if=/dev/mmcblk0p12 of=$_bak bs=1M 2>/dev/null && sync
     cmp -s /dev/mmcblk0p12 $_bak || { log "logo: could not save NVRAM -- not written"; rm -f $_bak; return 1; }
-    /sbin/tokens --list > "$T/tokens.before" 2>&1
+    # Sorted: trenchcoat writes the tokens back in the opposite order.
+    /sbin/tokens --list 2>&1 | sort > "$T/tokens.before"
     ( cd "$(dirname "$_tga")" && /sbin/trenchcoat --config=/boot/image-update.xml ) >> "$LOG" 2>&1
     _rc=$?
     sync
-    /sbin/tokens --list > "$T/tokens.after" 2>&1
+    /sbin/tokens --list 2>&1 | sort > "$T/tokens.after"
     if [ $_rc -eq 0 ] && [ -s "$T/tokens.before" ] && cmp -s "$T/tokens.before" "$T/tokens.after" \
        && logo_in_nvram "$_tga"; then
         echo "$MARK" > $LOGO_FLAG

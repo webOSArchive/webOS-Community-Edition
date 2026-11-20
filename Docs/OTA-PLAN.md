@@ -1,8 +1,9 @@
 # OTA plan — CE 3.1.0 → 3.2.0, then stock 3.0.5 → CE
 
-**Status, 2026-11-20:** the payload generator exists (`build/ota/make-payload.py`) and
-builds an unsigned payload for 600070 → 600107 that converges on paper (§2.0). Nothing
-has run on a device, `ce-ota-finish` is not written, and nothing is signed. The rest of
+**Status, 2026-11-20:** the payload generator, the device check and `ce-ota-finish`
+exist. An unsigned 600070 → 600109 payload was applied by hand to a running 3.1.0
+TouchPad, and the device came up as 3.2.0 with two open defects (§2.0a). The update
+ramdisk has not been tried and nothing is signed. The rest of
 this document is the plan of 2026-10-04. The OTA reference stays
 `../webos-update-exploration/OTA-3.1.0.md` (trust model, client, server; read-only
 from this repo). This document is the image side's plan for the two payloads, and
@@ -246,6 +247,71 @@ its own). `US/Pacific-New` and `Canada/East-Saskatchewan` are 2011 files that
    then the payload for that mark, applied to a clean 3.1.0 device.
 5. A0, the bench rehearsal of the armed flash with a trivial payload (§2.3).
 6. A1 to A3 as in §2.3. Signing and the manifest belong to the OTA repo.
+
+### 2.0a First run on a device: 600070 → 600109, by hand (2026-11-20)
+
+A freshly flashed 600070 TouchPad. Pre-flight with `device-check.py`: no file
+differed from the 600070 image except `status`, and the md5 of
+`org.webosarchive.ce-files.md5sums` matched the payload's manifest inputs. The
+payload was copied to `/media/internal`, and applied on the running system: `/`
+remounted read-write, `preinst`, `tar -C / -xvzf` of the data, `postinst`,
+reboot. This tests the payload and `ce-ota-finish`. **It does not test the
+update ramdisk, `mmipkg` or `PmUpdater`.** 600108 was baked first and never
+left the build machine; 600109 is 600108 with the first two fixes below.
+
+**Worked:**
+
+- After the payload the device differed from the 600109 image only as a flashed
+  device does: the customization layer, `status`, and directories no tar names.
+  No missing, changed or wrong-type file.
+- First boot: no crash report. `ce-register-video-handler` ran at boot and
+  registered (the new trigger). The stock preload pass installed Preware 1.9.22
+  from the renamed staged ipk by itself.
+- `ce-ota-finish` reinstalled Clock, Email, Calendar, Music and Photos through
+  `app-install` and verified each against its ipk; removed the stock Calculator
+  1.0.0 from cryptofs and set its status entry to 3.2.0; added the Videos
+  status entry; copied `28.jpg`; flagged itself. About two minutes of work.
+- The boot logo is in NVRAM (found at offset 24576) and all 28 tokens are
+  unchanged.
+- Second boot: `/` read-only, the job exits at its flag, the reclaim job
+  removed the staged wallpaper, no crash report.
+
+**Found, and fixed in the tree (after 600109, not baked):**
+
+- Read from the device before anything was written, and fixed in 600109: the
+  battery gauge is `/sys/devices/i2c-3/3-0031/getpercent`; the device's
+  `ipkg compare_versions` exits 1 for true.
+- `tokens --list` gives the same tokens in the opposite order after
+  `trenchcoat`, so the job's byte comparison called a good write unverified and
+  kept its NVRAM backup. It now compares them sorted.
+- Looking for the logo byte by byte in node took three and a half minutes. It
+  now tries only 4 KB boundaries, with `dd` and `cmp`.
+- The device's `tar` warns about a zero time stamp on the control files (exit
+  status 0). They now carry a fixed date.
+
+**Open:**
+
+1. **`/boot` is its own partition, mounted read-only.** `tar` could not replace
+   `/boot/boot-images.tar.gz` and exited 2. Under `mmipkg` a failing data tar
+   aborts the whole update. The file was placed by hand with `/boot` remounted.
+   What the ramdisk does with `/boot` (`ota.sh`, `post-update`) decides this,
+   and must be seen in A0. If `/boot` is not writable there, the payload must
+   leave `/boot` out and `ce-ota-finish` must place the file.
+2. **Photos' new service is not on the bus.** The files are installed, but
+   `org.webosarchive.photos.service` has no registration in `/var/palm/ls2`:
+   "Service does not exist", also after a reboot, `forceSingleAppScan` and
+   `rescan`. `app-install` installs with plain `ipkg`; the registration is
+   written only when LunaSysMgr's own installer (`com.palm.appinstaller`) does
+   the install. So on an updated device the photo editor cannot save and
+   Import vCards drops contact photos. To try next: install the staged Photos
+   ipk through `com.palm.appinstaller/installNoVerify`. **Also check a flashed
+   3.2.0 device:** its first-boot install goes through the same `app-install`.
+3. `/` was mounted read-write for the whole first boot and read-only on the
+   second. Not this job (its lock was never taken). The Preware 1.9.22 install
+   ran in that boot and its scripts remount `/`; not confirmed as the cause.
+4. `/` is at 84% after the update. Compare with a flashed 600109.
+5. Not looked at on the screen yet: the launcher, the keyboard, Email, the
+   boot logo itself.
 
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 

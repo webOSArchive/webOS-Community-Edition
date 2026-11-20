@@ -45,6 +45,7 @@ VERSION_PATHS = (
     "etc/prefs/properties/buildDate",
 )
 IPKG_DB_PREFIX = "usr/lib/ipkg/"
+CONTROL_MTIME = 1262304000      # 2010-01-01, fixed so a payload builds the same twice
 IPKG_INFO = "usr/lib/ipkg/info"
 BUILD_INFO = "etc/palm-build-info"
 # The harness's record of every CE file. A device whose copy differs from the
@@ -379,7 +380,8 @@ def tar_gz(members):
 def text_member(name, text, mode):
     body = text.encode()
     ti = tarfile.TarInfo("./" + name)
-    ti.size, ti.mode, ti.mtime = len(body), mode, 0
+    # Not 0: the device's GNU tar 1.17 warns "implausibly old time stamp".
+    ti.size, ti.mode, ti.mtime = len(body), mode, CONTROL_MTIME
     return ti, body
 
 
