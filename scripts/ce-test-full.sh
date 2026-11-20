@@ -349,6 +349,10 @@ map_ipk=$(ls /usr/palm/ipkgs/com.palm.app.maps/com.palm.app.maps_*_all.ipk 2>/de
 [ ! -e /usr/palm/ipkgs/com.palm.app.calculator ] && P "9   stock Calculator preload removed" || F "9   stock Calculator preload still staged"
 grep -q '"version": "3.2.0"' /usr/palm/applications/com.palm.app.calculator/appinfo.json 2>/dev/null \
   && P "9   Calculator 3.2.0 baked" || F "9   Calculator 3.2.0 not baked"
+# LunaSysMgr refuses an app whose id does not end its folder's path, and Calculator's does not
+# (id com.palm.calculator): the baked copy opens only with LunaCE 299295e's exception for it.
+strings /usr/bin/LunaSysMgr 2>/dev/null | grep -q '^/usr/palm/applications/com.palm.app.calculator$' \
+  && P "9   LunaSysMgr lets the baked Calculator open" || F "9   LunaSysMgr will refuse the baked Calculator (it is on the launcher and does not open)"
 [ -f /usr/lib/gstreamer-0.10/libgstcurlhttpsrc.so ] && [ ! -e /usr/lib/gstreamer-0.10/libgstsouphttpsrc.so ] \
   && P "9   souphttpsrc is the Media TLS element (stock plugin absent)" || F "9   Media TLS: plugin set wrong [$(ls /usr/lib/gstreamer-0.10 | grep -i http | tr '\n' ' ')]"
 c=$(grep -c "org.webosarchive.appcatalog" $STATUS 2>/dev/null)

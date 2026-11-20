@@ -661,6 +661,28 @@ every run.
 One crash report is on the device, LunaSysMgr SIGABRT at 13:41, on 3.1.0
 before the update.
 
+**What the owner found on that device afterwards:** everything worked (apps,
+launcher, wallpaper, PIN, boot logo, keyboard, photo edits) except that
+**Calculator was on the launcher and did not open.** Not the update's doing:
+LunaSysMgr refuses any app whose id does not end its folder's path, with three
+exceptions written into the check, and the one for Calculator (id
+`com.palm.calculator`, folder `com.palm.app.calculator`) named only the
+cryptofs folder of the stock preload. 3.2.0 bakes Calculator into the rootfs,
+so **it cannot open on any 3.2.0 image so far, flashed or updated**; the device
+test only looked at its files. Fixed in LunaCE `299295e` (the rootfs folder is
+an exception too) and tried on that TouchPad: refused before, opens with the
+new binary. `ce-test-full.sh` section 9 now checks the binary for it. Needs a
+bake. `ce-ota-finish` also left Calculator's cryptofs package folder, manifest
+and scripts folder behind, because the package goes by the app's id and not
+its folder's name; it now removes them by both names.
+
+Preware then offered "Photos & Videos" 3.2.0 as an update. It is the same code
+as the image's: only `"vendor"` differs (`HP` in the feed, `webOS Archive` in
+the image). The image stages Photos under the stock version number 3.0.8001,
+so that the preload pass does not reinstall it at every boot, and Preware
+compares its feed's 3.2.0 with that. A flashed device gets the same offer. The
+same must hold for Calendar. Not changed.
+
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
 | Change | Paths | Notes |

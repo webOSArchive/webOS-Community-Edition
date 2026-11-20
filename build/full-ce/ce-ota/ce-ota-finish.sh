@@ -357,6 +357,16 @@ step_feeds() {
         _cv=$(appinfo_version $APPS/usr/palm/applications/$_app)
         [ -n "$_bv" ] && [ -n "$_cv" ] && ver_le "$_cv" "$_bv" || continue
         rm -rf $APPS/usr/palm/applications/$_app $APPS/usr/palm/packages/$_app
+        # The package can go by the app's id, which is not always the folder's
+        # name (Calculator: folder com.palm.app.calculator, id com.palm.calculator).
+        # Seen on a TouchPad: that package folder, its manifest and its scripts
+        # folder were left behind.
+        _id=$(sed -n 's/.*"id"[^"]*"\([A-Za-z0-9._-]*\)".*/\1/p' /usr/palm/applications/$_app/appinfo.json 2>/dev/null | head -1)
+        for _n in $_app $_id; do
+            [ -n "$_n" ] || continue
+            rm -rf "$APPS/usr/palm/packages/$_n" "$APPS/.scripts/$_n"
+            rm -f "$_info/$_n.pmmanifest"
+        done
         # Its status entry stays, as a flash seeds one, at the baked version;
         # its file list and scripts describe files that are gone.
         rm -f $_info/$_app.list $_info/$_app.prerm $_info/$_app.postinst $_info/$_app.postrm
