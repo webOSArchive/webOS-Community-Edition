@@ -351,8 +351,15 @@ grep -q '"version": "3.2.0"' /usr/palm/applications/com.palm.app.calculator/appi
   && P "9   Calculator 3.2.0 baked" || F "9   Calculator 3.2.0 not baked"
 # LunaSysMgr refuses an app whose id does not end its folder's path, and Calculator's does not
 # (id com.palm.calculator): the baked copy opens only with LunaCE 299295e's exception for it.
-strings /usr/bin/LunaSysMgr 2>/dev/null | grep -q '^/usr/palm/applications/com.palm.app.calculator$' \
-  && P "9   LunaSysMgr lets the baked Calculator open" || F "9   LunaSysMgr will refuse the baked Calculator (it is on the launcher and does not open)"
+# (Not visible in the binary's strings: the compiler folds the rootfs path into the tail of
+# the cryptofs one. So launch it, look for it among the running apps, and close it again.)
+calc_r=$(luna-send -n 1 palm://com.palm.applicationManager/launch '{"id":"com.palm.calculator"}' </dev/null 2>&1)
+sleep 4
+calc_pid=$(luna-send -n 1 palm://com.palm.applicationManager/running '{}' </dev/null 2>&1 | tr -d '\n' \
+  | sed -n 's/.*"id": *"com.palm.calculator", *"processid": *"\([0-9]*\)".*/\1/p')
+[ -n "$calc_pid" ] && P "9   the baked Calculator opens" \
+  || F "9   the baked Calculator does not open ($(echo "$calc_r" | tr -d '\n' | cut -c1-80))"
+[ -n "$calc_pid" ] && luna-send -n 1 palm://com.palm.applicationManager/close "{\"processId\":\"$calc_pid\"}" </dev/null >/dev/null 2>&1
 [ -f /usr/lib/gstreamer-0.10/libgstcurlhttpsrc.so ] && [ ! -e /usr/lib/gstreamer-0.10/libgstsouphttpsrc.so ] \
   && P "9   souphttpsrc is the Media TLS element (stock plugin absent)" || F "9   Media TLS: plugin set wrong [$(ls /usr/lib/gstreamer-0.10 | grep -i http | tr '\n' ' ')]"
 c=$(grep -c "org.webosarchive.appcatalog" $STATUS 2>/dev/null)

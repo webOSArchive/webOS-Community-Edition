@@ -1,0 +1,12 @@
+# ce-preload-versions -- webOS CE: record staged preloads (Calendar, Photos)
+# under the version they really are, so Preware does not offer the feed's
+# copy of the same app as an update. No flag: one cheap pass at every boot.
+
+start on stopped finish
+start on first-use-finished
+
+console none
+
+script
+    exec sh -e /usr/palm/ce-seed/jobs/ce-preload-versions.sh
+end script
