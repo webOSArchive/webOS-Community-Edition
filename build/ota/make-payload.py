@@ -483,7 +483,8 @@ def cmd_build(args):
         "payload": {"file": ipk_name, "size": len(ipk),
                     "sha256": hashlib.sha256(ipk).hexdigest(),
                     "md5": hashlib.md5(ipk).hexdigest()},
-        "preflight": {"path": "/" + PREFLIGHT_FILE, "sha256": old[PREFLIGHT_FILE]["sha256"]},
+        "preflight": {"path": "/" + PREFLIGHT_FILE, "sha256": old[PREFLIGHT_FILE]["sha256"],
+                      "md5": old[PREFLIGHT_FILE]["md5"]},   # the device has md5sum only
         "counts": {k: len(v) for k, v in ops.items()},
         "tier": "armed-flash",
     }

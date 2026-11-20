@@ -103,12 +103,16 @@ process.exit(found ? 0 : 1);' 2>/dev/null
 }
 
 battery_percent() {
-    for _f in /sys/class/power_supply/*/capacity /sys/devices/w1*/*/getpercent \
-              /sys/devices/w1_bus_master1/*/getpercent; do
+    # The TouchPad's gauge is the A6 at /sys/devices/i2c-3/3-0031/getpercent.
+    # A second A6 node beside it reads 0, so take the highest reading.
+    _best=""
+    for _f in /sys/devices/i2c-*/*/getpercent /sys/class/power_supply/*/capacity; do
         [ -r "$_f" ] || continue
         _v=$(cat "$_f" 2>/dev/null | tr -cd '0-9')
-        [ -n "$_v" ] && { echo "$_v"; return; }
+        [ -n "$_v" ] || continue
+        if [ -z "$_best" ] || [ "$_v" -gt "$_best" ]; then _best=$_v; fi
     done
+    echo "$_best"
 }
 
 step_logo() {
@@ -278,6 +282,19 @@ baked_version() {     # the version preware-seed.sh records for a baked package
         /usr/palm/ce-seed/preware-seed.sh 2>/dev/null
 }
 
+# Dotted numbers, field by field. Not `ipkg compare_versions`: on the device it
+# exits 1 for true and 0 for false, and prints an error either way.
+ver_le() {
+    awk -v a="$1" -v b="$2" 'BEGIN {
+        if (a !~ /^[0-9]+(\.[0-9]+)*$/ || b !~ /^[0-9]+(\.[0-9]+)*$/) exit 1
+        n = split(a, x, "."); m = split(b, y, ".")
+        for (i = 1; i <= (n > m ? n : m); i++) {
+            if (x[i] + 0 < y[i] + 0) exit 0
+            if (x[i] + 0 > y[i] + 0) exit 1
+        }
+        exit 0 }'
+}
+
 appinfo_version() {
     sed -n 's/.*"version"[^"]*"\([^"]*\)".*/\1/p' "$1/appinfo.json" 2>/dev/null | head -1
 }
@@ -289,7 +306,7 @@ step_feeds() {
     for _pkg in com.palm.app.videos com.palm.app.calculator org.webosarchive.media-tls13; do
         ls $_info/$_pkg.* > /dev/null 2>&1 || continue
         _bv=$(baked_version $_pkg); _iv=$(installed_version $_pkg)
-        [ -n "$_bv" ] && [ -n "$_iv" ] && ipkg compare_versions "$_iv" '<=' "$_bv" > /dev/null 2>&1 || continue
+        [ -n "$_bv" ] && [ -n "$_iv" ] && ver_le "$_iv" "$_bv" || continue
         rm -f $_info/$_pkg.prerm $_info/$_pkg.postinst $_info/$_pkg.postrm $_info/$_pkg.list
         log "feeds: $_pkg $_iv from the feed is now the baked one; its remove scripts are gone"
     done
@@ -297,7 +314,7 @@ step_feeds() {
         [ -d /usr/palm/applications/$_app ] && [ -d $APPS/usr/palm/applications/$_app ] || continue
         _bv=$(appinfo_version /usr/palm/applications/$_app)
         _cv=$(appinfo_version $APPS/usr/palm/applications/$_app)
-        [ -n "$_bv" ] && [ -n "$_cv" ] && ipkg compare_versions "$_cv" '<=' "$_bv" > /dev/null 2>&1 || continue
+        [ -n "$_bv" ] && [ -n "$_cv" ] && ver_le "$_cv" "$_bv" || continue
         rm -rf $APPS/usr/palm/applications/$_app $APPS/usr/palm/packages/$_app
         # Its status entry stays, as a flash seeds one, at the baked version;
         # its file list and scripts describe files that are gone.
