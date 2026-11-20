@@ -18,13 +18,14 @@ in `preload.c`, and `Docs/email-app-for-ce.md` (one Email app bug). The mail
 part of `preload.c` still starts at line 1260. They are folded into phases 1,
 3 and 4 below.
 
-**Status (2026-11-19):** phase 1 is built (`packages/mailshim/`), wired into the bake and
-tested on a TouchPad by installing it by hand on 600102. Phase 2's token service is built,
-baked in 600104 and tested there against a local broker; the real broker's mail apps are not
-deployed yet. Phase 1's library is baked in 600104 too, and its tests are done. Phase 3 is
-built and works on a TouchPad by hand install (results at the end of its section); it is
-wired into the bake and not baked. Phases 3 to 5 are not started. Each phase's
-results are at the end of its section.
+**Status (2026-11-20):** phases 1 to 4 are built and baked. Phases 1 and 2 are in images
+from 600104, phases 3 and 4 from 600105; the latest image is 600107. Google signs in through
+the deployed broker; Microsoft signs in by device code, without the broker. Phase 5
+(delivery) is what remains: the flash side is done by the bake, the OTA side is not written
+(`Docs/OTA-PLAN.md`). Waiting on Microsoft's re-verification (estimated 2026-11-24), after
+which the Microsoft client id in `com.palm.service.oauth/providers.json` may change; images
+so far carry the old one. The behaviours not yet seen working are listed at the end of
+phase 3. Each phase's results are at the end of its section.
 
 **Release:** all five phases ship in **webOS CE 3.2.0**, as its main feature
 (decided 2026-11-09). So 600102 is not the final 3.2.0 image. The release

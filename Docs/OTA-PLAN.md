@@ -1,6 +1,9 @@
 # OTA plan — CE 3.1.0 → 3.2.0, then stock 3.0.5 → CE
 
-**Status: plan, 2026-10-04. Nothing here is built.** The OTA reference stays
+**Status, 2026-11-20:** the payload generator exists (`build/ota/make-payload.py`) and
+builds an unsigned payload for 600070 → 600107 that converges on paper (§2.0). Nothing
+has run on a device, `ce-ota-finish` is not written, and nothing is signed. The rest of
+this document is the plan of 2026-10-04. The OTA reference stays
 `../webos-update-exploration/OTA-3.1.0.md` (trust model, client, server; read-only
 from this repo). This document is the image side's plan for the two payloads, and
 for what the image build has to produce for them. `OTA-STRATEGY.md` is the older
@@ -111,7 +114,103 @@ Listed so the plan is honest about the critical path:
 
 ## 2. Path A — CE 3.1.0 → CE 3.2.0
 
-### 2.1 The delta (600070 → 600075, from the tracked overlays)
+### 2.0 Measured against a candidate: 600070 → 600107 (2026-11-20)
+
+600107 is the target while 3.2.0 is not final. Every number here comes from the
+tool, so a later candidate is one command:
+
+```sh
+build/ota/make-payload.py build out/webosdoctorp310hstnh-ce-600070.jar \
+    out/webosdoctorp320hstnh-ce-600107.jar --out out/ota/600070-600107
+```
+
+It reads both rootfs images straight from the Doctor JARs. The old image is the
+released 600070 JAR itself, which is what devices carry, so no rebuild from the
+tag is needed. It writes `delta.json`/`delta.txt` (every difference), the payload
+`org.webosarchive.ce-ota-3.2.0_600107_all.ipk` with its generated `preinst` and
+`postinst`, and `manifest-inputs.json` for the signer (from/to marks, payload
+sha256, and the sha256 of 600070's `org.webosarchive.ce-files.md5sums` for the
+pre-flight of §2.4). It refuses to write a payload unless applying it to the old
+image's member table gives the new image's exactly. For 600107 that check passes
+for all 21,989 members. **The check is on paper: the payload has not been
+unpacked by a real `tar`, and has not run on a device.**
+
+| | |
+|---|---|
+| Paths that differ | 1,313: 437 added, 707 changed, 104 hard link → file (zoneinfo), 10 removed, 52 ipkg db files, 3 version files |
+| File bytes delivered | 53.3 MB |
+| Payload ipk | 20.1 MB (gzip). More than `/var/lib/update`'s 16 MB, so staging on `/media/internal` (§1.4) is required |
+| `preinst` | unlinks the 104 zoneinfo paths, so `tar` cannot write a new file through an old hard link into its sibling |
+| `postinst` | 9 file removals, 1 `rmdir`, then removes the package's own `.control`/`.list`/`.preinst`/`.postinst` |
+
+**What the measurement changes in this plan:**
+
+1. **The delta is fourteen times §2.1's "about 93 files".** Half the bytes are the
+   SmartKey engine and its dictionaries (about 28 MB). Also absent from §2.1's
+   table: `LunaSysMgr` itself, the colour emoji set, the mail work, the CA bundle
+   (and the GoDaddy Class 2 certificate's removal), the launcher layout files,
+   `luna.conf`, `preware-seed.sh`, and a changed staged Clock ipk.
+2. **The armed flash is required, not just chosen (§2.3).** The payload replaces
+   `/usr/bin/LunaSysMgr`, `/usr/bin/SmartKeyService` and `/usr/lib/libWebKitLuna.so`.
+3. **The cryptofs work list is generated too.** Five staged ipks changed, and an
+   installed device never reinstalls them. The tool compares each from the inside
+   (`staged_ipks` in `delta.json`, with the old and new md5 of every file). That
+   list can replace the hand-written file lists of §2.2 steps 1, 8, 9, 11 and 12:
+
+   | App (under `/media/cryptofs/apps`) | Added | Changed | Removed |
+   |---|---|---|---|
+   | Calendar | 11 | 23 (and 164 files' modes) | 29 (test and build files) |
+   | Photos, with `org.webosarchive.photos.service` | 16 | 12 | 36 (test and build files) |
+   | Email | 0 | 20 | 0 |
+   | Music | 0 | 21 | 0 |
+   | Clock | 0 | 9 (`appinfo.json` only: the vendor name) | 0 |
+
+   Clock is not in §2.2 at all. Its vendor name decides whether LunaCE treats it
+   as a platform app, so check what an installed Clock with the old name does on
+   the new LunaSysMgr before deciding it can be skipped.
+4. **How `mmipkg` installs** (read in 600070's rootfs): control files are
+   unpacked to `/usr/lib/ipkg/info/<pkg>.*`, then `preinst`, then
+   `tar -C /rootfs -xvzf` whose output becomes `<pkg>.list`, then `postinst`, and
+   last `generate_status` rewrites `/usr/lib/ipkg/status` from every `*.control`.
+   The image's own `status` has that same form (666 stanzas for 666 control
+   files), so once `postinst` has removed the package's records the regenerated
+   file should equal a flashed image's. To be seen on the bench.
+5. **The §2.2 (3) trap is still in 600107.** `ce-register-video-handler` and
+   `ce-register-ipk-handler` start only on `first-use-finished`. Both scripts log
+   "will retry next boot" on failure and never do. Decision 4 (§4) is still open.
+6. **Not yet decided for a device that arrives by OTA:** the new default launcher
+   layout (a device keeps its saved layout, so new apps land where LunaSysMgr
+   puts them), SmartKey's learned words from XT9, and the 28.jpg wallpaper
+   (§2.1).
+7. **The target is not 600107 itself.** `ce-ota-finish` has to be in the image the
+   payload delivers, so the first real target is the bake that contains it.
+8. **AT&T:** no 3.2.0 AT&T image exists yet. Its payload needs one, diffed
+   against 600071.
+
+**Found in the image, not an OTA matter:** 600107's rootfs tar names 104
+zoneinfo paths twice, first as the stock hard link and then as the new file.
+Four of the links point at files with other content (`US/Pacific-New`,
+`Canada/East-Saskatchewan`, which 2026f no longer has). If the Doctor's `tar`
+writes through an existing link instead of replacing it, those two stale files
+get new bytes that their md5sums record does not expect. Check on a flashed
+device: `ls -l` link counts and `md5sum` of both.
+
+**The trail from here**, in order:
+
+1. ~~Generator, with the convergence check on paper.~~ Done.
+2. Unpack the payload over an extracted 600070 rootfs with a real `tar` (as root
+   or in a user namespace) and compare with 600107: the same check, off paper.
+3. A read-only device check: dump path, mode, link target and md5 of `/` over
+   novacom and compare it with an image's member table. One script serves the
+   pre-flight (§2.4, device against 600070), the convergence test (§1.3, device
+   against the target, so no second device is needed), and tells us today what a
+   lived-in flashed device differs in.
+4. `ce-ota-finish`: generated from the staged-ipk list, plus §2.2 steps 3 to 6
+   and 10 by hand. Then a bake that contains it, which becomes the target.
+5. A0, the bench rehearsal of the armed flash with a trivial payload (§2.3).
+6. A1 to A3 as in §2.3. Signing and the manifest belong to the OTA repo.
+
+### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
 | Change | Paths | Notes |
 |---|---|---|
