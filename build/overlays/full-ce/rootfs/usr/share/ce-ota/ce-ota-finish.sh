@@ -83,23 +83,19 @@ lsq() {
 # Its own flag: a low battery must not hold the other steps back, nor make
 # them run twice.
 logo_in_nvram() {     # is this BootLogo.tga stored, whole, in the NVRAM partition?
-    # A copy first: node cannot size a block device.
-    dd if=/dev/mmcblk0p12 of="$T/nv.img" bs=1M 2>/dev/null || return 1
-    CE_IMG="$1" CE_NV="$T/nv.img" node -e '
-var fs = require("fs");
-var img = fs.readFileSync(process.env.CE_IMG), nv = fs.readFileSync(process.env.CE_NV);
-var n = img.length, last = nv.length - n, found = false;
-if (n < 1024 || nv.length < 1048576) process.exit(2);
-for (var i = 0; i <= last && !found; i++) {
-    if (nv[i] !== img[0] || nv[i + n - 1] !== img[n - 1]) continue;
-    var j = 1;
-    while (j < n && nv[i + j] === img[j]) j++;
-    found = (j === n);
-}
-process.exit(found ? 0 : 1);' 2>/dev/null
-    _r=$?
-    rm -f "$T/nv.img"
-    return $_r
+    # trenchcoat lays each image at a 4 KB boundary (24576 after this path,
+    # 32768 after a Doctor flash), so only those are tried. Searching every
+    # byte in node took three and a half minutes on a TouchPad.
+    _sz=$(wc -c < "$1" 2>/dev/null)
+    [ -n "$_sz" ] && [ "$_sz" -gt 1024 ] || return 2
+    _blocks=$(( (_sz + 4095) / 4096 ))
+    _o=0
+    while [ $_o -lt 256 ]; do
+        dd if=/dev/mmcblk0p12 bs=4096 skip=$_o count=$_blocks 2>/dev/null \
+            | dd bs=1 count=$_sz 2>/dev/null | cmp -s - "$1" && return 0
+        _o=$((_o+1))
+    done
+    return 1
 }
 
 battery_percent() {
@@ -124,6 +120,7 @@ step_logo() {
     [ -n "$_tga" ] || { log "logo: no BootLogo.tga in boot-images.tar.gz"; return 1; }
     if logo_in_nvram "$_tga"; then
         echo "$MARK" > $LOGO_FLAG
+        rm -f /var/ce-ota-nvram-backup.img
         log "logo: NVRAM already holds this image's boot logo"
         return 0
     fi
@@ -136,11 +133,12 @@ step_logo() {
     _bak=/var/ce-ota-nvram-backup.img
     dd if=/dev/mmcblk0p12 of=$_bak bs=1M 2>/dev/null && sync
     cmp -s /dev/mmcblk0p12 $_bak || { log "logo: could not save NVRAM -- not written"; rm -f $_bak; return 1; }
-    /sbin/tokens --list > "$T/tokens.before" 2>&1
+    # Sorted: trenchcoat writes the tokens back in the opposite order.
+    /sbin/tokens --list 2>&1 | sort > "$T/tokens.before"
     ( cd "$(dirname "$_tga")" && /sbin/trenchcoat --config=/boot/image-update.xml ) >> "$LOG" 2>&1
     _rc=$?
     sync
-    /sbin/tokens --list > "$T/tokens.after" 2>&1
+    /sbin/tokens --list 2>&1 | sort > "$T/tokens.after"
     if [ $_rc -eq 0 ] && [ -s "$T/tokens.before" ] && cmp -s "$T/tokens.before" "$T/tokens.after" \
        && logo_in_nvram "$_tga"; then
         echo "$MARK" > $LOGO_FLAG
@@ -224,9 +222,33 @@ app_matches_ipk() {   # is every file of the ipk installed with the same bytes?
     return $_r
 }
 
+# Through LunaSysMgr's own installer, not the stock app-install script: that
+# one runs plain ipkg, which lays the files down but writes no bus registration
+# for a service the package brings (seen on a TouchPad: Photos' new service
+# "does not exist" after app-install, also after a reboot and a rescan, and
+# was on the bus at once after this call). The installer deletes the file it
+# is given, so it gets a copy.
+install_ipk() {
+    _dir=/media/internal/.ce-ota-finish
+    grep -q " /media/internal " /proc/mounts || _dir=/tmp/.ce-ota-finish
+    mkdir -p $_dir && cp "$1" $_dir/install.ipk 2>/dev/null || { log "apps: no room for a copy of $1"; return 1; }
+    luna-send -n 8 palm://com.palm.appinstaller/installNoVerify \
+        "{\"target\":\"$_dir/install.ipk\",\"subscribe\":true}" < /dev/null > "$T/inst.out" 2>&1 &
+    _p=$!
+    _i=0
+    while [ $_i -lt 90 ] && kill -0 $_p 2>/dev/null; do
+        grep -q '"status":"SUCCESS"\|FAILED' "$T/inst.out" 2>/dev/null && break
+        sleep 2
+        _i=$((_i+1))
+    done
+    kill $_p 2>/dev/null
+    log "apps: installer said: $(tr -d '\n' < "$T/inst.out" 2>/dev/null | sed 's/.*"status":"\([A-Z_]*\)".*/\1/' | cut -c1-60)"
+    rm -rf $_dir
+    grep -q '"status":"SUCCESS"' "$T/inst.out" 2>/dev/null
+}
+
 # A staged ipk whose bytes changed under an unchanged file name: the stock
-# preload pass compares versions and will never touch it. Reinstall it through
-# that same pass, which is how a flashed device got it. A changed file name is
+# preload pass compares versions and will never touch it. Reinstall it. A changed file name is
 # a new version, and the preload pass's own business.
 step_apps() {
     _bad=0
@@ -257,10 +279,9 @@ step_apps() {
             continue
         fi
         log "apps: reinstalling $_pkg $_ver from the staged ipk"
-        /usr/bin/app-install -force-reinstall -install-only -package "$(basename "$_ipk")" >> "$LOG" 2>&1
+        install_ipk "$_ipk"
         if app_matches_ipk "$_ipk"; then
             echo "$_m $_pkg" >> $APPLIED
-            lsq -f palm://com.palm.applicationManager/forceSingleAppScan "{\"id\":\"$_pkg\"}" >> "$LOG" 2>&1
             touch "$T/apps-changed"
             log "apps: $_pkg reinstalled and verified"
         else
@@ -304,7 +325,8 @@ step_feeds() {
     # Only a feed copy that is this image's version or older: a newer one the
     # owner installed later is theirs.
     for _pkg in com.palm.app.videos com.palm.app.calculator org.webosarchive.media-tls13; do
-        ls $_info/$_pkg.* > /dev/null 2>&1 || continue
+        ls $_info/$_pkg.prerm $_info/$_pkg.postinst $_info/$_pkg.postrm $_info/$_pkg.list \
+            > /dev/null 2>&1 || continue
         _bv=$(baked_version $_pkg); _iv=$(installed_version $_pkg)
         [ -n "$_bv" ] && [ -n "$_iv" ] && ver_le "$_iv" "$_bv" || continue
         rm -f $_info/$_pkg.prerm $_info/$_pkg.postinst $_info/$_pkg.postrm $_info/$_pkg.list
@@ -400,6 +422,6 @@ if [ "$(cat $FLAG 2>/dev/null)" != "$MARK" ]; then
     else
         log "$MARK: $_fail step(s) not verified -- NOT flagging, will try next boot"
     fi
-    [ -f "$T/apps-changed" ] && log "apps changed: an app that was already running keeps its old code until Luna restarts"
+    [ -f "$T/apps-changed" ] && log "apps changed: the installer closes an app it replaces; anything else running keeps its old code until Luna restarts"
 fi
 exit 0
