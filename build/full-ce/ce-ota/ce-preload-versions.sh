@@ -17,6 +17,7 @@
 #   ce-preload-versions.sh          one pass
 #   ce-preload-versions.sh wait     keep passing until every staged preload is
 #                                   installed (first boot after first use)
+#   ce-preload-versions.sh finish   one pass, from ce-ota-finish
 #
 # Run by /etc/event.d/ce-preload-versions, and by ce-ota-finish after it has
 # reinstalled apps. Idempotent; no flag.
@@ -76,6 +77,17 @@ one_pass() {
         rm -f "$T" "$STATUS.ce-new"
     done
 }
+
+# While an update is being finished, ce-ota-finish reinstalls apps and calls
+# this itself ("finish"). A pass of our own in the middle of that records the
+# higher version first, and ipkg then refuses the staged file as a downgrade
+# (seen on a TouchPad: Clock was not replaced).
+if [ "$1" != finish ] && [ -f /usr/share/ce-ota/ce-ota-finish.sh ] \
+   && [ -f /var/luna/preferences/ran-first-use ] \
+   && [ "$(cat /var/luna/preferences/ce-ota-finish 2>/dev/null)" != \
+        "$(sed -n 's/^BUILDMARK=//p' /etc/palm-build-info 2>/dev/null)" ]; then
+    exit 0
+fi
 
 if [ "$1" = wait ]; then
     _i=0

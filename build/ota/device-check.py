@@ -102,15 +102,85 @@ def expected(image, p):
     return e
 
 
+# What the Doctor's customization layer and a running system add to every device.
+NORMAL_EXTRA = ("usr/lib/luna/customization/", "usr/palm/applications/com.palm.app.crotest/",
+                "usr/lib/ipkg/info/", "boot/", "etc/fs.d/", "Settings/", "usr/share/alsa/")
+
+# Reclaimed after the first boot, or hidden under a bind mount, on every device.
+NORMAL_MISSING = ("usr/lib/luna/customization/", "usr/lib/purple-2/", "usr/lib/synergy-runtime/")
+
+
+def preflight(rows, dev, image, payload):
+    """Is this device one the payload may be applied to?
+
+    The payload replaces the paths it names and leaves every other path alone, so
+    a device does not have to match the old image, and no drift has to be known in
+    advance. What has to hold is that the device IS the old image underneath:
+
+      refuse   the harness's record of the image's files is not the old image's
+               (another build), or a path is unreadable
+      replaced the device changed a file the payload replaces or removes anyway
+               (a feed app's edits to a stock app, for one): the update wins
+      kept     the device changed or added something the payload does not name
+               (a game's jail config, an owner's udev rule, rootfs_open): it
+               stays as the owner left it, and is listed so it can be told apart
+               from damage
+
+    Owner and mode differences are reported and never refuse.
+    """
+    named = dict((d["path"], d["change"]) for d in payload["delta"])
+    refuse, replaced, kept, meta = [], [], [], []
+    rec = image.get(mp.PREFLIGHT_FILE)
+    got = dev.get(mp.PREFLIGHT_FILE, {})
+    if not rec or got.get("h") != rec["md5"]:
+        refuse.append("/%s is not the old image's: this device is another build" % mp.PREFLIGHT_FILE)
+    for kind, p, note in rows:
+        if p == "usr/lib/ipkg/status":
+            continue
+        if kind == "unreadable":
+            refuse.append("/%s cannot be read (%s)" % (p, note))
+        elif kind in ("owner", "mode"):
+            meta.append(p)
+        elif kind in ("extra", "extra-dir") and p.startswith(NORMAL_EXTRA):
+            continue
+        elif kind == "extra-dir" or (kind == "missing" and image[p]["type"] != "file"):
+            continue
+        elif kind == "missing" and p.startswith(NORMAL_MISSING):
+            continue
+        elif p in named:
+            replaced.append((kind, p, named[p]))
+        else:
+            kept.append((kind, p))
+    print("pre-flight for the payload %s -> %s:" % (payload["meta"]["old"], payload["meta"]["new"]))
+    print("  the update replaces %d path(s) this device had changed" % len(replaced))
+    for kind, p, ch in replaced[:40]:
+        print("    %-8s /%s  (payload: %s)" % (kind, p, ch))
+    print("  %d change(s) of the owner's stay as they are" % len(kept))
+    for kind, p in kept[:40]:
+        print("    %-8s /%s" % (kind, p))
+    if meta:
+        print("  %d path(s) differ only in owner or mode, e.g. /%s" % (len(meta), meta[0]))
+    for r in refuse:
+        print("  REFUSE: " + r)
+    print("  verdict: %s" % ("DO NOT APPLY" if refuse else "may be applied"))
+    return 1 if refuse else 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("image")
     ap.add_argument("--device", help="novacom device id (default: the only one)")
     ap.add_argument("--out", help="directory for device.json and check.txt")
+    ap.add_argument("--listing", help="a saved device.json to use instead of reading a device")
+    ap.add_argument("--delta", help="a payload's delta.json: judge the device as a pre-flight "
+                    "for that payload (exit 1 when it must not be applied)")
     args = ap.parse_args()
 
-    print("reading the device (a few minutes)...", file=sys.stderr)
-    dev = read_device(args.device)
+    if args.listing:
+        dev = json.load(open(args.listing))
+    else:
+        print("reading the device (a few minutes)...", file=sys.stderr)
+        dev = read_device(args.device)
     print("scanning the image...", file=sys.stderr)
     image = mp.scan(args.image)
 
@@ -144,6 +214,9 @@ def main():
           % (len(dev), len(image), len(rows)))
     for k, v in sorted(counts.items()):
         print("  %-10s %6d" % (k, v))
+    verdict = 0
+    if args.delta:
+        verdict = preflight(rows, dev, image, json.load(open(args.delta)))
     if args.out:
         os.makedirs(args.out, exist_ok=True)
         with open(os.path.join(args.out, "device.json"), "w") as f:
@@ -152,6 +225,7 @@ def main():
             for kind, p, note in rows:
                 f.write("%-10s /%s  (%s)\n" % (kind, p, note))
         print("wrote %s/check.txt and device.json" % args.out)
+    sys.exit(verdict)
 
 
 if __name__ == "__main__":

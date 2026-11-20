@@ -5,8 +5,10 @@ exist. An unsigned 600070 → 600109 payload was applied by hand to a running 3.
 TouchPad five times; the last two, the same 600070 → 600112 payload on two
 devices, were clean end to end (§2.0a to §2.0e). **The same payload has also gone
 through the update ramdisk** (`make-update-uimage`, `PmUpdater`, `mmipkg`) on one
-TouchPad, armed by hand (§2.0g). Nothing is signed, and the OTA client has not
-driven any of it. The rest of
+TouchPad, armed by hand (§2.0g), and since then on both test devices, clean and
+lived-in (§2.0h to §2.0k). **600114 is the latest image; three fixes to the finish
+job are in the tree after it and need a bake** (§2.0k). Nothing is signed, and the
+OTA client has not driven any of it. The rest of
 this document is the plan of 2026-10-04. The OTA reference stays
 `../webos-update-exploration/OTA-3.1.0.md` (trust model, client, server; read-only
 from this repo). This document is the image side's plan for the two payloads, and
@@ -696,6 +698,67 @@ or under a version no higher than the staged app's own. **To see on a
 device:** Preware no longer offers Photos or Calendar; and the stock preload
 pass does not reinstall them at the next boot (read in `app-install`: it
 installs only when the staged version is not lower than the recorded one).
+
+### 2.0k Armed flash of 600114 on a device with the feed apps; the pre-flight rule (2026-11-20)
+
+The first TouchPad again, 600070, made lived-in by its owner with **the feed
+versions of Videos, Media TLS, Calculator and Photos**, two more games, and
+8,170 files on `/media/internal`. Status `0`, booted as 600114.
+
+**Worked:** Calculator opens (LunaCE `299295e`; launched, seen running,
+closed). Calendar is recorded as 3.2.0, so Preware has no update to offer for
+it. Videos resolves to the baked app; the feed copies of Videos and Calculator
+are gone from cryptofs with their package folders, manifests and script
+folders; the feed postinsts' backups of stock files are gone from `/`. The
+owner's `/etc/jail_game.conf`, its backup and four udev rules are untouched.
+Logo verified, leftovers removed, no crash report.
+
+**`/media/internal` is accounted for this time** (a file list before and
+after, in `out/ota/run-600114/`): 8,170 files before, 8,106 after, and every
+one of the differences is under `/media/internal/.palm`, which is cryptofs's
+own storage (the apps the update replaced or removed). No file of the owner's
+changed. The 13 files of §2.0j were the same thing.
+
+**Three faults in the finish job, found here, fixed in the tree and re-run on
+the device from its unfinished state (not baked):**
+
+1. **ipkg will not install over a higher recorded version.** Photos was the
+   feed's copy (recorded 3.2.0) and Clock had just been recorded as 3.1.1904
+   by `ce-preload-versions`; the installer said SUCCESS for the staged
+   3.0.8001 and 3.0.1904 and left the old files. The job did not flag. It now
+   records the staged file's version before each install, and
+   `ce-preload-versions` raises it again afterwards.
+2. **`ce-preload-versions` ran in the middle of the finish job** (its pass at
+   90 seconds). It now does nothing while an update is unfinished; the finish
+   job calls it when it has installed.
+3. **Media TLS's feed scripts were left** (an `ls` of four files fails when one
+   is missing, so the loop skipped every package). A later removal in Preware
+   would have run its `prerm` against stock files that are no longer there.
+   Fixed.
+
+After the fixes, on the device: Photos and Clock reinstalled and verified,
+Photos is the image's copy and recorded 3.2.0, Media TLS's scripts gone,
+flagged. **600114 as baked has faults 1 to 3**: on a clean device, 2 is a
+matter of timing and can leave apps unreplaced until the next boot.
+
+**The pre-flight rule, now in `device-check.py --delta delta.json`.** The
+owner asked whether every possible drift has to be shown to us first. It does
+not: the payload replaces the paths it names and leaves every other path
+alone, so nothing about a device's drift has to be known in advance.
+
+- **Refuse** only when the device is not the old image underneath (its
+  `org.webosarchive.ce-files.md5sums` is not the old image's) or cannot be
+  read.
+- **Replaced:** the device changed a file the payload replaces or removes
+  anyway. The update wins. (A feed app's edits to a stock app.)
+- **Kept:** the device changed or added something the payload does not name.
+  It stays, and is listed. (A game's jail config, `rootfs_open`.)
+- Owner and mode differences are reported and never refuse.
+
+Tonight's devices were judged this way by hand before the rule was written
+down; run against the saved listings the tool gives the same verdicts. Before
+arming, the device must also have finished first use (`ran-first-use`) with
+no `ce-*` job still running: that is a readiness test, apart from the files.
 
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
