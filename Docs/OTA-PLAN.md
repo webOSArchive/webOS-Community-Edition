@@ -543,6 +543,55 @@ of `OTA-3.1.0.md` is closed for CE 3.1.0 → 3.2.0 on this device.** Logs are in
 - The session files and the arming were done by hand. The client has to write
   the `urls` file in the form above, and stage on `/media/internal`.
 
+### 2.0h The armed flash on the second device; the leftovers; HP's migrations (2026-11-20)
+
+**A second armed flash, clean.** The first TouchPad (`1b4452fa…`), re-flashed
+to 600070, straight to the real payload: pre-flight, staged on
+`/media/internal`, `PmUpdater -v`, armed, rebooted. About 100 seconds in the
+ramdisk, status `0`, booted as 600112; `ce-ota-finish` wrote and verified the
+logo, reinstalled the five apps and flagged in 68 seconds; Photos' service on
+the bus; no crash report. Against the 600112 image the device shows exactly
+what the by-hand run on it showed (§2.0e), plus a job file of an app the owner
+installed before this run. Two devices, two armed flashes of one payload.
+
+**The leftovers are removed by `ce-ota-finish`** (new step, after 600112, not
+baked; run by hand on that device): `/boot/update-uimage` (the partition went
+back from 74% to 45%) and the payload ipk named in `update_list.txt`, only when
+the updater's status says the update was done, nothing is armed, and the file
+is one of ours (`org.webosarchive.ce-ota-*.ipk` under `/media/internal`).
+
+**HP's data migrations will not run on an update to the next image.**
+`post-update` ends with `datamigration_ota`: it starts the bus and db8 inside
+the new rootfs and runs `com.palm.service.migration`, which runs each script
+in `resources/migration.json` once per device, recording it in db8. **A
+Doctor-flashed device has never run any of them**, so its first OTA runs all
+eleven against the owner's data. Read one by one:
+
+| Script | What it does on a 3.x device |
+|---|---|
+| 001 account credentials | Nothing: it tests a misspelled field (`tmp_credenials`) |
+| 002 email parts, 003 contact photos, 009 max-rev import | Nothing without a webOS 1.4.5 export file |
+| 004 contact addresses | Re-parses every address held only as free text, drops address entries that have neither form, and **merges every contact that has an address**, changed or not. HP's own comment: "we resync everything with an address uselessly" |
+| 005 person fix-up | Calls `fixup()` and `save()` on **every person** |
+| 006 call log | Rewrites phone call records (none on a Wi-Fi TouchPad) |
+| 008 Photobucket | Rewrites Photobucket accounts' user names |
+| 011 globalization | Recomputes every person's sort key |
+| 012 Yahoo IM | Fails harmlessly: the kind is not registered |
+| 013 Skype | Deletes accounts whose template is `com.skype` |
+
+They were written for data made by older releases. A device flashed with 3.0.5
+or CE made its data in the current form, and a device HP updated ran them
+then. Nobody has run 004, 005 and 011 over CE's contacts (the community app,
+Import vCards), and an owner's TouchPad in the update ramdisk is not the place
+to find out. So `bake.py` now writes `migration.json` without its `migrations`
+list (it stops the build if the stock file is not the one it expects). Kept:
+the `imports` entry (webOS 1.x data only) and everything else the service
+does, which includes re-running the configurator for db kinds and file-cache
+types. **That also answers §3.2 (3): db kinds are reloaded after an OTA, by
+this service.** A flash is not affected, since it never ran them. The file is
+also where a CE data migration would go. Not baked; to see on the next armed
+flash: `ota.log` should say "No migration scripts".
+
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
 | Change | Paths | Notes |

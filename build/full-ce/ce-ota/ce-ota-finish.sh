@@ -14,6 +14,8 @@
 #   gst     the GStreamer registry, which caches the plugin the image replaced
 #   media   the default wallpaper, staged for a copy that runs once per flash
 #   logo    bootie's still logo in NVRAM, which only the Doctor writes
+#   cleanup the update ramdisk left in /boot and the payload left where it
+#           was staged
 #
 # Nothing here knows a version. What changed is worked out on the device from
 # this image and the lists in /usr/share/ce-ota/finish/from-*.list, which hold
@@ -418,6 +420,37 @@ step_media() {
     return 0
 }
 
+# ------------------------------------------------------------- cleanup ----
+# What the update itself leaves behind: the update ramdisk in /boot (9.6 MB of
+# a 31 MB partition) and the payload where it was staged. Only after an update
+# that the updater recorded as done, and never while one is armed.
+step_cleanup() {
+    _sess=/var/lib/software/SessionFiles
+    [ -f /var/lib/software/updating ] && return 0
+    [ "$(readlink /boot/uImage 2>/dev/null)" = update-uimage ] && return 0
+    if [ -f /boot/update-uimage ]; then
+        if mount -o remount,rw /boot 2>/dev/null; then
+            rm -f /boot/update-uimage
+            sync
+            mount -o remount,ro /boot 2>/dev/null
+        fi
+        if [ -f /boot/update-uimage ]; then
+            log "cleanup: could not remove /boot/update-uimage -- will try next boot"
+            return 1
+        fi
+        log "cleanup: removed the update ramdisk from /boot"
+    fi
+    [ -f $_sess/update_list.txt ] && [ "$(head -1 $_sess/update_status.txt 2>/dev/null)" = 0 ] || return 0
+    _left=0
+    for _p in $(grep '^/media/internal/.*/org\.webosarchive\.ce-ota-[^/]*\.ipk$' $_sess/update_list.txt 2>/dev/null); do
+        grep -q " /media/internal " /proc/mounts || { log "cleanup: /media/internal not mounted -- later"; return 1; }
+        [ -f "$_p" ] || continue
+        rm -f "$_p"
+        if [ -f "$_p" ]; then _left=$((_left+1)); else log "cleanup: removed the installed payload $_p"; fi
+    done
+    [ $_left -eq 0 ]
+}
+
 # ---------------------------------------------------------------- main ----
 step_logo
 
@@ -433,6 +466,7 @@ if [ "$(cat $FLAG 2>/dev/null)" != "$MARK" ]; then
     step_feeds || _fail=$((_fail+1))
     step_gst   || _fail=$((_fail+1))
     step_media || _fail=$((_fail+1))
+    step_cleanup || _fail=$((_fail+1))
     if [ $_fail -eq 0 ]; then
         echo "$MARK" > $FLAG
         log "$MARK: finished and verified"

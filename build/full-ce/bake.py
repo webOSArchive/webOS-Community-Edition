@@ -2458,6 +2458,34 @@ def main():
         sys.exit("ERROR: no build/full-ce/ce-ota/finish/from-*.list for ce-ota-finish")
     for n in ota_lists:
         wcopy("usr/share/ce-ota/finish/" + n, os.path.join(OTA_SRC, "finish", n), 0o644)
+    # HP's data migrations do not run on an update to this image.
+    #
+    # The update ramdisk ends with post-update -> datamigration_ota, which starts
+    # the bus and db8 inside the NEW rootfs and runs com.palm.service.migration.
+    # That service runs each script named in resources/migration.json once per
+    # device (it keeps a record in db8). A Doctor-flashed device has never run
+    # any of them, so its first OTA would run all eleven against the owner's
+    # data: 004 re-parses and merges every contact that has an address, 005
+    # calls fixup() and save() on every person, 011 recomputes every person's
+    # sort key, 013 deletes Skype accounts. HP wrote them for data made by
+    # older releases; a device flashed with 3.0.5 or CE made its data in the
+    # current form, and a device HP updated ran them then. Nobody has run them
+    # over CE's contacts (the community app, Import vCards), and the place to
+    # find out is not an owner's TouchPad in the update ramdisk.
+    #
+    # So the list of migrations is removed. What the service does besides is
+    # kept: the "imports" entry (webOS 1.x data, never present here) and, in
+    # handlers/migrate.js, the configurator run that reloads db kinds and file
+    # cache types after an update. A flash is not affected: it never ran them.
+    # This file is also where a CE data migration would go, should one be needed.
+    MIG = "./usr/palm/services/com.palm.service.migration/resources/migration.json"
+    mig = json.loads(read_rootfs(ROOTFS_TGZ, exact=[MIG])[MIG]["data"].decode("utf-8"))
+    dropped = [m["path"] for m in mig.pop("migrations", [])]
+    if len(dropped) != 11 or "imports" not in mig:
+        sys.exit(f"ERROR: migration.json is not the stock one (migrations: {len(dropped)})")
+    w(MIG[2:], (json.dumps(mig, indent=4) + "\n").encode("utf-8"), 0o644)
+    log(f"  migration.json: {len(dropped)} HP data migrations will not run on an update")
+
     w("etc/event.d/ce-ota-finish",
       "# ce-ota-finish -- webOS CE: finish an update on the first boot of the new\n"
       "# image: the cryptofs apps and seed files an OTA payload cannot reach, and\n"
