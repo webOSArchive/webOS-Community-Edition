@@ -592,6 +592,34 @@ this service.** A flash is not affected, since it never ran them. The file is
 also where a CE data migration would go. Not baked; to see on the next armed
 flash: `ota.log` should say "No migration scripts".
 
+### 2.0i Armed flash of 600113: no migrations, and the update cleans up after itself (2026-11-20)
+
+The second TouchPad, re-flashed to 600070, 600070 → 600113 through the ramdisk.
+Status `0`, booted as 600113, and both changes of §2.0h seen working:
+
+- **`ota.log`: "No migration scripts".** One script was looked at instead of
+  twelve: the webOS 1.x import, which found no export file and did nothing. The
+  configurator still ran for db kinds and file-cache types (110 configured).
+- **`ce-ota-finish` removed `/boot/update-uimage` and the payload ipk by
+  itself**, after writing and verifying the logo and reinstalling the five
+  apps; flagged in 74 seconds. `/boot` is at 45% again. Photos' service is on
+  the bus. No crash report from the update.
+
+**This device was not as clean as the others, and the update did not mind:**
+
+- The pre-flight first refused it, rightly: first use had not finished (no
+  `ran-first-use`). The readiness test before arming should check that marker
+  and that no `ce-*` job is still running, not just the files.
+- 190 certificate files under `/etc/ssl/certs/trustedcerts` have group `luna`
+  where the image and the other devices have `root`, changed at 12:19 during
+  its first boot on 3.1.0, and unchanged by a reboot. The contents are the
+  image's. The payload was applied anyway; afterwards 189 of them still have
+  that group (the 190th is the certificate the update removes). So the
+  pre-flight should **refuse on content and type, and only report owner and
+  mode**. Not yet changed in `device-check.py`'s callers; done by hand here.
+- A "Device crash" report dated 12:19 was already on the device: 3.1.0 reset
+  itself during that first boot. Before the update, and not looked into here.
+
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
 | Change | Paths | Notes |
