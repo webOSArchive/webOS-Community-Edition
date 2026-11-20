@@ -376,6 +376,34 @@ a card on this device. LunaCE `045427d` checks the failed open and logs its
 errno; it is in 600111, with SmartKey's new ranking. 600111's payload is built
 (`out/ota/600070-600111/`) and has not run.
 
+### 2.0c Third run: 600070 → 600111, and two races in the app step (2026-11-20)
+
+The first TouchPad again, re-flashed to 600070. Pre-flight, apply and the
+comparison with the 600111 image were clean, and the logo was written and
+verified. `ce-ota-finish` then reinstalled Clock, Music and Calendar, and **got
+nothing from the installer for Email and Photos**. It did what it is meant to:
+no flag, "will try next boot". Both failures were the job's own, and the same
+code had passed all five on the second run by luck of timing:
+
+1. **One file name for every install.** LunaSysMgr deletes the ipk it was given
+   about a second after it reports SUCCESS (three seconds for Photos, after its
+   size scan). The job had copied the next app's ipk to that same name by then,
+   and the installer deleted it. Each install now has a file of its own, and
+   the job waits until the installer has removed it.
+2. **One reply file for every install.** The wait loop looked at the reply file
+   before the new `luna-send` had emptied it, saw the previous install's
+   SUCCESS, and killed the request before it was sent. Each install now has a
+   reply file of its own, removed first, and the loop sleeps before it looks.
+
+With both fixed, the script was run on the device against all five apps made
+to differ again: five installs back to back, each "SUCCESS" and verified,
+Photos' service on the bus, flagged. **Fixed in the tree after 600111, not
+baked.**
+
+Also on that device: one crash report, `org.webosinternals.ipkgservice`
+SIGABRT at the reboot that ended the apply (Preware's service, killed at
+shutdown). No LunaSysMgr crash; nobody has minimized a card there yet.
+
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
 | Change | Paths | Notes |
