@@ -620,6 +620,47 @@ Status `0`, booted as 600113, and both changes of §2.0h seen working:
 - A "Device crash" report dated 12:19 was already on the device: 3.1.0 reset
   itself during that first boot. Before the update, and not looked into here.
 
+### 2.0j Armed flash of 600113 on a lived-in device (2026-11-20)
+
+The first TouchPad, 600070, after the owner had used it: 25 apps in cryptofs
+(FeedSpider, Internalz, SimpleChat, LuneDrop, BibleZ, Commander Keen and
+others), four of them with services; **Calculator 3.2.0 from the feed**; 2
+contacts, 3 bookmarks; 3 GB in 8,570 files on `/media/internal`; no mail
+account. The inventory before and after is in `out/ota/lived-in/` on the build
+machine. Status `0`, booted as 600113, `ce-ota-finish` flagged.
+
+**Kept:** every cryptofs app and service directory, and the four owner
+services answer on the bus; every ipkg status entry and version (Preware's
+moved to 1.9.22, and the Videos and Media TLS entries were added); the db8
+counts for accounts, contacts, persons and bookmarks; four of six launcher
+files byte for byte.
+
+**The owner's own changes to `/` came through untouched:** `/etc/.rootfs_RW`
+set to 1 (`rootfs_open -w`, so `/` stays writable), a LuneDrop job in
+`/etc/event.d`, `/etc/mtools.conf`, a udev rule. The pre-flight reported them
+and the payload names none of them. With `.rootfs_RW` at 1 the stock arming
+script skips its own md5 check of the ramdisk it builds; the pre-flight's
+content check covers those files instead, and for a device in this state it
+has to.
+
+**The feed step ran against a real feed install for the first time:** the
+cryptofs copy of Calculator 3.2.0 was removed in favour of the baked one, its
+status entry stays at 3.2.0. Two launcher files changed with that
+(`launcher_fixed.msave` and one page). Where Calculator's icon ended up is for
+the owner to look at.
+
+**Not accounted for: `/media/internal` has 13 files and about 1 MB fewer than
+before** (8,557 against 8,570). Only the count was recorded beforehand, so
+which files is not known. The payload ipk is not among them (it was copied on
+after the count and removed by the cleanup). Hidden app caches are the likely
+place (`.palm`, `.photosApp`), since Photos and four other apps were
+reinstalled, but that is a guess. A full file list is now saved on the device
+(`ce-ota/files-after-600113.txt`), and the pre-flight should record one before
+every run.
+
+One crash report is on the device, LunaSysMgr SIGABRT at 13:41, on 3.1.0
+before the update.
+
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
 | Change | Paths | Notes |
