@@ -2,8 +2,8 @@
 
 **Status, 2026-11-20:** the payload generator, the device check and `ce-ota-finish`
 exist. An unsigned 600070 → 600109 payload was applied by hand to a running 3.1.0
-TouchPad, and the device came up as 3.2.0 with two open defects (§2.0a). The update
-ramdisk has not been tried and nothing is signed. The rest of
+TouchPad four times; the last, 600070 → 600112, was clean end to end (§2.0a to
+§2.0d). The update ramdisk has not been tried and nothing is signed. The rest of
 this document is the plan of 2026-10-04. The OTA reference stays
 `../webos-update-exploration/OTA-3.1.0.md` (trust model, client, server; read-only
 from this repo). This document is the image side's plan for the two payloads, and
@@ -403,6 +403,21 @@ baked.**
 Also on that device: one crash report, `org.webosinternals.ipkgservice`
 SIGABRT at the reboot that ended the apply (Preware's service, killed at
 shutdown). No LunaSysMgr crash; nobody has minimized a card there yet.
+
+### 2.0d Fourth run: 600070 → 600112, clean (2026-11-20)
+
+The second TouchPad, re-flashed to 600070. 600112 is 600111 with the two races
+of §2.0c fixed. Pre-flight clean; every step of the apply exited 0; afterwards
+only directories no tar names were new against the image. First boot: logo
+written and verified; one seed file placed; Music, Photos, Email, Clock and
+Calendar each "SUCCESS" and verified, back to back; Calculator's stock copy
+removed; flagged, 70 seconds from first line to last. Photos' service answers
+on the bus, the video handler registered, Preware is 1.9.22, and there is no
+crash report at all on the device.
+
+On the 600111 device (§2.0c) the user opened a card and swiped it away: no
+crash. The first-card crash of §2.0a has not been seen again; its cause is
+still not known, and 600111 onward logs the errno if that open fails.
 
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
