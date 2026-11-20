@@ -7,7 +7,7 @@ namespace Sk {
 
 Params::Params()
     : subNear(0.6f), subFar(1.0f), subAccent(0.15f), firstLetter(0.3f),
-      insNear(0.55f), insFar(0.9f), insApostrophe(0.3f),
+      insNear(0.7f), insFar(0.9f), insApostrophe(0.3f),
       delDouble(0.5f), delFar(0.9f), delApostrophe(0.15f),
       transpose(0.6f), acronym(1.0f),
       costWeight(10.0f), maxCost(2.0f),
@@ -95,7 +95,7 @@ void Corrector::walk(Walk& w, unsigned int node, int d) const
         // the word has c, the typed word doesn't: a missed tap
         float del = isApostrophe(c) ? p.delApostrophe
                   : (d > 0 && w.wch[d] == c) ? p.delDouble : p.delFar;
-        cur[0] = prev[0] + del;
+        cur[0] = prev[0] + del + ((dd == 1 && !isApostrophe(c)) ? p.firstLetter : 0.0f);
         float rowMin = cur[0];
         for (int j = 1; j <= n; ++j) {
             const cp_t s = w.in[j - 1];
@@ -111,6 +111,9 @@ void Corrector::walk(Walk& w, unsigned int node, int d) const
                 v = std::min(v, pp[j - 2] + p.transpose);
             cur[j] = v;
             if (v < rowMin) rowMin = v;
+            // a swap that the next letter of the word can still complete keeps this path alive
+            if (j < n && w.in[j] == c && s != c && prev[j - 1] + p.transpose < rowMin)
+                rowMin = prev[j - 1] + p.transpose;
         }
         if (ch.freq && !(ch.flags & FLAG_NEVER) && cur[n] <= w.maxCost) {
             Candidate cd;
@@ -194,6 +197,7 @@ Correction Corrector::correct(const std::string& typedUtf8, int maxGuesses, Know
         bool near = (j > 1 && (low[j - 2] == s || m_kb.adjacent(low[j - 2], s))) ||
                     (j < w.n && (low[j] == s || m_kb.adjacent(low[j], s)));
         w.insCost[j] = isApostrophe(s) ? m_p.insApostrophe : near ? m_p.insNear : m_p.insFar;
+        if (j == 1 && !isApostrophe(s)) w.insCost[j] += m_p.firstLetter;
     }
     float* r0 = w.row(0);
     r0[0] = 0.0f;
@@ -222,7 +226,20 @@ Correction Corrector::correct(const std::string& typedUtf8, int maxGuesses, Know
     if (!r.guesses.empty() && letters >= 2) {
         const Candidate& b = r.guesses[0];
         float margin = m_p.autoMargin + (isUpper(typed[0]) ? m_p.capitalMargin : 0.0f);
-        bool clear = r.guesses.size() < 2 || b.score - r.guesses[1].score >= margin;
+        // A rival that changes the first letter is ranked lower for it, but that is no
+        // evidence that the leader is right: when the leader keeps the typed first letter,
+        // measure its lead as if such rivals had not been charged.
+        bool clear = true;
+        const U32 bl = lower(decode(b.word));
+        const bool keepsFirst = !bl.empty() && bl[0] == low[0];
+        for (size_t i = 1; i < kept.size() && clear; ++i) {
+            float rs = kept[i].score;
+            if (keepsFirst) {
+                const U32 rl = lower(decode(kept[i].word));
+                if (!rl.empty() && rl[0] != low[0]) rs += m_p.firstLetter * m_p.costWeight;
+            }
+            if (b.score - rs < margin) clear = false;
+        }
         r.autoAccept = b.cost <= m_p.autoMaxCost && b.freq >= m_p.autoMinFreq && clear;
     }
     if ((int)r.guesses.size() > maxGuesses) r.guesses.resize(std::max(maxGuesses, 0));

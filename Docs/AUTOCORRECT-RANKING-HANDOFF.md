@@ -135,3 +135,30 @@ which fits "sometimes, for seconds". CE's engine does not have this cost: it wal
 dictionary trie once with a bounded edit-distance row per node, and never builds a
 spelling that is not a prefix of a real word. That is the design to copy, or else: cap the
 second pass, and take it off the UI thread.
+
+## 4. What was done with section 2 (2026-11-20, for the next bake)
+
+`tools/eval.py` was run (the work directory already had Hunspell 1.3.4's objects and the AOSP
+lists; Wikipedia's list was fetched). English, 3,000 touch typos, the Wikipedia list, 1,615
+clean words:
+
+| Engine | touch fixed / wrong / kept | wiki fixed / wrong / kept | clean damaged (names and slang, of 115) |
+|---|---|---|---|
+| Before | 80.2 / 4.3 / 15.5 | 78.4 / 4.8 / 16.8 | 0.7% (11) |
+| Section 2's patch as written | 81.2 / 4.1 / 14.7 | 79.3 / 4.4 / 16.3 | 0.9% (14) |
+| **Committed: the patch plus the margin rule below** | 80.2 / 3.4 / 16.5 | 78.1 / 4.2 / 17.7 | 0.7% (11) |
+
+The patch as written fixed one typo in a hundred more, and changed correctly typed words it
+used to leave alone: Reddit → Refit, lmao → Lao, Arjun → Arjuna, retweet → retest. Charging
+rivals for touching the first letter widens the leader's lead, so more words pass
+`autoMargin`. The committed engine therefore measures that lead differently: when the leader
+keeps the typed first letter, a rival that changes it is counted as if it had not been
+charged `firstLetter`, and the lead is measured against every kept guess, not only the
+second. The ranking is section 2's: "trest" offers treat, test, rest, in that order, and is
+left alone; treay, yhe and hte are corrected. A changed word is worse than a typo left in
+place, so the row with fewer wrong corrections and no new damage was taken over the row
+with more fixes.
+
+`insNear` 0.6 instead of 0.7 was also tried with the margin rule: slightly worse on every
+count. Still not done: other languages and layouts (the evaluation's typo model is QWERTY),
+and a TouchPad. The rebuilt `SmartKeyService` is in `prebuilt/`.
