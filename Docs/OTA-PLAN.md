@@ -302,10 +302,14 @@ left the build machine; 600109 is 600108 with the first two fixes below.
    "Service does not exist", also after a reboot, `forceSingleAppScan` and
    `rescan`. `app-install` installs with plain `ipkg`; the registration is
    written only when LunaSysMgr's own installer (`com.palm.appinstaller`) does
-   the install. So on an updated device the photo editor cannot save and
-   Import vCards drops contact photos. To try next: install the staged Photos
-   ipk through `com.palm.appinstaller/installNoVerify`. **Also check a flashed
-   3.2.0 device:** its first-boot install goes through the same `app-install`.
+   the install. **Fixed in the tree, tried on the device:** installing the
+   staged Photos ipk through `com.palm.appinstaller/installNoVerify` put the
+   service on the bus at once. `ce-ota-finish` now installs that way (the
+   installer deletes the file it is given, so it gets a copy), and the changed
+   script repaired a deliberately altered Clock on the device in 12 seconds.
+   Not baked. **Still to check on a flashed 3.2.0 device:** whether its
+   first-boot install registers the service, since the stock preload pass is
+   the same `app-install`.
 3. `/` was mounted read-write for the whole first boot and read-only on the
    second. Not this job (its lock was never taken). The Preware 1.9.22 install
    ran in that boot and its scripts remount `/`; not confirmed as the cause.
@@ -366,9 +370,10 @@ device tree with stand-ins for `app-install`, `luna-send`, `ipkg` and `mount`
 - **A flashed device does nothing.** With no `ran-first-use` at boot, the job
   writes both flags and exits.
 - **Steps 1, 8, 9, 11 and 12, and Clock:** a staged ipk whose bytes changed
-  under the same file name is reinstalled with the stock
-  `app-install -force-reinstall -install-only -package <ipk>`, the pass that
-  installs it after a flash, and then checked file by file against the ipk. It
+  under the same file name is reinstalled through
+  `com.palm.appinstaller/installNoVerify` (at first with the stock
+  `app-install`, which registers no services: §2.0a), and then checked file by
+  file against the ipk. It
   is left alone when the app is not installed or is at another version (the
   feed's Calendar 3.2.0, for one). This replaces laying files over the app, so
   removed files go too. **To see on a device:** that the reinstall registers

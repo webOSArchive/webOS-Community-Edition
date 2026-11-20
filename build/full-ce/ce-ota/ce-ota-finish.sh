@@ -222,9 +222,33 @@ app_matches_ipk() {   # is every file of the ipk installed with the same bytes?
     return $_r
 }
 
+# Through LunaSysMgr's own installer, not the stock app-install script: that
+# one runs plain ipkg, which lays the files down but writes no bus registration
+# for a service the package brings (seen on a TouchPad: Photos' new service
+# "does not exist" after app-install, also after a reboot and a rescan, and
+# was on the bus at once after this call). The installer deletes the file it
+# is given, so it gets a copy.
+install_ipk() {
+    _dir=/media/internal/.ce-ota-finish
+    grep -q " /media/internal " /proc/mounts || _dir=/tmp/.ce-ota-finish
+    mkdir -p $_dir && cp "$1" $_dir/install.ipk 2>/dev/null || { log "apps: no room for a copy of $1"; return 1; }
+    luna-send -n 8 palm://com.palm.appinstaller/installNoVerify \
+        "{\"target\":\"$_dir/install.ipk\",\"subscribe\":true}" < /dev/null > "$T/inst.out" 2>&1 &
+    _p=$!
+    _i=0
+    while [ $_i -lt 90 ] && kill -0 $_p 2>/dev/null; do
+        grep -q '"status":"SUCCESS"\|FAILED' "$T/inst.out" 2>/dev/null && break
+        sleep 2
+        _i=$((_i+1))
+    done
+    kill $_p 2>/dev/null
+    log "apps: installer said: $(tr -d '\n' < "$T/inst.out" 2>/dev/null | sed 's/.*"status":"\([A-Z_]*\)".*/\1/' | cut -c1-60)"
+    rm -rf $_dir
+    grep -q '"status":"SUCCESS"' "$T/inst.out" 2>/dev/null
+}
+
 # A staged ipk whose bytes changed under an unchanged file name: the stock
-# preload pass compares versions and will never touch it. Reinstall it through
-# that same pass, which is how a flashed device got it. A changed file name is
+# preload pass compares versions and will never touch it. Reinstall it. A changed file name is
 # a new version, and the preload pass's own business.
 step_apps() {
     _bad=0
@@ -255,10 +279,9 @@ step_apps() {
             continue
         fi
         log "apps: reinstalling $_pkg $_ver from the staged ipk"
-        /usr/bin/app-install -force-reinstall -install-only -package "$(basename "$_ipk")" >> "$LOG" 2>&1
+        install_ipk "$_ipk"
         if app_matches_ipk "$_ipk"; then
             echo "$_m $_pkg" >> $APPLIED
-            lsq -f palm://com.palm.applicationManager/forceSingleAppScan "{\"id\":\"$_pkg\"}" >> "$LOG" 2>&1
             touch "$T/apps-changed"
             log "apps: $_pkg reinstalled and verified"
         else
@@ -302,7 +325,8 @@ step_feeds() {
     # Only a feed copy that is this image's version or older: a newer one the
     # owner installed later is theirs.
     for _pkg in com.palm.app.videos com.palm.app.calculator org.webosarchive.media-tls13; do
-        ls $_info/$_pkg.* > /dev/null 2>&1 || continue
+        ls $_info/$_pkg.prerm $_info/$_pkg.postinst $_info/$_pkg.postrm $_info/$_pkg.list \
+            > /dev/null 2>&1 || continue
         _bv=$(baked_version $_pkg); _iv=$(installed_version $_pkg)
         [ -n "$_bv" ] && [ -n "$_iv" ] && ver_le "$_iv" "$_bv" || continue
         rm -f $_info/$_pkg.prerm $_info/$_pkg.postinst $_info/$_pkg.postrm $_info/$_pkg.list
@@ -398,6 +422,6 @@ if [ "$(cat $FLAG 2>/dev/null)" != "$MARK" ]; then
     else
         log "$MARK: $_fail step(s) not verified -- NOT flagging, will try next boot"
     fi
-    [ -f "$T/apps-changed" ] && log "apps changed: an app that was already running keeps its old code until Luna restarts"
+    [ -f "$T/apps-changed" ] && log "apps changed: the installer closes an app it replaces; anything else running keeps its old code until Luna restarts"
 fi
 exit 0
