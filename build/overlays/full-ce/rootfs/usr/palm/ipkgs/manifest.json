@@ -1,11 +1,11 @@
 [
  {
   "id": "com.palm.app.enyo-findapps",
-  "ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.enyo-findapps_6.1.2923_all.ipk",
+  "ipkgUrl": "file:///usr/palm/ipkgs/com.palm.app.enyo-findapps_6.3.3000_all.ipk",
   "iconUrl": "file:///usr/palm/ipkgs/findapps-icon.png",
   "loc_name": "App Catalog-Enyo",
   "vendor": "webOS Archive",
-  "version": "6.1.2923"
+  "version": "6.3.3000"
  },
  {
   "id": "com.quickoffice.ar",

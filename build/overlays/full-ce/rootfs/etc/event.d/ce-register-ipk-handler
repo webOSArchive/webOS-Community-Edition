@@ -6,6 +6,11 @@
 # opening Preware, and permanently dedupes the runtime call that would
 # have fixed it. See bake.py (b) for the full trace.
 
+# Boot trigger too: first-use-finished is emitted once, at the end of first
+# use. A device that reaches this image by OTA never emits it, and a try
+# that failed there was never repeated. The script leaves at once when it
+# has nothing to do.
+start on stopped finish
 start on first-use-finished
 
 console none

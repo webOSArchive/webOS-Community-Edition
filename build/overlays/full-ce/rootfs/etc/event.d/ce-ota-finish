@@ -1,0 +1,12 @@
+# ce-ota-finish -- webOS CE: finish an update on the first boot of the new
+# image: the cryptofs apps and seed files an OTA payload cannot reach, and
+# the boot logo in NVRAM. Exits at once when there is nothing to do, and
+# on a flashed device flags itself done before first use.
+
+start on stopped finish
+
+console none
+
+script
+    exec sh -e /usr/palm/ce-seed/jobs/ce-ota-finish.sh
+end script

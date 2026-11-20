@@ -6,6 +6,10 @@
     FLAG=/var/luna/preferences/ce-video-handler-registered
     LOG=/var/log/ce-register-video-handler.log
     [ -f $FLAG ] && exit 0
+    # Before first use is over, leave at once: a run still going when
+    # first-use-finished arrives makes upstart drop that trigger.
+    if [ "$UPSTART_EVENT" != "first-use-finished" ] \
+       && [ ! -f /var/luna/preferences/ran-first-use ]; then exit 0; fi
     AM=palm://com.palm.applicationManager
     APP=com.palm.app.videos
     n=0

@@ -4,6 +4,11 @@
 # static command-resource-handlers.json entry). The stock system-default
 # entries stay as alternates; com.palm.app.videoplayer hosts the same player.
 
+# Boot trigger too: first-use-finished is emitted once, at the end of first
+# use. A device that reaches this image by OTA never emits it, and a try
+# that failed there was never repeated. The script leaves at once when it
+# has nothing to do.
+start on stopped finish
 start on first-use-finished
 
 console none

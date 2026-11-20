@@ -1,8 +1,8 @@
 {
  "id": "org.webosinternals.preware",
- "version": "1.9.19",
+ "version": "1.9.22",
  "loc_name": "Preware",
  "vendor": "WebOS Internals",
- "ipkgUrl": "file:///usr/palm/ipkgs/org.webosinternals.preware/org.webosinternals.preware_1.9.19_arm.ipk",
+ "ipkgUrl": "file:///usr/palm/ipkgs/org.webosinternals.preware/org.webosinternals.preware_1.9.22_arm.ipk",
  "iconUrl": "file:///usr/palm/ipkgs/org.webosinternals.preware/org.webosinternals.preware-icon.png"
 }

@@ -46,14 +46,14 @@ rm -f $APPS/etc/ipkg/precentral.conf
 # Install backup webosnation feed
 echo "src/gz precentral http://weboslives.eu/feeds/precentral" > $APPS/etc/ipkg/precentral-weboslives.conf
 
-# Install App Museum feed (disabled by default)
-echo "src/gz precentral http://weboslives.eu/feeds/wosa" > $APPS/etc/ipkg/wosa-appmuseum.conf.new
+# Remove the App Museum feed, which is no longer offered: on, off or pending
+rm -f $APPS/etc/ipkg/wosa-appmuseum.conf $APPS/etc/ipkg/wosa-appmuseum.conf.disabled $APPS/etc/ipkg/wosa-appmuseum.conf.new
 
 # Install PreCentral theme feed
 echo "src/gz precentral-themes http://ipkg.preware.net/feeds/precentral-themes" > $APPS/etc/ipkg/precentral-themes.conf.new
 
-# Install PivotCE feeds
-echo "src/gz pivotce http://feed.pivotce.com" > $APPS/etc/ipkg/pivotce.conf
+# Remove the PivotCE feed, which has gone offline: on, off or pending
+rm -f $APPS/etc/ipkg/pivotce.conf $APPS/etc/ipkg/pivotce.conf.disabled $APPS/etc/ipkg/pivotce.conf.new
 
 # Install prethemer feed
 echo "src/gz prethemer http://www.prethemer.com/feeds/preware/themes" > $APPS/etc/ipkg/prethemer.conf.new
