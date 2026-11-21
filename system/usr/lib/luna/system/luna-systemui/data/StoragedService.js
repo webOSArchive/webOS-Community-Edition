@@ -36,9 +36,13 @@ enyo.kind({
 	        return;
 	   
 	    if (inResponse["mode-avail"]) {
-			this.isUSBConnected = true;
 			// webOS CE: a banner and the dashboard, not a popup that stays up until dismissed.
-			if (this.canUSBAlertDisplayed()) 
+			// storaged can say mode-avail more than once for one connection; stock's popup and
+			// the dashboard open only if not already open, so it never showed. Announce only
+			// the change from disconnected to connected.
+			var wasConnected = this.isUSBConnected;
+			this.isUSBConnected = true;
+			if (!wasConnected && this.canUSBAlertDisplayed()) 
 				this.showUSBBanner();
 			this.createUSBDashboard();
 		}

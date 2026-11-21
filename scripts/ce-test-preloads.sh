@@ -105,23 +105,12 @@ else
   F "photos app not yet in cryptofs (first use finished?)"
 fi
 
-# --- 7b. staged customization media reclaimed at first boot (NEW: first run on a real trigger) ---
-RL=/var/log/ce-reclaim-customization-media.log
+# --- 7b. staged customization media kept: the source a Full Erase copies from (issue #14) ---
 STAGE=/usr/lib/luna/customization/copy_binaries/media/internal
-if [ -f /var/luna/preferences/ce-customization-media-reclaimed ]; then
-  if [ -d "$STAGE" ]; then
-    F "reclaim flagged but staging still present: $(du -sm $STAGE 2>/dev/null | cut -f1)MB"
-  else
-    P "staged customization media reclaimed"
-  fi
-  [ -f $RL ] && I "reclaim log: $(tail -1 $RL)"
+if [ -f $STAGE/ringtones/Pre.mp3 ]; then
+  P "staged customization media kept ($(du -sm $STAGE 2>/dev/null | cut -f1)MB)"
 else
-  if [ -d "$STAGE" ]; then
-    F "staged media NOT reclaimed ($(du -sm $STAGE 2>/dev/null | cut -f1)MB still on /) -- job did not fire or deferred"
-    [ -f $RL ] && I "reclaim log: $(tail -2 $RL)" || I "no reclaim log at all -- job never ran"
-  else
-    F "staging gone but no flag -- unexpected state"
-  fi
+  F "staged customization media missing: a Full Erase would leave no ringtones/wallpapers"
 fi
 # live media must be untouched
 I "live media: wallpapers=$(ls /media/internal/wallpapers 2>/dev/null | wc -l) ringtones=$(ls /media/internal/ringtones 2>/dev/null | wc -l)"

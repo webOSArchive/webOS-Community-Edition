@@ -45,8 +45,20 @@ for a live community host:
 | `http://developer.palm.com` | `http://www.webosarchive.org` |
 | `http://www.hpwebos.com` | `http://webosarchive.org` |
 | `http://www.compaq.com` | `http://ipkg.preware.net` |
+| `http://www.yahoo.com` | `http://www.example.com` |
+| `http://www.hp.com` | `http://info.cern.ch` |
 
-The google, yahoo, hp and bing entries are unchanged.
+The google and bing entries are unchanged.
+
+yahoo and hp were swapped for vNext (issue #15). The probe sends no
+`User-Agent`, and by 2026 yahoo answered that with a 429 and hp.com with an
+empty 302, so neither page had a `<title>`. Each check fetches two neighbouring
+entries and says `captivePortal` only when both have no title; yahoo and hp were
+neighbours, so a check that started at yahoo always failed. The replacements
+answer a request with no User-Agent with a 200 and a title (checked with
+`curl -H 'User-Agent:'`): example.com is reserved by RFC 2606, and info.cern.ch
+is CERN's preserved first website. They are different operators, so the two can
+not fail together the way yahoo and hp did.
 
 Rules for the patch:
 

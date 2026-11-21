@@ -4074,99 +4074,16 @@ def main():
     )
     w("etc/event.d/ce-firstboot-tweaks", tweaks_job, 0o644)
 
-    # 17c) reclaim the staged customization media once it has been copied.
-    # The Doctor writes NO media volume (installer.xml covers boot / rootfs /
-    # ramdisk / modem only), so every wallpaper and ringtone shipped in the image
-    # has to transit the 559MB rootfs via customization/copy_binaries/ — hp.tar's
-    # sweatshop ipk stages ~21MB there and CE adds its own set on top. The
-    # customization service copies them to /media/internal (27GB free) on first
-    # boot and never reads them again, so both copies then exist forever on a
-    # partition that ships at ~93% full. This job deletes the rootfs one.
-    #
-    # Safe because the service gates on its OWN completion markers
-    # (/var/luna/data/Customization/system_complete.txt), not on whether the
-    # destination files are present: once those exist it will not re-copy, so a
-    # user who erases the USB drive has already lost this media whether or not
-    # the staging copy survives. Re-flashing rewrites the rootfs and wipes /var,
-    # restoring the staging copy and clearing the markers together.
-    #
-    # Only copy_binaries/media/internal is removed. The rest of customization/
-    # stays: a locale change can re-read the loc_customization_*.json files.
-    log("tier: reclaim staged customization media after first boot")
-    reclaim_job = (
-        "# ce-reclaim-customization-media — webOS CE: once per flash, after the\n"
-        "# customization service has copied the staged wallpapers/ringtones to\n"
-        "# /media/internal, delete the rootfs STAGING copy (~25MB).\n"
-        "#\n"
-        "# Verify-then-flag, like ce-cryptofs-seed and ce-firstboot-tweaks: the\n"
-        "# staging copy is the ONLY other source, so it is not removed until the\n"
-        "# live copy has been confirmed present. A run that cannot confirm defers\n"
-        "# to the next trigger rather than burning the once-per-flash flag.\n"
-        "\n"
-        "start on stopped finish\n"
-        "start on first-use-finished\n"
-        "\n"
-        "console none\n"
-        "\n"
-        "script\n"
-        "    FLAG=/var/luna/preferences/ce-customization-media-reclaimed\n"
-        "    LOG=/var/log/ce-reclaim-customization-media.log\n"
-        "    log() { echo \"$(date 2>/dev/null) $*\" >> \"$LOG\" 2>/dev/null; }\n"
-        "    STAGE=/usr/lib/luna/customization/copy_binaries/media/internal\n"
-        "    DONE=/var/luna/data/Customization/system_complete.txt\n"
-        "    if [ -f \"$FLAG\" ]; then exit 0; fi\n"
-        "    if [ ! -d \"$STAGE\" ]; then\n"
-        "        log \"nothing staged -- already reclaimed, or this image ships no media\"\n"
-        "        mkdir -p /var/luna/preferences && touch \"$FLAG\"\n"
-        "        exit 0\n"
-        "    fi\n"
-        "    # The customization service is what copies these; it must have finished.\n"
-        "    if [ ! -f \"$DONE\" ]; then\n"
-        "        log \"customization service not finished -- deferring to the next trigger\"\n"
-        "        exit 0\n"
-        "    fi\n"
-        "    # VERIFY the payload actually landed before deleting the only other copy.\n"
-        "    # A short count means the copy did not complete and the staging copy is\n"
-        "    # still the only good source.\n"
-        "    bad=0\n"
-        "    for d in wallpapers ringtones music; do\n"
-        "        [ -d \"$STAGE/$d\" ] || continue\n"
-        "        st=$(ls -1 \"$STAGE/$d\" 2>/dev/null | wc -l)\n"
-        "        lv=$(ls -1 \"/media/internal/$d\" 2>/dev/null | wc -l)\n"
-        "        if [ \"$lv\" -lt \"$st\" ]; then\n"
-        "            log \"VERIFY FAILED $d: staged=$st live=$lv -- keeping the staging copy\"\n"
-        "            bad=$((bad+1))\n"
-        "        else\n"
-        "            log \"verified $d: staged=$st live=$lv\"\n"
-        "        fi\n"
-        "    done\n"
-        "    if [ $bad -ne 0 ]; then\n"
-        "        log \"$bad directory(ies) unverified -- NOT flagging, will retry\"\n"
-        "        exit 0\n"
-        "    fi\n"
-        "    # ce-firstboot-tweaks and ce-remove-preloads also flip / rw->ro; take the\n"
-        "    # shared lock so neither remounts under the other.\n"
-        "    L=/tmp/.ce-rootfs-rw.lock\n"
-        "    n=0\n"
-        "    while ! mkdir $L 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n+1)); done\n"
-        "    # busybox df WRAPS a long device name onto a second line, so NR==2 is the\n"
-        "    # continuation and $4 is empty. Take the last line and count from the end.\n"
-        "    before=$(df -k / 2>/dev/null | awk \"END{print \\$(NF-2)}\")\n"
-        "    mount -o remount,rw / 2>/dev/null || true\n"
-        "    rm -rf \"$STAGE\"\n"
-        "    sync\n"
-        "    mount -o remount,ro / 2>/dev/null || true\n"
-        "    rmdir $L 2>/dev/null || true\n"
-        "    if [ -d \"$STAGE\" ]; then\n"
-        "        log \"FAILED to remove $STAGE -- NOT flagging, will retry\"\n"
-        "        exit 0\n"
-        "    fi\n"
-        "    after=$(df -k / 2>/dev/null | awk \"END{print \\$(NF-2)}\")\n"
-        "    log \"reclaimed staged media: / free ${before}K -> ${after}K\"\n"
-        "    mkdir -p /var/luna/preferences && touch \"$FLAG\"\n"
-        "end script\n"
-    )
-    w("etc/event.d/ce-reclaim-customization-media", reclaim_job, 0o644)
+    # 17c) The staged customization media STAYS on the rootfs, as on stock.
+    # 600028 to 600114 had a ce-reclaim-customization-media job that deleted
+    # copy_binaries/media/internal once it had been copied (+28 MB free). That
+    # assumed the customization service never copies again. A Full Erase wipes
+    # /media/internal AND /var, so the service does copy again, from a directory
+    # the job had emptied: no ringtones, no wallpapers, and SystemRestore, unable
+    # to find the default ringtone (copy_binaries/.../Pre.mp3), never writes its
+    # token and resets the wallpaper on every boot (issue #14). The rootfs is the
+    # only copy a Full Erase cannot touch. The OTA payload puts it back on a
+    # device that reclaimed it (build/ota/make-payload.py, CUSTOMIZATION_MEDIA).
 
     # 17c) default wallpaper, the DEFINITIVE path. The customization.json sed
     # above races the customization service (both fire on `stopped
@@ -4491,7 +4408,13 @@ def main():
     ncm = sdata("./usr/bin/PmNetConfigManager")
     for old, new in (("http://developer.palm.com", "http://www.webosarchive.org"),
                      ("http://www.hpwebos.com",    "http://webosarchive.org"),
-                     ("http://www.compaq.com",     "http://ipkg.preware.net")):
+                     ("http://www.compaq.com",     "http://ipkg.preware.net"),
+                     # The probe sends no User-Agent: yahoo answers 429 and hp.com a body-less
+                     # 302, so neither has a <title>. They sit side by side in the rotation and
+                     # a check that gets two title-less answers says captivePortal (issue #15).
+                     # example.com is reserved by RFC 2606; info.cern.ch is the first website.
+                     ("http://www.yahoo.com",      "http://www.example.com"),
+                     ("http://www.hp.com",         "http://info.cern.ch")):
         ncm = patch_cstring(ncm, old, new, "connectivity URL")
         log(f"  connectivity probe {old} -> {new}")
     w("usr/bin/PmNetConfigManager", ncm, 0o755)

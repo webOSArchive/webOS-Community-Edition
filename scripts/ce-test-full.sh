@@ -421,12 +421,9 @@ grep -qi "google" $B/source/URLSearch.js 2>/dev/null \
 
 # ---------------------------------------------------------------- 11. space / media
 STAGE=/usr/lib/luna/customization/copy_binaries/media/internal
-if have /var/luna/preferences/ce-customization-media-reclaimed; then
-  [ ! -d "$STAGE" ] && P "11  staged customization media reclaimed" || F "11  flagged but staging still present"
-else
-  F "11  staged media NOT reclaimed"
-fi
-have /var/log/ce-reclaim-customization-media.log && I "11  reclaim: $(tail -1 /var/log/ce-reclaim-customization-media.log)"
+# Full Erase copies the media again from here (issue #14): it must stay.
+have $STAGE/ringtones/Pre.mp3 && P "11  staged customization media kept (Full Erase source)" || F "11  staged customization media MISSING: a Full Erase leaves no ringtones/wallpapers"
+have /etc/event.d/ce-reclaim-customization-media && F "11  ce-reclaim-customization-media job still present" || P "11  no reclaim job"
 I  "11  rootfs: $(df -k / | awk 'END{print $(NF-2)"K free, "$(NF-1)" used"}')"
 I  "11  media: wallpapers=$(ls /media/internal/wallpapers 2>/dev/null | wc -l) ringtones=$(ls /media/internal/ringtones 2>/dev/null | wc -l)"
 n=$(ls /media/internal/wallpapers/*.png 2>/dev/null | wc -l)

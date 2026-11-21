@@ -58,8 +58,8 @@ fi
 mkdir -p "$T" || exit 0
 trap 'rm -rf "$T"' EXIT
 
-# / is read-only; ce-firstboot-tweaks, ce-remove-preloads and
-# ce-reclaim-customization-media open it too. mkdir is atomic: a spinlock.
+# / is read-only; ce-firstboot-tweaks and ce-remove-preloads open it too.
+# mkdir is atomic: a spinlock.
 rootfs_rw() {
     _n=0
     while ! mkdir /tmp/.ce-rootfs-rw.lock 2>/dev/null && [ $_n -lt 60 ]; do sleep 1; _n=$((_n+1)); done
@@ -430,9 +430,9 @@ step_gst() {
 
 # --------------------------------------------------------------- media ----
 # The customization copy runs once per flash, so an updated device never gets
-# a newly staged wallpaper. Copy what is missing, then let the reclaim job
-# remove the staged copies as it does after a flash. Nobody's wallpaper is
-# changed.
+# a newly staged wallpaper. Copy what is missing. The staged copies stay: a
+# Full Erase copies from them (issue #14; the payload restores them on a 3.1.0
+# device whose reclaim job had removed them). Nobody's wallpaper is changed.
 step_media() {
     _stage=/usr/lib/luna/customization/copy_binaries/media/internal
     [ -d $_stage ] || return 0
@@ -446,8 +446,8 @@ step_media() {
         cmp -s "$_src" "$_dst" || { _bad=$((_bad+1)); log "media: FAILED to copy ${_src#$_stage/}"; }
     done
     [ $_bad -eq 0 ] || return 1
-    rm -f $PREFS/ce-customization-media-reclaimed
-    log "media: staged media copied; ce-reclaim-customization-media removes the staged copies next boot"
+    rm -f $PREFS/ce-customization-media-reclaimed /var/log/ce-reclaim-customization-media.log
+    log "media: staged media copied; the staged copies stay for a Full Erase"
     return 0
 }
 

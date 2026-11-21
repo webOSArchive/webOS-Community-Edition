@@ -59,6 +59,63 @@ PREFLIGHT_FILE = "usr/lib/ipkg/info/org.webosarchive.ce-files.md5sums"
 STAGED_IPK = re.compile(r"^usr/palm/ipkgs/[^/]+/[^/]+\.ipk$")
 CRYPTOFS_APPS = "/media/cryptofs/apps"
 
+# The staged customization media (issue #14). 3.1.0 had a job that deleted it
+# after first boot, so every 3.1.0 device lacks it, yet a Full Erase copies it
+# again from here: the payload must put it back. Part of it is CE's (in the
+# rootfs image) and most is hp.tar's sweatshop ipk, which the Doctor installs
+# over the rootfs at flash time and so is in neither rootfs tar. The old side
+# is modelled without it and the new side with both parts, so the diff
+# delivers it all and the convergence proof covers it.
+EXTRAS = ":customization-media"    # new_blobs key; not a path
+CUSTOMIZATION_MEDIA = "usr/lib/luna/customization/copy_binaries/media/internal"
+CUSTOMIZATION_TAR_IN_JAR = "resources/hp.tar"
+SWEATSHOP_IPK = re.compile(r"^sweatshop-hp-topaz_.*\.ipk$")
+
+
+def is_customization_media(p):
+    return p == CUSTOMIZATION_MEDIA or p.startswith(CUSTOMIZATION_MEDIA + "/")
+
+
+def customization_media(path):
+    """{path: (TarInfo, body)} for the sweatshop ipk's staged media in a Doctor
+    JAR's hp.tar. A bare rootfs tarball has no hp.tar: refuse, because a payload
+    without this media leaves an updated device unable to recover from a Full
+    Erase."""
+    if not zipfile.is_zipfile(path):
+        sys.exit("%s: not a Doctor JAR, so there is no hp.tar to take the staged "
+                 "customization media from" % path)
+    custo = tarfile.open(fileobj=zipfile.ZipFile(path).open(CUSTOMIZATION_TAR_IN_JAR), mode="r|")
+    for ti in custo:
+        if SWEATSHOP_IPK.match(os.path.basename(norm(ti.name))):
+            blob = custo.extractfile(ti).read()
+            break
+    else:
+        sys.exit("%s: no sweatshop ipk in %s" % (path, CUSTOMIZATION_TAR_IN_JAR))
+    out = {}
+    with tarfile.open(fileobj=io.BytesIO(ar_members(blob)["data.tar.gz"]), mode="r:gz") as tf:
+        for ti in tf:
+            name = norm(ti.name)
+            if not is_customization_media(name) or not (ti.isreg() or ti.isdir()):
+                continue
+            body = tf.extractfile(ti).read() if ti.isreg() else None
+            ti.name, ti.pax_headers = "./" + name, {}
+            ti.uid = ti.gid = 0                 # ipkg installs it as root
+            ti.uname = ti.gname = "root"
+            out[name] = (ti, body)
+    if not any(b is not None for _, b in out.values()):
+        sys.exit("%s: the sweatshop ipk stages no media" % path)
+    return out
+
+
+def record_of(ti, body):
+    rec = {"type": TYPE_NAMES[ti.type], "mode": ti.mode & 0o7777, "uid": ti.uid, "gid": ti.gid}
+    if ti.isreg():
+        rec["size"] = len(body)
+        rec["sha256"] = hashlib.sha256(body).hexdigest()
+        rec["md5"] = hashlib.md5(body).hexdigest()
+    return rec
+
+
 TYPE_NAMES = {
     tarfile.REGTYPE: "file", tarfile.AREGTYPE: "file", tarfile.DIRTYPE: "dir",
     tarfile.SYMTYPE: "symlink", tarfile.LNKTYPE: "hardlink",
@@ -233,6 +290,17 @@ def load(args):
     if dups:
         print("note: the new rootfs tar names %d paths twice (the last member wins), "
               "e.g. /%s" % (len(dups), dups[0]))
+    # The old device: its reclaim job removed the staged media. The new image: it
+    # keeps CE's part, and the Doctor adds hp.tar's (CUSTOMIZATION_MEDIA).
+    for p in [p for p in old if is_customization_media(p)]:
+        del old[p]
+    extras = customization_media(args.new)
+    for p, (ti, body) in extras.items():
+        if p in new and new[p]["type"] == "file":
+            sys.exit("/%s is in both the rootfs and hp.tar" % p)
+        if p not in new:
+            new[p] = record_of(ti, body)
+    new_blobs[EXTRAS] = extras
     delta = compare(old, new)
     staged = staged_ipk_deltas(delta, old_blobs, new_blobs)
     return old, new, delta, staged, old_blobs, new_blobs
@@ -394,8 +462,9 @@ def ar_pack(parts):
     return b"".join(out)
 
 
-def collect_data(path, wanted):
-    """[(TarInfo, bytes)] for the wanted members of the new rootfs, in its order."""
+def collect_data(path, wanted, extras):
+    """[(TarInfo, bytes)] for the wanted members of the new rootfs, in its order,
+    then the wanted members that only hp.tar has."""
     out, seen = [], set()
     tf = open_rootfs(path)
     for ti in tf:
@@ -409,6 +478,10 @@ def collect_data(path, wanted):
             out = [m for m in out if norm(m[0].name) != name]
         out.append((ti, body))
         seen.add(name)
+    for name in sorted(wanted - seen):
+        if name in extras:
+            out.append(extras[name])
+            seen.add(name)
     if seen != wanted:
         sys.exit("new rootfs lacks members the delta names: %s" % sorted(wanted - seen)[:5])
     return out
@@ -450,7 +523,7 @@ def cmd_build(args):
             sys.exit("package id %s already exists in the old image" % pkg)
 
     ops = plan_ops(delta, old, new)
-    data_members = collect_data(args.new, set(ops["data"]))
+    data_members = collect_data(args.new, set(ops["data"]), new_blobs[EXTRAS])
 
     # Proof before anything is written: old image + payload == new image.
     left = compare(simulate(old, ops, data_members, pkg), new)

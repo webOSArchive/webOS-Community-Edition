@@ -27,6 +27,41 @@ measured this way — which is evidence, not closure. #4 fires per **OOBE**, and
 
 ---
 
+## 16. Full Erase leaves no ringtones or wallpapers, and the wallpaper resets on every boot — FIXED for 3.2.0, not yet on hardware
+
+Reported in GitHub issue #14. On 600070 (and 600028 onward), Settings → Reset
+Options → **Full Erase** brings the device back with empty ringtone and
+wallpaper libraries. The wallpaper is `flowers.png`, and any wallpaper the user
+picks reverts on the next boot. Only a re-Doctor recovers it.
+
+**Cause.** `ce-reclaim-customization-media` deleted
+`/usr/lib/luna/customization/copy_binaries/media/internal` after first boot to
+free ~28 MB of rootfs, on the theory that the customization service never copies
+again. A Full Erase wipes `/var` too, so the service does copy again, from the
+emptied directory. The default ringtone in `defaultPreferences.txt` points into
+that directory (`Pre.mp3`), so LunaSysService's `SystemRestore` fails, never
+writes `/media/internal/.sysservice/token`, and re-runs its restore on every
+boot.
+
+**Fix (3.2.0).** The job is gone; the staged media stays on the rootfs, as on
+stock. The OTA payload delivers the whole staged set (CE's files and hp.tar's
+sweatshop ringtones and wallpapers, 21.5 MB) because every 3.1.0 device has
+already deleted it. Cost: ~28 MB of rootfs on a flashed device; the 600070 to
+600114 payload's net rootfs growth went to 55 MB.
+
+**A 3.1.0 device that is not updated** keeps the fault. Re-Doctor after a Full
+Erase.
+
+## 17. The hotspot sign-in dashboard appears on an ordinary network — FIXED for 3.2.0, not yet on hardware
+
+Reported in GitHub issue #15. `PmNetConfigManager`'s connectivity check fetches
+two neighbouring URLs from a built-in list, sends no User-Agent, and decides
+`captivePortal` when neither page has a `<title>`. `www.yahoo.com` now answers
+that with 429 and `www.hp.com` with an empty 302, and they are neighbours, so a
+check that starts at yahoo always fails. 3.2.0 patches them to
+`www.example.com` and `info.cern.ch` (Docs/HOTSPOTS.md). Workaround on 3.1.0:
+dismiss the dashboard.
+
 ## 14. USB Settings reports "Helper not running" on every fresh flash — DIAGNOSED ON HARDWARE (600070), NOT FIXED
 
 **Severity: high — it is the first thing a user sees in a shipped app, and it is
