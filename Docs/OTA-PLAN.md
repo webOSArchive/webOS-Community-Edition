@@ -795,6 +795,39 @@ without help except the first.
 - **600117 (D, lived-in with QupZilla and its Qt5 stack, Videos, Media TLS).**
   Finished unaided; QupZilla still works.
 
+### 2.0m 600118 and 600119: Photos' service, mail, and a failure inside the ramdisk (2026-11-21)
+
+- **Photos after a Full Erase or a fresh flash** (KNOWN-ISSUES #19): the preload
+  pass never registers `org.webosarchive.photos.service`; 600118 added
+  `ce-register-cryptofs-services`, which registered it, but the service still
+  could not start until `/var/palm/tokens` existed (its triton-inst jail mounts
+  it and never creates it). 600119 creates it. Proven with no help on both
+  paths: D updated 600070 -> 600119 and Full-Erased, C freshly flashed with
+  600119; Photos saves on both.
+- **Mail (D, Exchange account, 600070 -> 600119).** 3.x mail lives in db8 with
+  bodies and attachments in `/var/file-cache/{email,attachment}`, not the 1.x
+  paths `pre-update` saves (`/var/luna/data/{attachments,emails}`,
+  `/var/luna/files`, all empty here). After the update: 61 messages, 15 folders
+  and the account intact, every file-cache body and attachment byte-identical;
+  one new message synced. `post-update` completed. Email, Messaging and Tweaks
+  checked on screen.
+- **A failure inside the ramdisk** (`build/ota/make-failtest.py`, C on 600070):
+  - *Transient* (preinst fails once): `mmipkg returned error 0x100`,
+    `PmUpdater returned 7`, `reboot_and_retry`; about 37 s later the second
+    attempt installed, `post-update` ran, `restore_and_reboot: normal exit`.
+    A one-off failure recovers by itself.
+  - *Permanent* (preinst always fails): four attempts about 37 s apart (three
+    `reboot_and_retry`), then the stock bricked state: `/boot/uImage` deleted,
+    the bootloader shows "!" and www.palm.com/ROM, novacom sees `topaz-bootie`.
+    User data and the rootfs were untouched (the failure was before any write).
+  - **Recovery without the Doctor:** `novacom -d <id> boot mem:// <
+    uImage-2.6.35-palm-tenderloin` (the kernel from the old image's rootfs,
+    `/boot/`) boots the device into its old system from RAM; then
+    `mount -o remount,rw /boot; ln -sf uImage-2.6.35-palm-tenderloin
+    /boot/uImage; rm /boot/update-uimage`, and it boots normally. Took two
+    minutes. A failure after the data tar has started writing would leave a
+    half-updated rootfs that this does not repair; not tested.
+
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
 | Change | Paths | Notes |
