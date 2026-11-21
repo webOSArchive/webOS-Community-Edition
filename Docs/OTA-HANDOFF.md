@@ -1,6 +1,7 @@
 # OTA hand-off: CE 3.1.0 → 3.2.0 (Path A)
 
-State at the end of 2026-11-21, everything pushed. The plan and every finding are in
+State at the end of 2026-11-21 (evening), everything pushed; picked up again **Monday
+2026-11-23 with the 600120 bake**. The plan and every finding are in
 [OTA-PLAN.md](OTA-PLAN.md): §2.0 (the measurement), §2.0a to §2.0m (every run on a device,
 in order), §2.2 (`ce-ota-finish`). This page is where it stands and what to do next. It
 replaces the hand-off of 2026-11-20 (600114).
@@ -13,9 +14,12 @@ lived-in (Atlas, QupZilla and its Qt5 stack, Videos, Media TLS, Chat Enabler), w
 Exchange mail account, and with a third-party language pack. `ce-ota-finish` finishes every
 run by itself on the first boot. A Full Erase after an update and a fresh flash both come up
 right. A failure inside the ramdisk recovers on a retry, and the bricked state after four
-failures was recovered without the Doctor. **The device side is done.** **Not done:** the
-OTA client driving any of it, signing, AT&T. **600119 is the latest image; nothing is
-unbaked.**
+failures was recovered without the Doctor. **The device side is done, and so is the
+client:** OTA Ready 3.0.0 from App Museum II takes a 3.1.0 TouchPad to 3.2.0 from System
+Updates' Install Now, with a signed manifest from swupdate.webosarchive.org, and a
+per-release device filter on the server decides who is offered it. Proven on two devices
+in production. **Not done:** the release build 600120 (Monday), baking the client into it,
+AT&T. **600119 is the latest image; two changes wait for 600120 (below).**
 
 ## What exists
 
@@ -31,6 +35,11 @@ unbaked.**
 | Payload | `out/ota/600070-600119/…_600119_all.ipk`, 49.5 MB | Unsigned. `out/` is git-ignored: rebuild with the command below. Net rootfs growth on a device 55 MB; `/` 89% after, as on a flash |
 | Old image | `out/webosdoctorp310hstnh-ce-600070.jar` (and `…att-ce-600071.jar`) | The released JARs, the "from" side |
 | Evidence | `out/ota/run-*` on the build machine only | Pre-flights, media listings, finish logs, mail before/after |
+| OTA client | `../webos-update-exploration/otaready-app/` (OTA Ready 3.0.0, `build.sh`) | In App Museum II; notes in its `CLAUDE.md` |
+| Update server | `../webos-update-exploration/webos-update-server/` (`ce_ota.py`) | Deployed at swupdate.webosarchive.org (git-to-deploy). `ce-ota/releases.json` = who is offered what; `ce-ota/manifests/` = signed manifests; payloads in `ce-ota/payloads/` on the host, copied by hand |
+| Signer | `webos-update-server/tools/sign-manifest.py <manifest-inputs.json> --copy-payload` | Key `../webos-update-exploration/keys/ce-ota-signing.key` (git-ignored, this machine only) |
+| Bench server | `webos-update-server/tools/bench-server.py --releases FILE` | stdlib LAN stand-in; a device uses it via `/media/internal/.otaready/server-url` |
+| Daily-driver pre-flights | `out/ota/dd-*/preflight/` | Four field devices, read-only, 2026-11-21 (below) |
 
 ```sh
 build/ota/make-payload.py build out/webosdoctorp310hstnh-ce-600070.jar \
@@ -81,32 +90,64 @@ Two TouchPads in rotation, which the user re-flashes and has said anything may b
 `1b4452fa…` (D) and `c68faf11…` (C, has a screen protector). **One is connected at a time;
 the user says which is ready.** Other TouchPads: ask before writing to them. The user checks
 the screen; do not judge a UI from logs. At the end of 2026-11-21: D on 600119 (the 3.2.0
-reference, with an Exchange account), C on 600070.
+reference, with an Exchange account); C on 600119 by OTA through production (in
+`releases.json`). The user also has a fresh TouchPad `c37f7a34…` (600119 by OTA, in
+`releases.json`).
 
-## Open, in the order I would take them
+**Daily drivers are READ ONLY** (the user's own, lent for checks): read over novacom only,
+never write. Inventoried 2026-11-21 (`out/ota/dd-*`): `070e3139…`, `76e607c5…` (has OTA
+Ready 3.0.0, was briefly offered and withdrawn), `d3a223af…` -- all 600070, all "may be
+applied", `/` 117-120 MB free (75.6 MB needed). `6863778a…` is AT&T 600071 (OTA Ready
+installed, correctly UpToDate; only 89 MB free on `/` because of Qt5 + Qt5 SDK). A
+TouchPad Go on 3.0.5 is "Not eligible".
 
-1. **The client: DONE and proven in production (2026-11-21).** OTA Ready 3.0.0 (App
-   Museum II; sibling repo `otaready-app/`) does the by-hand recipe from System Updates'
-   Install Now: signed manifest, the server's per-release device filter
-   (`webos-update-server/ce-ota/releases.json`, `"*"` or nduids), download from
-   swupdate.webosarchive.org, arm, ramdisk, and System Updates opens with the result.
-   Two devices went 600070 -> 600119 that way; an unlisted device was not offered; a 3.0.5
-   device shows "Not eligible". Notes: `../webos-update-exploration/otaready-app/CLAUDE.md`.
-   `make-payload.py` writes the `space` the client checks into `manifest-inputs.json`;
-   `webos-update-server/tools/sign-manifest.py` turns it into a signed manifest. **Left:**
-   bake the client into 3.2.0 (`/usr/share/otaready/baked`, a rootfs bridge registration)
-   so 3.2.0 devices need no Museum step; edge checks.
-2. **Signing and the manifest** (tier field, target binding). `manifest-inputs.json`
-   carries what the signer needs.
-3. **AT&T.** No 3.2.0 AT&T image exists. Bake the AT&T variant, diff against 600071, one run.
-4. **Microsoft's re-verification** (about 2026-11-24) may change the client id in
-   `com.palm.service.oauth/providers.json`: one more bake and payload.
-5. Smaller: a failure after the data tar has started writing (would leave a half-updated
+## Monday 2026-11-23: 600120, the release build
+
+The bake waits for the user's word (planned Monday, hoping Microsoft has answered).
+Testers report on 600119 until then; fold their findings in first.
+
+**Already in the tree for 600120** (`b956d65`):
+- `ce-ota-finish` `feed_emoji`: drops Emoji for webOS's records of changes the image now
+  ships (WebKit patch, CE-Emoji.ttf), so removing that package after the update does not
+  take 3.2.0's emoji away. Found on daily driver `76e607c5…`.
+- Boot logo disc 93 -> 109 px (artwork 140 x 131); dim, bright and NVRAM files regenerated
+  together (`tools/boot-logo/build-boot-logo.py`).
+
+**To decide or do before baking:**
+1. **Microsoft client id** in `com.palm.service.oauth/providers.json`, if their
+   re-verification has come back.
+2. **Bake the client into 600120?** The user chose "plan for it now" (2026-11-21). Not built
+   yet: bake.py would ship `/usr/bin/otaready-daemon`, `/usr/share/otaready/ota-manifest.js`
+   and `/usr/share/otaready/baked`, the upstart job, the patched `UpdatesApp.js` (with an
+   appinfo version bump), and the bridge service under `/usr/palm/services` with static
+   rootfs ls2 files. The Museum package already steps aside when `baked` exists. Ask before
+   building it; confirm whether it goes into 600120 or a later release.
+3. Then the usual: bake, `ce-test-full.sh`, flash a test TouchPad, then the OTA from 600070.
+
+**Releasing 600120 by OTA** (the steps proven on 2026-11-21):
+```sh
+build/ota/make-payload.py build out/webosdoctorp310hstnh-ce-600070.jar \
+    out/webosdoctorp320hstnh-ce-600120.jar --out out/ota/600070-600120
+../webos-update-exploration/webos-update-server/tools/sign-manifest.py \
+    out/ota/600070-600120/manifest-inputs.json --copy-payload      # commit the manifest + .sig
+```
+The user copies the payload to the host's `ce-ota/payloads/` and edits `releases.json`
+(a list of NDUIDs for testers, then `"*"`). **Retire 600070-600119 from `releases.json`
+when 600120 goes out.** Devices already on 600119 (testers) need a 600119 -> 600120
+payload and its own release entry, or a reflash; decide which.
+
+## Open after 600120
+
+1. **AT&T.** No 3.2.0 AT&T image exists. Bake the AT&T variant, diff against 600071, sign,
+   one run. The AT&T daily driver has only 89 MB free on `/`: check the payload's `space`.
+2. **The client baked into the image**, if not in 600120 (above).
+3. Smaller: a failure after the data tar has started writing (would leave a half-updated
    rootfs the recovery above does not repair); a power cut during the ramdisk; why LunaCE
    loads no fallback layout or dock file with `IgnoreLegacyCustomizationFiles`
    (KNOWN-ISSUES #18, worked around); an Atlas BrowserServer SIGBUS at the reboot into an
    update (Atlas project); a 3.1.0 SmartKeyService SIGBUS reading `/tmp/kdb.xml` on a first
-   boot; the first-card crash of §2.0a (never seen again).
+   boot; the first-card crash of §2.0a (never seen again); the first boot after an update
+   shows the launcher while ce-ota-finish swaps apps for a minute (cosmetic, looks alarming).
 
 ## Release-note items found on 2026-11-21
 
@@ -117,6 +158,10 @@ reference, with an Exchange account), C on 600070.
   Chinese pack's device ended at 92%).
 - 3.1.0's Full Erase leaves no ringtones or wallpapers (issue #14, KNOWN-ISSUES #16); the
   update repairs it.
+- How to get it: install **OTA Ready** from App Museum II on a 3.1.0 TouchPad; System
+  Updates then offers 3.2.0 (to listed testers first, then everyone). Keep it charged (at
+  least half) and on Wi-Fi; it restarts twice, with a black screen for a while, and the
+  first minute of 3.2.0 shows apps being swapped in. 3.0.5 devices need the Doctor first.
 
 ## Decisions that the user can still reverse
 
@@ -150,3 +195,11 @@ reference, with an Exchange account), C on 600070.
   `ce-test-full.sh` now checks the dock save, the Settings page and the service on the bus.
 - **The OTA client, server and keys live in `../webos-update-exploration`.** Its
   `OTA-3.1.0.md` is the reference. `Docs/OTA-STRATEGY.md` here is stale.
+- **The user edits `releases.json` on the host** as testers sign up. The repo copy is
+  `{"releases": []}`: pull the host's version before committing a change to it, or a push
+  (git-to-deploy) withdraws every tester's offer.
+- **OTAs start at 3.1.0.** 3.0.5 devices get the Doctor; OTA Ready says "Not eligible" there.
+- **The client's checks run on the device and the server cannot switch them off:**
+  TouchPad hardware, signature, from-build, pre-flight file, stock kernel, first use, space.
+  The server's filter is rollout policy only.
+- **busybox sh arithmetic is 32-bit and an error exits the script.** Space math is in KB.
