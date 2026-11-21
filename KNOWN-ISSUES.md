@@ -62,6 +62,27 @@ check that starts at yahoo always fails. 3.2.0 patches them to
 `www.example.com` and `info.cern.ch` (Docs/HOTSPOTS.md). Workaround on 3.1.0:
 dismiss the dashboard.
 
+## 18. 3.2.0 previews: the launcher comes up by category with an empty dock — FIXED in 600117, not yet on a fresh flash
+
+Every 3.2.0 image from 600101 to 600116, on a fresh flash or after a Full Erase:
+all apps and settings on the first page, two icons on Settings, nothing in the
+dock. A device updated from 3.1.0 keeps its saved launcher and is fine until a
+Full Erase.
+
+**Cause.** 600101 set `IgnoreLegacyCustomizationFiles` so the launcher would read
+CE's layout from `/etc/palm` instead of hp.tar's customization copy. With it
+set, LunaCE loads neither fallback file (`/etc/palm/default-launcher-page-layout.json`,
+`/usr/palm/default-dock-positions.json`), whatever they contain: HP's own layout
+at the `/etc/palm` path failed the same way. Nothing is logged except the
+absence of a `staticMultiPageConfiguration : results:` line. Why LunaCE fails
+there is not known. The device test only read the layout file, so it passed.
+
+**Fix (600117).** The setting is gone; `ce-firstboot-tweaks` copies CE's layout
+over the customization copy on every boot, before first use ends. The device
+test now checks for a dock save and a full Settings page. Recovery on an
+affected device: `rm /var/luna/preferences/launcher3/*` and restart Luna, after
+the fix is on it.
+
 ## 14. USB Settings reports "Helper not running" on every fresh flash — DIAGNOSED ON HARDWARE (600070), NOT FIXED
 
 **Severity: high — it is the first thing a user sees in a shipped app, and it is

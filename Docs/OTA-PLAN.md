@@ -760,6 +760,41 @@ down; run against the saved listings the tool gives the same verdicts. Before
 arming, the device must also have finished first use (`ran-first-use`) with
 no `ce-*` job still running: that is a readiness test, apart from the files.
 
+### 2.0l 600115 to 600117: the staged media, the launcher, a third-party language pack (2026-11-21)
+
+Five armed flashes from 600070, both TouchPads, each finished by `ce-ota-finish`
+without help except the first.
+
+- **600115 (C, clean).** The payload now restores the staged customization media
+  (GitHub issue #14; KNOWN-ISSUES #16): 40 ringtones, 28 wallpapers and
+  `Pre.mp3` back under `copy_binaries`, which a 3.1.0 device's reclaim job had
+  deleted. Most of it is hp.tar's sweatshop media, which is in neither rootfs
+  tar; `make-payload.py` takes it from the new JAR's hp.tar
+  (`CUSTOMIZATION_MEDIA`). Payload 22 to 49.5 MB; net rootfs growth 55 MB; `/`
+  89% after, as on a flash. The media step split hp.tar's file names on spaces
+  and did not flag; fixed in 791581c, hand-patched on the device, then
+  finished.
+- **600116 (D, lived-in with Atlas, Videos, Media TLS).** Finished unaided.
+  An Atlas BrowserServer SIGBUS report was written at the reboot into the
+  update, on 3.1.0.
+- **Full Erase on the updated C** brought the media back and wrote the
+  SystemRestore token, and exposed the launcher fault (KNOWN-ISSUES #18): every
+  3.2.0 image to date builds pages by category with an empty dock whenever it
+  has no saved launcher. Fixed in 600117.
+- **600117 (C, with Harvy Tao's "Chinese Patch & IME" 1.0.12).** The pack
+  replaces `/usr/bin/LunaSysMgr` (its Pinyin keyboard is built in) and
+  `/usr/palm/ext-timezones.json`, changes 25 other stock files and adds about
+  1,150. The pre-flight allowed it; the update replaced the two overlapping
+  files and kept the rest. It finished unaided; `/` went to 92% (45 MB free:
+  the pack's 19 MB on top). In Chinese after the update, the UI, fonts and Baidu
+  search were intact; **the Pinyin keyboard was gone.** The pack's prerm checks
+  LunaSysMgr and will refuse to restore anything, and its postinst refuses an
+  unknown LunaSysMgr, so the pack can neither be removed cleanly nor
+  reinstalled until it supports 3.2.0. Release notes should tell its users to
+  remove it before updating.
+- **600117 (D, lived-in with QupZilla and its Qt5 stack, Videos, Media TLS).**
+  Finished unaided; QupZilla still works.
+
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
 | Change | Paths | Notes |
