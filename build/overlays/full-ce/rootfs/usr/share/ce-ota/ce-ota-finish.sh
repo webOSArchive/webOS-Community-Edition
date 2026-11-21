@@ -58,8 +58,8 @@ fi
 mkdir -p "$T" || exit 0
 trap 'rm -rf "$T"' EXIT
 
-# / is read-only; ce-firstboot-tweaks, ce-remove-preloads and
-# ce-reclaim-customization-media open it too. mkdir is atomic: a spinlock.
+# / is read-only; ce-firstboot-tweaks and ce-remove-preloads open it too.
+# mkdir is atomic: a spinlock.
 rootfs_rw() {
     _n=0
     while ! mkdir /tmp/.ce-rootfs-rw.lock 2>/dev/null && [ $_n -lt 60 ]; do sleep 1; _n=$((_n+1)); done
@@ -303,6 +303,19 @@ step_apps() {
             log "apps: $_pkg already matches the staged ipk"
             continue
         fi
+        # ipkg will not install over a higher recorded version, and the app may be
+        # recorded under its real one (ce-preload-versions) or be the feed's copy
+        # of this release. Seen on a TouchPad: SUCCESS from the installer, and
+        # the old files still there. So record the staged file's version first;
+        # ce-preload-versions raises it again afterwards.
+        if [ "$_inst" != "$_ver" ]; then
+            awk -v p="$_pkg" -v v="$_ver" '$1 == "Package:" { on = ($2 == p) }
+                on && $1 == "Version:" { print "Version: " v; on = 0; next } { print }' \
+                $APPS/usr/lib/ipkg/status > $APPS/usr/lib/ipkg/status.ce-new 2>/dev/null \
+                && [ -s $APPS/usr/lib/ipkg/status.ce-new ] \
+                && mv -f $APPS/usr/lib/ipkg/status.ce-new $APPS/usr/lib/ipkg/status
+            rm -f $APPS/usr/lib/ipkg/status.ce-new
+        fi
         log "apps: reinstalling $_pkg $_ver from the staged ipk"
         install_ipk "$_ipk"
         if app_matches_ipk "$_ipk"; then
@@ -350,8 +363,10 @@ step_feeds() {
     # Only a feed copy that is this image's version or older: a newer one the
     # owner installed later is theirs.
     for _pkg in com.palm.app.videos com.palm.app.calculator org.webosarchive.media-tls13; do
-        ls $_info/$_pkg.prerm $_info/$_pkg.postinst $_info/$_pkg.postrm $_info/$_pkg.list \
-            > /dev/null 2>&1 || continue
+        # any of them (ls fails when one is missing, which hid Media TLS's prerm)
+        _any=0
+        for _f in prerm postinst postrm list; do [ -e "$_info/$_pkg.$_f" ] && _any=1; done
+        [ $_any = 1 ] || continue
         _bv=$(baked_version $_pkg); _iv=$(installed_version $_pkg)
         [ -n "$_bv" ] && [ -n "$_iv" ] && ver_le "$_iv" "$_bv" || continue
         rm -f $_info/$_pkg.prerm $_info/$_pkg.postinst $_info/$_pkg.postrm $_info/$_pkg.list
@@ -415,9 +430,9 @@ step_gst() {
 
 # --------------------------------------------------------------- media ----
 # The customization copy runs once per flash, so an updated device never gets
-# a newly staged wallpaper. Copy what is missing, then let the reclaim job
-# remove the staged copies as it does after a flash. Nobody's wallpaper is
-# changed.
+# a newly staged wallpaper. Copy what is missing. The staged copies stay: a
+# Full Erase copies from them (issue #14; the payload restores them on a 3.1.0
+# device whose reclaim job had removed them). Nobody's wallpaper is changed.
 step_media() {
     _stage=/usr/lib/luna/customization/copy_binaries/media/internal
     [ -d $_stage ] || return 0
@@ -431,8 +446,8 @@ step_media() {
         cmp -s "$_src" "$_dst" || { _bad=$((_bad+1)); log "media: FAILED to copy ${_src#$_stage/}"; }
     done
     [ $_bad -eq 0 ] || return 1
-    rm -f $PREFS/ce-customization-media-reclaimed
-    log "media: staged media copied; ce-reclaim-customization-media removes the staged copies next boot"
+    rm -f $PREFS/ce-customization-media-reclaimed /var/log/ce-reclaim-customization-media.log
+    log "media: staged media copied; the staged copies stay for a Full Erase"
     return 0
 }
 
@@ -480,7 +495,7 @@ if [ "$(cat $FLAG 2>/dev/null)" != "$MARK" ]; then
     step_seed  || _fail=$((_fail+1))
     step_apps  || _fail=$((_fail+1))
     # the installer has just recorded the staged files' versions again
-    [ -x /usr/palm/ce-seed/ce-preload-versions.sh ] && sh /usr/palm/ce-seed/ce-preload-versions.sh
+    [ -x /usr/palm/ce-seed/ce-preload-versions.sh ] && sh /usr/palm/ce-seed/ce-preload-versions.sh finish
     step_feeds || _fail=$((_fail+1))
     step_gst   || _fail=$((_fail+1))
     step_media || _fail=$((_fail+1))
