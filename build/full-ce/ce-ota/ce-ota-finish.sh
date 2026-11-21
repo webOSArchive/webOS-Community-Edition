@@ -10,7 +10,8 @@
 #   apps    the apps the image carries as staged ipks (Calendar, Email, ...).
 #           A flash installs them on first boot; an installed device keeps its
 #           old copy when the ipk changed under the same version
-#   feeds   leftovers of the feed versions of what this image now bakes
+#   feeds   leftovers of the feed versions of what this image now bakes,
+#           and feed packages' records of changes the image now ships itself
 #   gst     the GStreamer registry, which caches the plugin the image replaced
 #   media   the default wallpaper, staged for a copy that runs once per flash
 #   logo    bootie's still logo in NVRAM, which only the Doctor writes
@@ -358,6 +359,43 @@ appinfo_version() {
     sed -n 's/.*"version"[^"]*"\([^"]*\)".*/\1/p' "$1/appinfo.json" 2>/dev/null | head -1
 }
 
+# Is $1 a file this image ships, as shipped? Every rootfs file is in some
+# package's md5sums ("md5 *./path"): the stock owner's, rewritten when CE
+# replaced the file, or org.webosarchive.ce-files.md5sums for CE's own.
+image_owns() {
+    _want=$(cat /usr/lib/ipkg/info/*.md5sums 2>/dev/null | awk -v p="*.$1" '$2 == p { print $1; exit }')
+    [ -n "$_want" ] && [ "$(md5of "$1")" = "$_want" ]
+}
+
+# Emoji for webOS (org.webosarchive.emoji, feed): its postinst records in its
+# state file what it changed (webkit=patched, font=installed) and its prerm
+# undoes exactly that. Once this image ships the same WebKit and font, those
+# records point at the image's own files: removing the package in Preware would
+# put the stock WebKit bytes back and delete the image's CE-Emoji.ttf, and the
+# image would lose emoji. Seen on a 3.1.0 daily driver whose files were already
+# byte-identical to 3.2.0's. Drop each record whose file is now the image's.
+feed_emoji() {
+    _st=/var/palm/org.webosarchive.emoji.state
+    _font=/usr/share/fonts/CE-Emoji.ttf
+    [ -f $_st ] || return 0
+    if grep -q '^webkit=' $_st && image_owns /usr/lib/libWebKitLuna.so; then
+        grep -v '^webkit=' $_st > $_st.ce-new; mv -f $_st.ce-new $_st
+        log "feeds: Emoji for webOS no longer owns libWebKitLuna.so (this image ships it)"
+    fi
+    if grep -q '^font=' $_st && image_owns $_font; then
+        grep -v '^font=' $_st > $_st.ce-new; mv -f $_st.ce-new $_st
+        if [ -f $_font.emoji-orig ]; then     # its backup of an older font
+            rootfs_rw
+            rm -f $_font.emoji-orig
+            rootfs_ro
+        fi
+        log "feeds: Emoji for webOS no longer owns CE-Emoji.ttf (this image ships it)"
+    fi
+    # An empty record: its prerm exits at once ([ -f STATE ] || exit 0).
+    [ -s $_st ] || rm -f $_st
+    return 0
+}
+
 step_feeds() {
     _info=$APPS/usr/lib/ipkg/info
     # Only a feed copy that is this image's version or older: a newer one the
@@ -400,6 +438,7 @@ step_feeds() {
         touch "$T/apps-changed"
         log "feeds: removed the cryptofs copy of $_app ($_cv) that the baked $_bv shadows"
     done
+    feed_emoji
     rm -f $APPS/usr/palm/applications/com.palm.app.photos/source/*.webosce-orig 2>/dev/null
     _left=$(ls /usr/lib/gstreamer-0.10/*.webosce-orig \
                /usr/palm/applications/com.palm.app.videoplayer/*.webosce-orig \

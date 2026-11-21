@@ -40,7 +40,7 @@ from PIL import Image, ImageDraw
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
-DISC_PX = 93.0   # stock badge: 69 x 71; this is 70 x 1.15 x 1.10 x 1.05
+DISC_PX = 109.0  # artwork with glow 140 x 131 (was 93: 120 x 112; stock badge 69 x 71)
 CANVAS = 200
 LIT = 24         # above this a pixel is part of the artwork, not the background
 ABOUT_PX = 92    # the About scene's moon, which hangs from the header strip
