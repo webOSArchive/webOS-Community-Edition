@@ -62,7 +62,7 @@ check that starts at yahoo always fails. 3.2.0 patches them to
 `www.example.com` and `info.cern.ch` (Docs/HOTSPOTS.md). Workaround on 3.1.0:
 dismiss the dashboard.
 
-## 19. 3.2.0 previews: Photos cannot save an edit after a fresh flash or a Full Erase — FIXED for 600118, not yet baked
+## 19. 3.2.0 previews: Photos cannot save an edit after a fresh flash or a Full Erase — FIXED for 600119, not yet baked
 
 The rotate/crop editor writes through `org.webosarchive.photos.service`, which
 lives in the Photos preload on cryptofs. The first-boot preload pass installs
@@ -73,8 +73,14 @@ LunaSysMgr's installer, which registers it, until a Full Erase.
 
 **Fix.** A new job, `ce-register-cryptofs-services`, writes the role and
 `.service` files on both hubs every boot when they are missing, runs
-`ls-control scan-services` (no reboot needed) and verifies on the bus. Tested
-on the TouchPad by hand.
+`ls-control scan-services` (no reboot needed) and verifies on the bus. In
+600118 it registered the service after a Full Erase, but the save still hung:
+the service's jail (`jail_triton-inst.conf`) mounts `/var/palm/tokens` and,
+unlike the default and game jails, never creates it, so after a Full Erase the
+jailer fails ("failed to mount directory ... /var/palm/tokens") until some other
+app happens to create it. The job now creates it as `jail_default.conf` does
+(for 600119). Stock 3.0.5's own triton-inst services would have the same latent
+fault.
 
 ## 18. 3.2.0 previews: the launcher comes up by category with an empty dock — FIXED in 600117, not yet on a fresh flash
 

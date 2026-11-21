@@ -4569,6 +4569,8 @@ def main():
     # installer writes, a role and a .service file on both hubs, and have the
     # hub rescan. Every boot: a Full Erase wipes /var/palm/ls2 and the preload
     # pass installs again. Proven by hand on the test TouchPad; no reboot needed.
+    # It also creates /var/palm/tokens, which the service's jail needs and which
+    # does not exist after a Full Erase until some other app's jail makes it.
     if not CE_CRYPTOFS_SERVICES:
         sys.exit("ERROR: no CE cryptofs services recorded; the Photos edit did not run")
     for n in CE_CRYPTOFS_SERVICES:
@@ -4590,6 +4592,11 @@ def main():
       "    LOG=/var/log/ce-register-cryptofs-services.log\n"
       "    log() { echo \"$(date 2>/dev/null) $*\" >> $LOG 2>/dev/null; }\n"
       "    L2=/var/palm/ls2\n"
+      "    # The service runs in the triton-inst jail, which mounts /var/palm/tokens\n"
+      "    # but, unlike the default and game jails, never creates it. After a Full\n"
+      "    # Erase nothing has, so the jailer fails and the service never starts\n"
+      "    # (seen on 600118). Create it the way jail_default.conf does.\n"
+      "    mkdir -p /var/palm/tokens; chmod 770 /var/palm/tokens; chown 0.5000 /var/palm/tokens\n"
       "    changed=\"\"\n"
       f"    for N in {' '.join(CE_CRYPTOFS_SERVICES)}; do\n"
       "        [ -f $L2/services/pub/$N ] && [ -f $L2/services/prv/$N ] && continue\n"

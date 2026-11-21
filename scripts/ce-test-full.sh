@@ -580,7 +580,7 @@ lv=$(echo "$L" | grep -n 'com.palm.app.videos_default' | cut -d: -f1)
 # 23b. CE's cryptofs services on the bus (the preload pass does not register them)
 for N in org.webosarchive.photos.service; do
   R=$(luna-send -n 1 palm://$N/ceprobe '{}' </dev/null 2>&1)
-  case "$R" in *"Unknown method"*) P "23b $N on the bus" ;; *) F "23b $N not on the bus: Photos cannot save edits" ;; esac
+  case "$R" in *"Unknown method"*) P "23b $N on the bus" ;; *) F "23b $N not on the bus or cannot start: Photos cannot save edits ($R)" ;; esac
 done
 
 # 24. HP branding: App Catalog art (md5 = system/ copies) and account templates
