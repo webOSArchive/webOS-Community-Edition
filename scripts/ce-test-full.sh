@@ -555,8 +555,22 @@ have /var/luna/preferences/used-first-card && P "23  used-first-card marker pres
   || F "23  used-first-card missing: the tutorial will show"
 grep -q "USB Connected" /usr/lib/luna/system/luna-systemui/data/StoragedService.js 2>/dev/null \
   && P "23  USB banner (StoragedService.js is CE's)" || F "23  StoragedService.js is stock: USB popup instead of banner"
+# LunaCE loads no fallback layout or dock file when IgnoreLegacyCustomizationFiles
+# is set: the launcher must read the customization copy, which ce-firstboot-tweaks
+# replaces with CE's.
 grep -q '^IgnoreLegacyCustomizationFiles=true' /etc/palm/launcher3/launcher_operational_settings.conf 2>/dev/null \
-  && P "23  launcher ignores the payload layout (IgnoreLegacyCustomizationFiles)" || F "23  IgnoreLegacyCustomizationFiles not set"
+  && F "23  IgnoreLegacyCustomizationFiles is set: the launcher loads no layout and no dock" \
+  || P "23  launcher reads the customization layout"
+cmp -s /etc/palm/default-launcher-page-layout.json /usr/lib/luna/customization/default-launcher-page-layout.json \
+  && P "23  CE launcher layout is in the customization path" || F "23  customization launcher layout is not CE's"
+# What the launcher actually built, not what the files say: a filled dock and a
+# Settings page. A layout that failed to load leaves no dock save and two icons
+# on Settings.
+LP=/var/luna/preferences/launcher3
+ls $LP/quicklaunch_*.qlsave >/dev/null 2>&1 && P "23  dock save exists" || F "23  no dock save: the dock is empty"
+np=0
+for f in $LP/page_*; do strings "$f" 2>/dev/null | grep -q '^pagedesignator=prefs' && np=$(strings "$f" | grep -c '^[0-9]*\\id=') ; done
+[ "$np" -ge 10 ] && P "23  Settings page holds $np icons" || F "23  Settings page holds $np icons: the layout did not load"
 L=$(cat /etc/palm/default-launcher-page-layout.json 2>/dev/null | tr -d " \t\r\n" | tr "," "\n")
 lm=$(echo "$L" | grep -n 'com.palm.app.musicplayer_default' | cut -d: -f1)
 lv=$(echo "$L" | grep -n 'com.palm.app.videos_default' | cut -d: -f1)

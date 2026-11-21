@@ -533,15 +533,16 @@ def bake_launcher_layout(tmp, stock_dock):
     customization payload (hp.tar / att.tar), rewritten for CE: Video Player
     on the Apps tab after Music, the Settings tab alphabetical.
 
-    The launcher prefers /usr/lib/luna/customization/default-launcher-page-
+    The launcher reads /usr/lib/luna/customization/default-launcher-page-
     layout.json, which the Doctor installs from that payload AFTER the rootfs,
-    so the image cannot replace it. Instead the result goes to the rootfs
-    fallback (/etc/palm/default-launcher-page-layout.json) and the operational
-    settings set IgnoreLegacyCustomizationFiles, which makes the launcher skip
-    the customization copies of the page layout AND the dock positions. The
-    dock file is therefore checked: the payload's must equal the rootfs one,
-    or ignoring it would change the dock. Only a launcher with no saved layout
-    (a fresh flash) reads any of this."""
+    so the image cannot replace it. The result goes to the rootfs
+    (/etc/palm/default-launcher-page-layout.json) and ce-firstboot-tweaks
+    copies it over the customization one on every boot, early, before first use
+    ends and the launcher is first built. (600101-600116 relied on
+    IgnoreLegacyCustomizationFiles and the /etc/palm fallback instead, which
+    LunaCE never loads: see the operational settings above.) The dock comes
+    from the payload's file, which must equal the rootfs one. Only a launcher
+    with no saved layout (a fresh flash, a Full Erase) reads any of this."""
     import zipfile
     log("tier: launcher layout (Video Player after Music, Settings alphabetical)")
     with zipfile.ZipFile(OEM_JAR) as jz:
@@ -565,7 +566,7 @@ def bake_launcher_layout(tmp, stock_dock):
     cust_dock = json.load(open(os.path.join(cust, "default-dock-positions.json")))
     if cust_dock != json.loads(stock_dock):
         sys.exit(f"ERROR: {cn} {ipkname}: its dock positions differ from the rootfs "
-                 "default; IgnoreLegacyCustomizationFiles would change the dock")
+                 "default; CE does not edit the dock, so this payload is unexpected")
     pages = {p.get("title"): p for p in layout}
     if not {"apps", "prefs"} <= set(pages):
         sys.exit(f"ERROR: {cn} layout has no apps/prefs page: {sorted(pages)}")
@@ -3290,9 +3291,17 @@ def main():
     # fall back to the predefined marshal exactly as before), map the private
     # keyword "wosa-settings" to the 'prefs' page designator, and stamp that
     # keyword into the baked USB appinfo.json.
+    #
+    # No IgnoreLegacyCustomizationFiles: with it set, LunaCE loads NEITHER
+    # fallback file (/etc/palm/default-launcher-page-layout.json,
+    # /usr/palm/default-dock-positions.json), whatever they hold, and silently
+    # builds pages by category with an empty dock. Seen on 600115 after a Full
+    # Erase and reproduced by clearing the saved launcher; HP's own layout at
+    # the /etc/palm path failed the same way. Cause in LunaCE not found. So the
+    # launcher reads the customization copies, as on 3.1.0, and
+    # ce-firstboot-tweaks puts CE's layout there (bake_launcher_layout).
     w("etc/palm/launcher3/launcher_operational_settings.conf",
-      "[Main]\nPreferAppKeywordsForAppPlacement=true\n"
-      "IgnoreLegacyCustomizationFiles=true\n", 0o644)
+      "[Main]\nPreferAppKeywordsForAppPlacement=true\n", 0o644)
     bake_launcher_layout(tmp, sdata("./usr/palm/default-dock-positions.json"))
 
     # 15b2) full brightness until the user sets one. A TouchPad's backlight has
@@ -4019,6 +4028,26 @@ def main():
         "\n"
         "script\n"
         + wp_block +
+        # CE's launcher layout into the customization path (bake_launcher_layout).
+        # Every boot, before the once-per-flash flag: a Full Erase rebuilds the
+        # launcher from this file, and the copy is a no-op once it matches.
+        "    CL=/usr/lib/luna/customization/default-launcher-page-layout.json\n"
+        "    if [ -f /etc/palm/default-launcher-page-layout.json ] && \\\n"
+        "       ! cmp -s /etc/palm/default-launcher-page-layout.json \"$CL\"; then\n"
+        "        L=/tmp/.ce-rootfs-rw.lock\n"
+        "        n=0\n"
+        "        while ! mkdir $L 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n+1)); done\n"
+        "        mount -o remount,rw / 2>/dev/null || true\n"
+        "        cp /etc/palm/default-launcher-page-layout.json \"$CL\" 2>/dev/null || true\n"
+        "        sync\n"
+        "        mount -o remount,ro / 2>/dev/null || true\n"
+        "        rmdir $L 2>/dev/null || true\n"
+        "        cmp -s /etc/palm/default-launcher-page-layout.json \"$CL\" \\\n"
+        "            && echo \"$(date 2>/dev/null) CE launcher layout placed in the customization path\" \\\n"
+        "                 >> /var/log/ce-firstboot-tweaks.log 2>/dev/null \\\n"
+        "            || echo \"$(date 2>/dev/null) FAILED to place the CE launcher layout\" \\\n"
+        "                 >> /var/log/ce-firstboot-tweaks.log 2>/dev/null\n"
+        "    fi\n"
         "    FLAG=/var/luna/preferences/ce-cryptofs-deshadowed\n"
         "    LOG=/var/log/ce-firstboot-tweaks.log\n"
         "    log() { echo \"$(date 2>/dev/null) $*\" >> \"$LOG\" 2>/dev/null; }\n"
