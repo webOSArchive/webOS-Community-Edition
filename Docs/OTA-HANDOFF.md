@@ -85,10 +85,14 @@ reference, with an Exchange account), C on 600070.
 
 ## Open, in the order I would take them
 
-1. **The client** (`../webos-update-exploration`, ask before editing it). Do what the by-hand
-   recipe does: download to `/media/internal`, write `urls` in the format above (its
-   `direct-update.sh` writes a URL list, which `PmUpdater` refuses), run the pre-flight rule
-   on the device, verify the signature, arm.
+1. **The client: done on the bench (2026-11-21, sibling repo 7d00e88).** OTA Ready 3.0.0
+   does the by-hand recipe from System Updates' Install Now, with a signed manifest and
+   the server's per-release device filter (`releases.json`). Device C went 600070 -> 600119
+   that way. Its notes: `../webos-update-exploration/otaready-app/CLAUDE.md`. Left: the
+   production deploy (payload copied to the host, NDUIDs in `releases.json`), the Museum
+   install on a fresh 3.1.0 and a 3.0.5 device, and baking the client into 3.2.0
+   (`/usr/share/otaready/baked`, its own bridge registration). `make-payload.py` now writes
+   the `space` the client checks into `manifest-inputs.json`.
 2. **Signing and the manifest** (tier field, target binding). `manifest-inputs.json`
    carries what the signer needs.
 3. **AT&T.** No 3.2.0 AT&T image exists. Bake the AT&T variant, diff against 600071, one run.

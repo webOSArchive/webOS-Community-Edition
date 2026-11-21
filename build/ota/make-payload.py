@@ -116,6 +116,11 @@ def record_of(ti, body):
     return rec
 
 
+def file_bytes(recs):
+    """Bytes of regular-file content in an image record set (hard links counted once)."""
+    return sum(r.get("size", 0) for r in recs.values() if r["type"] == "file")
+
+
 TYPE_NAMES = {
     tarfile.REGTYPE: "file", tarfile.AREGTYPE: "file", tarfile.DIRTYPE: "dir",
     tarfile.SYMTYPE: "symlink", tarfile.LNKTYPE: "hardlink",
@@ -562,6 +567,12 @@ def cmd_build(args):
                       "md5": old[PREFLIGHT_FILE]["md5"]},   # the device has md5sum only
         "counts": {k: len(v) for k, v in ops.items()},
         "tier": "armed-flash",
+        # What the client checks before arming. Running out of room on / inside the
+        # ramdisk leaves a half-written rootfs that no retry repairs, so the client
+        # needs the free space on / to cover the net growth plus the largest file
+        # (the old copy and the new one coexist while tar replaces it).
+        "space": {"rootfs_growth": file_bytes(new) - file_bytes(old),
+                  "largest_file": max([new[p].get("size", 0) for p in ops["data"]] or [0])},
     }
     with open(os.path.join(args.out, "manifest-inputs.json"), "w") as f:
         json.dump(manifest_inputs, f, indent=1, sort_keys=True)
