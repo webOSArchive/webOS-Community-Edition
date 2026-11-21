@@ -6,6 +6,11 @@
     LOG=/var/log/ce-register-cryptofs-services.log
     log() { echo "$(date 2>/dev/null) $*" >> $LOG 2>/dev/null; }
     L2=/var/palm/ls2
+    # The service runs in the triton-inst jail, which mounts /var/palm/tokens
+    # but, unlike the default and game jails, never creates it. After a Full
+    # Erase nothing has, so the jailer fails and the service never starts
+    # (seen on 600118). Create it the way jail_default.conf does.
+    mkdir -p /var/palm/tokens; chmod 770 /var/palm/tokens; chown 0.5000 /var/palm/tokens
     changed=""
     for N in org.webosarchive.photos.service; do
         [ -f $L2/services/pub/$N ] && [ -f $L2/services/prv/$N ] && continue
