@@ -18,8 +18,8 @@ failures was recovered without the Doctor. **The device side is done, and so is 
 client:** OTA Ready 3.0.0 from App Museum II takes a 3.1.0 TouchPad to 3.2.0 from System
 Updates' Install Now, with a signed manifest from swupdate.webosarchive.org, and a
 per-release device filter on the server decides who is offered it. Proven on two devices
-in production. **Not done:** the release build 600120 (Monday), baking the client into it,
-AT&T. **600119 is the latest image; two changes wait for 600120 (below).**
+in production. The client stays in the Museum (not baked into 3.2.0, decided).
+**Not done:** the release build 600120 (Monday), AT&T. **600119 is the latest image; two changes wait for 600120 (below).**
 
 ## What exists
 
@@ -116,13 +116,36 @@ Testers report on 600119 until then; fold their findings in first.
 **To decide or do before baking:**
 1. **Microsoft client id** in `com.palm.service.oauth/providers.json`, if their
    re-verification has come back.
-2. **Bake the client into 600120?** The user chose "plan for it now" (2026-11-21). Not built
-   yet: bake.py would ship `/usr/bin/otaready-daemon`, `/usr/share/otaready/ota-manifest.js`
-   and `/usr/share/otaready/baked`, the upstart job, the patched `UpdatesApp.js` (with an
-   appinfo version bump), and the bridge service under `/usr/palm/services` with static
-   rootfs ls2 files. The Museum package already steps aside when `baked` exists. Ask before
-   building it; confirm whether it goes into 600120 or a later release.
+2. **The client is NOT baked into 3.2.0 (decided 2026-11-21).** OTA Ready from App Museum
+   II stays the only client; revisit only if there is another OTA after 3.2.0. See "The
+   client stays in the Museum" below.
 3. Then the usual: bake, `ce-test-full.sh`, flash a test TouchPad, then the OTA from 600070.
+
+### The client stays in the Museum (decided 2026-11-21)
+
+Every 3.2.0 user, however they got there, should install OTA Ready (or keep it installed)
+to receive future updates. If they uninstalled it, or never had it, reinstalling it is all
+it takes.
+- **Updated by OTA:** the client survives the update (the payload replaces only the files it
+  names), so the device keeps getting offers while OTA Ready stays installed.
+- **Uninstalled:** the prerm removes the whole client (daemon, job, helper, bridge) and puts
+  the stock System Updates back (keeping 3.2.0's own appinfo). No offers until reinstalled.
+- **Flashed with the 3.2.0 Doctor:** no client until OTA Ready is installed, as on 3.1.0.
+- **Full Erase:** wipes the app and its bridge (cryptofs) but probably leaves the rootfs half;
+  reinstall OTA Ready even if it looks installed (untested).
+- Reinstalling on 3.2.0 is safe: the postinst saves 3.2.0's own System Updates as the stock
+  copy.
+- An offer still needs a release that starts at the device's build (600070 -> 600120;
+  600119 -> 600120 for testers; AT&T from 600071, not built) and an entry in
+  `releases.json` that admits the device.
+
+Why not baked (the risks weighed): the baked and Museum copies of the bridge service would
+both be registered after an OTA, and ls-hubd drops both (the device could not install);
+a baked client can only be fixed by an OTA, which a broken client cannot deliver (the
+Museum package steps aside for a baked one); every 3.2.0 device would contact the server
+unasked; and the rootfs-registered paths are untested. If it is ever baked: fix the double
+registration (ce-ota-finish removes the Museum registration, or another service name),
+let a newer Museum version replace the baked one, and test before the bake.
 
 **Releasing 600120 by OTA** (the steps proven on 2026-11-21):
 ```sh
@@ -140,7 +163,7 @@ payload and its own release entry, or a reflash; decide which.
 
 1. **AT&T.** No 3.2.0 AT&T image exists. Bake the AT&T variant, diff against 600071, sign,
    one run. The AT&T daily driver has only 89 MB free on `/`: check the payload's `space`.
-2. **The client baked into the image**, if not in 600120 (above).
+2. **The client baked into the image:** not planned; only if there is another OTA (above).
 3. Smaller: a failure after the data tar has started writing (would leave a half-updated
    rootfs the recovery above does not repair); a power cut during the ramdisk; why LunaCE
    loads no fallback layout or dock file with `IgnoreLegacyCustomizationFiles`
@@ -159,7 +182,9 @@ payload and its own release entry, or a reflash; decide which.
 - 3.1.0's Full Erase leaves no ringtones or wallpapers (issue #14, KNOWN-ISSUES #16); the
   update repairs it.
 - How to get it: install **OTA Ready** from App Museum II on a 3.1.0 TouchPad; System
-  Updates then offers 3.2.0 (to listed testers first, then everyone). Keep it charged (at
+  Updates then offers 3.2.0 (to listed testers first, then everyone). Keep OTA Ready
+  installed to keep getting updates; on any 3.2.0 device (updated, flashed, or after a Full
+  Erase) installing or reinstalling it is all that is needed. Keep it charged (at
   least half) and on Wi-Fi; it restarts twice, with a black screen for a while, and the
   first minute of 3.2.0 shows apps being swapped in. 3.0.5 devices need the Doctor first.
 

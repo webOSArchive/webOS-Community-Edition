@@ -1,3 +1,45 @@
+# webOS CE 3.2.0 — Release Notes (DRAFT, not released)
+
+*Draft for the 3.2.0 release (planned build 600120). The 3.1.0 release notes follow below,
+unchanged.*
+
+## Getting 3.2.0, and staying up to date
+
+**From webOS CE 3.1.0, by over-the-air update.** Install **OTA Ready** from App Museum II.
+System Updates then offers webOS CE 3.2.0; tap **Install Now**. Keep the TouchPad charged
+(at least half) and on Wi-Fi. It restarts twice: the screen stays black for a while, then
+shows the updater, then 3.2.0 starts, and for its first minute apps are being swapped in.
+System Updates opens by itself when it is done. Your apps, data, mail and settings stay.
+
+**From webOS 3.0.5 or earlier:** updates start at webOS CE 3.1.0. Flash 3.2.0 (or 3.1.0)
+with the webOS Doctor; see https://docs.webosarchive.org. OTA Ready says "Not eligible" on
+these devices.
+
+**Keep OTA Ready installed to keep getting updates.** It is what lets System Updates find
+and install webOS CE updates, on every 3.2.0 TouchPad however it got there:
+- updated from 3.1.0 by OTA: OTA Ready is already installed; leave it;
+- flashed with the 3.2.0 Doctor: install OTA Ready from App Museum II;
+- after a Full Erase: reinstall OTA Ready, even if it is listed as installed;
+- uninstalled it: reinstall it. Removing OTA Ready removes the update client and puts the
+  stock System Updates back; reinstalling restores everything.
+
+Updates are offered in stages: to testers first, then to everyone. OTA Ready shows your
+device's ID (NDUID) under Device Details if you are asked for it.
+
+**Before updating:**
+- Remove Harvy Tao's "Chinese Patch & IME" first: the update replaces the system files it
+  patched, so Pinyin input would stop working and the pack could no longer be removed or
+  reinstalled cleanly.
+- The update needs about 76 MB free on the system partition. Devices with many system
+  patches or packages (Qt5 and its SDK, for one) have less; System Updates says so if
+  there is not enough room, and nothing is changed.
+- Only the HP TouchPad (Wi-Fi) is offered this update. The 4G/AT&T TouchPad's update is
+  not ready yet.
+
+**Fixed by the update:** 3.1.0's Full Erase left no ringtones or wallpapers (issue #14).
+
+---
+
 # webOS CE 3.1.0 — Release Notes
 
 **Release — BUILDMARK 600070** (2026-09-03)
