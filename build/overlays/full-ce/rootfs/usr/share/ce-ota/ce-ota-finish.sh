@@ -438,6 +438,11 @@ step_media() {
     [ -d $_stage ] || return 0
     grep -q " /media/internal " /proc/mounts || { log "media: /media/internal not mounted -- later"; return 1; }
     _bad=0
+    # hp.tar's ringtones have spaces in their names ("Rain Dance (short).mp3"):
+    # split find's output on newlines only.
+    _ifs=$IFS
+    IFS='
+'
     for _src in $(find $_stage -type f 2>/dev/null); do
         _dst=/media/internal/${_src#$_stage/}
         [ -e "$_dst" ] && continue
@@ -445,6 +450,7 @@ step_media() {
         cp "$_src" "$_dst" 2>/dev/null
         cmp -s "$_src" "$_dst" || { _bad=$((_bad+1)); log "media: FAILED to copy ${_src#$_stage/}"; }
     done
+    IFS=$_ifs
     [ $_bad -eq 0 ] || return 1
     rm -f $PREFS/ce-customization-media-reclaimed /var/log/ce-reclaim-customization-media.log
     log "media: staged media copied; the staged copies stay for a Full Erase"
