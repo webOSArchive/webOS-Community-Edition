@@ -1,0 +1,12 @@
+# ce-register-cryptofs-services — webOS CE: put the services CE ships in
+# its staged preloads on the bus. The preload pass installs them with plain
+# ipkg, which writes no hub registration. See bake.py (b-1).
+
+start on stopped finish
+start on first-use-finished
+
+console none
+
+script
+    exec sh -e /usr/palm/ce-seed/jobs/ce-register-cryptofs-services.sh
+end script
