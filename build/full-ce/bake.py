@@ -630,6 +630,10 @@ def read_rootfs_names(tgz, prefixes):
     return names
 
 
+# Bus names of the services CE ships inside staged preloads (cryptofs). Filled
+# while the preloads are edited; ce-register-cryptofs-services registers them.
+CE_CRYPTOFS_SERVICES = []
+
 # Every file this script authors, so the verify pass at the end can check the
 # ones whose failure mode is silent. Python syntax errors stop the build
 # instantly; a busted line of shell inside one of these string literals ships
@@ -2234,6 +2238,10 @@ def main():
             if os.path.exists(dst):
                 sys.exit(f"ERROR: stock Photos staged ipk already has usr/palm/{sub}")
             shutil.copytree(os.path.join(palm, sub), dst, symlinks=True)
+        # The preload pass (app-install, plain ipkg) installs the service's files
+        # but never registers it on the bus; ce-register-cryptofs-services does.
+        CE_CRYPTOFS_SERVICES.append(json.load(open(os.path.join(
+            palm, "services/org.webosarchive.photos.service/services.json")))["id"])
         log(f"  app tree + photo-editor service from {os.path.basename(IPK['photos'])}")
 
     def edit_clock(approot):
@@ -4551,6 +4559,67 @@ def main():
       "    rm -f /media/internal/downloads/.ce-probe.ipk 2>/dev/null\n"
       "end script\n", 0o644)
     log("  ce-register-ipk-handler job installed (runtime addResourceHandler)")
+
+    # (b-1) CE's cryptofs services onto the bus. A preload's first-boot install
+    # (app-install, plain ipkg: a fresh flash and every Full Erase) unpacks a
+    # service but writes no hub registration; only LunaSysMgr's installer does
+    # (an OTA goes through it, in ce-ota-finish). Without it the Photos editor
+    # cannot save: "Service does not exist", ls-hubd "Service not listed in
+    # service files" (seen on 600117 after a Full Erase). So write what that
+    # installer writes, a role and a .service file on both hubs, and have the
+    # hub rescan. Every boot: a Full Erase wipes /var/palm/ls2 and the preload
+    # pass installs again. Proven by hand on the test TouchPad; no reboot needed.
+    if not CE_CRYPTOFS_SERVICES:
+        sys.exit("ERROR: no CE cryptofs services recorded; the Photos edit did not run")
+    for n in CE_CRYPTOFS_SERVICES:
+        if n.startswith("com.palm.") or not n.endswith(".service"):
+            # com.palm.* would run on the private hub and hang (outbound []), and
+            # a launcher file not ending in .service is ignored by D-Bus.
+            sys.exit(f"ERROR: cryptofs service {n}: must be outside com.palm and end in .service")
+    w("etc/event.d/ce-register-cryptofs-services",
+      "# ce-register-cryptofs-services — webOS CE: put the services CE ships in\n"
+      "# its staged preloads on the bus. The preload pass installs them with plain\n"
+      "# ipkg, which writes no hub registration. See bake.py (b-1).\n"
+      "\n"
+      "start on stopped finish\n"
+      "start on first-use-finished\n"
+      "\n"
+      "console none\n"
+      "\n"
+      "script\n"
+      "    LOG=/var/log/ce-register-cryptofs-services.log\n"
+      "    log() { echo \"$(date 2>/dev/null) $*\" >> $LOG 2>/dev/null; }\n"
+      "    L2=/var/palm/ls2\n"
+      "    changed=\"\"\n"
+      f"    for N in {' '.join(CE_CRYPTOFS_SERVICES)}; do\n"
+      "        [ -f $L2/services/pub/$N ] && [ -f $L2/services/prv/$N ] && continue\n"
+      "        D=/media/cryptofs/apps/usr/palm/services/$N\n"
+      "        # the preload pass may not have installed it yet: wait up to 15 minutes\n"
+      "        n=0\n"
+      "        while [ ! -f $D/services.json ] && [ $n -lt 90 ]; do sleep 10; n=$((n+1)); done\n"
+      "        if [ ! -f $D/services.json ]; then log \"$N: not installed -- next boot\"; continue; fi\n"
+      "        mkdir -p $L2/roles/pub $L2/roles/prv $L2/services/pub $L2/services/prv\n"
+      "        for B in pub prv; do\n"
+      "            printf '{\\n\\t\"role\": {\\n\\t\\t\"exeName\": \"js\",\\n\\t\\t\"type\": \"regular\",\\n\\t\\t\"allowedNames\": [\"%s\"]\\n\\t},\\n\\t\"permissions\": [\\n\\t\\t{\\n\\t\\t\\t\"service\": \"%s\",\\n\\t\\t\\t\"outbound\": [\"*\"],\\n\\t\\t\\t\"inbound\": [\"*\"]\\n\\t\\t}\\n\\t]\\n}\\n' $N $N > $L2/roles/$B/$N.json\n"
+      "            printf '[D-BUS Service]\\nName=%s\\nExec=/usr/bin/run-js-service -n %s\\n' $N $D > $L2/services/$B/$N\n"
+      "        done\n"
+      "        changed=\"$changed $N\"\n"
+      "    done\n"
+      "    [ -n \"$changed\" ] || exit 0\n"
+      "    ls-control scan-services >/dev/null 2>&1\n"
+      "    sleep 3\n"
+      "    # verify on the bus, not the files: an unknown method means the hub found it\n"
+      "    for N in $changed; do\n"
+      "        for P in \"\" \"-P\"; do\n"
+      "            R=$(luna-send $P -n 1 palm://$N/ceprobe '{}' </dev/null 2>&1)\n"
+      "            case \"$R\" in\n"
+      "                *\"Unknown method\"*) log \"$N: registered ($P)\" ;;\n"
+      "                *) log \"$N: NOT on the bus ($P): $R\" ;;\n"
+      "            esac\n"
+      "        done\n"
+      "    done\n"
+      "end script\n", 0o644)
+    log(f"  ce-register-cryptofs-services job installed: {' '.join(CE_CRYPTOFS_SERVICES)}")
 
     # (b-2) Video mimetypes -> the CE Videos app, the same way. The stock
     # system-default entries point at com.palm.app.videoplayer (streamable);
