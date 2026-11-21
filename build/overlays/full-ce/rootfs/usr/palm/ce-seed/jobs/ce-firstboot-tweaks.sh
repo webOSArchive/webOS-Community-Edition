@@ -24,6 +24,23 @@
             || echo "$(date 2>/dev/null) FAILED to patch customization.json" \
                  >> /var/log/ce-firstboot-tweaks.log 2>/dev/null
     fi
+    CL=/usr/lib/luna/customization/default-launcher-page-layout.json
+    if [ -f /etc/palm/default-launcher-page-layout.json ] && \
+       ! cmp -s /etc/palm/default-launcher-page-layout.json "$CL"; then
+        L=/tmp/.ce-rootfs-rw.lock
+        n=0
+        while ! mkdir $L 2>/dev/null && [ $n -lt 60 ]; do sleep 1; n=$((n+1)); done
+        mount -o remount,rw / 2>/dev/null || true
+        cp /etc/palm/default-launcher-page-layout.json "$CL" 2>/dev/null || true
+        sync
+        mount -o remount,ro / 2>/dev/null || true
+        rmdir $L 2>/dev/null || true
+        cmp -s /etc/palm/default-launcher-page-layout.json "$CL" \
+            && echo "$(date 2>/dev/null) CE launcher layout placed in the customization path" \
+                 >> /var/log/ce-firstboot-tweaks.log 2>/dev/null \
+            || echo "$(date 2>/dev/null) FAILED to place the CE launcher layout" \
+                 >> /var/log/ce-firstboot-tweaks.log 2>/dev/null
+    fi
     FLAG=/var/luna/preferences/ce-cryptofs-deshadowed
     LOG=/var/log/ce-firstboot-tweaks.log
     log() { echo "$(date 2>/dev/null) $*" >> "$LOG" 2>/dev/null; }
