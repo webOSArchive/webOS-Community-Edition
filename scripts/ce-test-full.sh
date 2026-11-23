@@ -765,15 +765,17 @@ else
   r=$( (luna-send -n 1 palm://com.palm.applicationManager/launch '{"id":"com.palm.app.ondevlog"}' </dev/null & p=$!; ( sleep 15; kill $p 2>/dev/null ) & wait $p) 2>/dev/null)
   sleep 8
   lsm1=$(pidof LunaSysMgr | tr ' ' '\n' | sort -n | tr '\n' ' ')
-  rd1=$(ls /var/log/rdxd/pending 2>/dev/null | wc -l)
   pid=$( (luna-send -n 1 palm://com.palm.applicationManager/running '{}' </dev/null & p=$!; ( sleep 15; kill $p 2>/dev/null ) & wait $p) 2>/dev/null | tr -d '\n' \
     | sed -n 's/.*"id": *"com.palm.app.ondevlog", *"processid": *"\([0-9]*\)".*/\1/p')
   [ -n "$lsm0" ] && [ "$lsm0" = "$lsm1" ] && P "32  LunaSysMgr survived a phone app (pids $lsm0)" \
     || F "32  LunaSysMgr restarted when a phone app opened: pids $lsm0-> $lsm1 (issue #16)"
   [ -n "$pid" ] && P "32  the phone app is running in its card" \
     || F "32  the phone app is not running ($(echo "$r" | tr -d '\n' | cut -c1-80))"
-  [ "$rd0" = "$rd1" ] && P "32  no crash report while the phone app opened" || F "32  $((rd1-rd0)) new rdxd report(s) while the phone app opened"
   [ -n "$pid" ] && luna-send -n 1 palm://com.palm.applicationManager/close "{\"processId\":\"$pid\"}" </dev/null >/dev/null 2>&1
+  # rdxd writes its report ~20 s after a crash (600119: 8 s after the launch there was none yet).
+  sleep 30
+  rd1=$(ls /var/log/rdxd/pending 2>/dev/null | wc -l)
+  [ "$rd0" = "$rd1" ] && P "32  no crash report while the phone app opened" || F "32  $((rd1-rd0)) new rdxd report(s) while the phone app opened"
 fi
 
 # ---------------------------------------------------------------- ota. CE OTA trust anchor
