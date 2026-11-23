@@ -214,7 +214,9 @@ n=$(strings /usr/bin/LunaSysMgr 2>/dev/null | grep -c "QtEmojiFallback")
 # SmartKey (CE auto-correct, packages/smartkey): the service, its English dictionary, and an
 # answer to the same query WebKit sends while typing.
 m=$(md5sum /usr/bin/SmartKeyService 2>/dev/null | cut -d' ' -f1)
-[ "$m" = "97475abdcc315d0f95d142d4831eabf6" ] && P "7   SmartKeyService is CE's auto-correct" || F "7   SmartKeyService not CE's (md5 ${m:-none})"
+# The md5 of packages/smartkey/prebuilt/usr/bin/SmartKeyService: update it when the engine changes
+# (c4ed085 did, and this line still expected the first build's 97475abd until 2026-11-23).
+[ "$m" = "9a3666fb010c475811c0bf9ed0447697" ] && P "7   SmartKeyService is CE's auto-correct" || F "7   SmartKeyService not CE's (md5 ${m:-none})"
 [ -f /usr/palm/smartkey/skd/en.skd ] && P "7   SmartKey English dictionary present" || F "7   /usr/palm/smartkey/skd/en.skd missing"
 r=$( (luna-send -n 1 palm://com.palm.smartKey/search '{"query":"teh"}' </dev/null & p=$!; ( sleep 15; kill $p 2>/dev/null ) & wait $p) 2>/dev/null)
 echo "$r" | grep -q '"str": "the", "sp": true, "auto-accept": true' && P "7   SmartKey corrects teh -> the" || F "7   SmartKey search teh: ${r:-no answer}"
