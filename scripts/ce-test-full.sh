@@ -723,7 +723,8 @@ n=$(ls /var/log/rdxd/pending 2>/dev/null | wc -l)
 # Clock and Calculator are platform apps (vendor "webOS Archive" counts): on Apps, not Downloads.
 ap=$(grep -l "pagedesignator=apps" /var/luna/preferences/launcher3/page_* 2>/dev/null | head -1)
 if [ -n "$ap" ]; then
-  grep -q "id=com.palm.app.clock" "$ap" && grep -q "id=com.palm.calculator" "$ap" && P "28  Clock and Calculator are on the Apps tab" || F "28  Clock or Calculator is not on the Apps tab"
+  # An icon in a group is saved as one of its groupmembers, not as an id= line.
+  grep -qE "(id=|groupmembers=.*)com.palm.app.clock" "$ap" && grep -qE "(id=|groupmembers=.*)com.palm.calculator" "$ap" && P "28  Clock and Calculator are on the Apps tab" || F "28  Clock or Calculator is not on the Apps tab"
 else
   I "28  no saved launcher layout to check yet"
 fi
