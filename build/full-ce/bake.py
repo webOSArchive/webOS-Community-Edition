@@ -929,6 +929,19 @@ def main():
                 *IPK.values(), *OVERWRITE_IPKS.values()):
         if not os.path.exists(req):
             sys.exit(f"ERROR: missing required input: {req}")
+    # LunaSysMgr must be a clean build. An incremental one after a header change
+    # shipped objects compiled against an old Settings layout in 600119, and every
+    # phone app crashed LunaSysMgr (webOS-Community-Edition issue #16). LunaCE's
+    # cross-build/ship.sh is the only thing that writes this record.
+    lsm = os.path.join(LUNACE, "bin", "LunaSysMgr-LunaCE-topaz")
+    rec = os.path.join(LUNACE, "bin", "LunaSysMgr-LunaCE.clean")
+    with open(lsm, "rb") as f:
+        lsm_sha = hashlib.sha256(f.read()).hexdigest()
+    recorded = open(rec).read() if os.path.exists(rec) else ""
+    if f"{lsm_sha}  LunaSysMgr-LunaCE-topaz" not in recorded:
+        sys.exit("ERROR: LunaCE's LunaSysMgr-LunaCE-topaz is not a recorded clean build "
+                 f"(sha256 {lsm_sha[:16]}…). Run LunaCE's cross-build/ship.sh.")
+    log(f"input LunaSysMgr   clean build {lsm_sha[:16]}…")
     if not os.path.isdir(MEDIA):
         sys.exit(f"ERROR: missing {MEDIA}")
     for k, v in sorted(IPK.items()):

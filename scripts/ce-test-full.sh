@@ -751,6 +751,31 @@ else
 fi
 grep -q 'if (this.$.list) {' /usr/palm/frameworks/enyo/0.10/framework/lib/addressing/AddressingPopup.js 2>/dev/null && P "30  the address field's popup is guarded" || F "30  AddressingPopup.js lacks the guard"
 
+# 32. A phone app (no "uiRevision": 2) opens in an emulated card and LunaSysMgr survives it.
+# 600119's LunaSysMgr was an incremental build: objects compiled against an old Settings layout
+# read the emulated card size 4 bytes off, and every phone app crashed LunaSysMgr
+# (webOS-Community-Edition issue #16). Nothing in the image except a stock diagnostic is a phone
+# app, so the stock QXDM Logger stands in: it opens on a code-entry scene and does nothing until
+# a button is pressed. Opens a card and closes it again.
+lsm0=$(pidof LunaSysMgr | tr ' ' '\n' | sort -n | tr '\n' ' ')
+rd0=$(ls /var/log/rdxd/pending 2>/dev/null | wc -l)
+if [ ! -f /usr/palm/applications/com.palm.app.ondevlog/appinfo.json ]; then
+  F "32  the stock phone app (com.palm.app.ondevlog) is missing: nothing to open"
+else
+  r=$( (luna-send -n 1 palm://com.palm.applicationManager/launch '{"id":"com.palm.app.ondevlog"}' </dev/null & p=$!; ( sleep 15; kill $p 2>/dev/null ) & wait $p) 2>/dev/null)
+  sleep 8
+  lsm1=$(pidof LunaSysMgr | tr ' ' '\n' | sort -n | tr '\n' ' ')
+  rd1=$(ls /var/log/rdxd/pending 2>/dev/null | wc -l)
+  pid=$( (luna-send -n 1 palm://com.palm.applicationManager/running '{}' </dev/null & p=$!; ( sleep 15; kill $p 2>/dev/null ) & wait $p) 2>/dev/null | tr -d '\n' \
+    | sed -n 's/.*"id": *"com.palm.app.ondevlog", *"processid": *"\([0-9]*\)".*/\1/p')
+  [ -n "$lsm0" ] && [ "$lsm0" = "$lsm1" ] && P "32  LunaSysMgr survived a phone app (pids $lsm0)" \
+    || F "32  LunaSysMgr restarted when a phone app opened: pids $lsm0-> $lsm1 (issue #16)"
+  [ -n "$pid" ] && P "32  the phone app is running in its card" \
+    || F "32  the phone app is not running ($(echo "$r" | tr -d '\n' | cut -c1-80))"
+  [ "$rd0" = "$rd1" ] && P "32  no crash report while the phone app opened" || F "32  $((rd1-rd0)) new rdxd report(s) while the phone app opened"
+  [ -n "$pid" ] && luna-send -n 1 palm://com.palm.applicationManager/close "{\"processId\":\"$pid\"}" </dev/null >/dev/null 2>&1
+fi
+
 # ---------------------------------------------------------------- ota. CE OTA trust anchor
 # The only OTA component in the image (600070). No private key on the device, so
 # this cannot test a POSITIVE verification -- it tests that the anchor is the

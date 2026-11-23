@@ -936,6 +936,26 @@ each phase lands. The plan's §4 is the gate for every bake.
 - [ ] **OTA'd device:** Email has the new Change Login Settings, and the
       OAuth accounts work after the OTA (§16)
 
+## 27. LunaSysMgr is a clean build  *(new after 600119, issue #16)*
+
+600119's LunaSysMgr was an incremental build after a `Settings.h` change. Objects
+that weren't recompiled read settings 4 bytes off. Every phone app crashed
+LunaSysMgr, and 60 other functions read the wrong value: display lock state, the
+light sensor, touch and gesture handling, scrolling, and backup. A late change to
+LunaSysMgr needs this whole section, not just a test of the feature itself.
+
+- [ ] The bake log says `input LunaSysMgr clean build …`. The bake refuses a binary
+      that LunaCE's `cross-build/ship.sh` didn't record — *enforced by bake.py*
+- [ ] A phone app (the stock QXDM Logger) opens in an emulated card, LunaSysMgr
+      keeps its pids, and there is no crash report — *automated, ce-test-full §32*
+- [ ] **Third-party phone apps** from the Museum or Preware open, draw at phone
+      size, rotate, and close: Dali Clock (`org.jwz.daliclock`), Tip Calculator
+      (`org.jwz.tipcalculator`), Lumberjack (`org.webosinternals.lumberjack`)
+- [ ] **Settings readers:** screen lock and unlock with the power button and the
+      lock slider. The screen dims and turns off on its timeout. Auto-brightness
+      follows the room light. Launcher scrolling and flicks feel normal. A
+      tap-and-hold in the launcher starts reorder mode.
+
 ---
 
 ## Carried-over issues (not introduced by any recent build)
