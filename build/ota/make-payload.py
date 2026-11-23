@@ -63,10 +63,12 @@ CRYPTOFS_APPS = "/media/cryptofs/apps"
 # after first boot, so every 3.1.0 device lacks it, yet a Full Erase copies it
 # again from here: the payload must put it back. Part of it is CE's (in the
 # rootfs image) and most is hp.tar's sweatshop ipk, which the Doctor installs
-# over the rootfs at flash time and so is in neither rootfs tar. The old side
-# is modelled without it and the new side with both parts, so the diff
-# delivers it all and the convergence proof covers it.
+# over the rootfs at flash time and so is in neither rootfs tar. The new side is
+# modelled with both parts. The old side has none of it if its image carried the
+# reclaim job (RECLAIM_JOB), and both parts from its own JAR if not (load()).
+# The diff delivers the difference and the convergence proof covers it.
 EXTRAS = ":customization-media"    # new_blobs key; not a path
+RECLAIM_JOB = "etc/event.d/ce-reclaim-customization-media"   # 600028-600114 only
 CUSTOMIZATION_MEDIA = "usr/lib/luna/customization/copy_binaries/media/internal"
 CUSTOMIZATION_TAR_IN_JAR = "resources/hp.tar"
 SWEATSHOP_IPK = re.compile(r"^sweatshop-hp-topaz_.*\.ipk$")
@@ -295,10 +297,24 @@ def load(args):
     if dups:
         print("note: the new rootfs tar names %d paths twice (the last member wins), "
               "e.g. /%s" % (len(dups), dups[0]))
-    # The old device: its reclaim job removed the staged media. The new image: it
-    # keeps CE's part, and the Doctor adds hp.tar's (CUSTOMIZATION_MEDIA).
-    for p in [p for p in old if is_customization_media(p)]:
-        del old[p]
+    # The new image keeps CE's part of the staged media, and the Doctor adds
+    # hp.tar's (CUSTOMIZATION_MEDIA). The old device depends on its image:
+    # 600028 to 600114 (3.1.0 among them) had a reclaim job that deleted the
+    # media, so the payload delivers all of it. From 600115 the media stays,
+    # so the old device has it too, and only what changed is delivered:
+    # otherwise a 600119 -> 600120 payload re-sent 28 MB the device already had.
+    if RECLAIM_JOB in old:
+        for p in [p for p in old if is_customization_media(p)]:
+            del old[p]
+        print("old image deleted its staged media (%s): delivering all of it" % RECLAIM_JOB,
+              file=sys.stderr)
+    else:
+        for p, (ti, body) in customization_media(args.old).items():
+            if p in old and old[p]["type"] == "file":
+                sys.exit("/%s is in both the old rootfs and its hp.tar" % p)
+            if p not in old:
+                old[p] = record_of(ti, body)
+        print("old image keeps its staged media: delivering only what changed", file=sys.stderr)
     extras = customization_media(args.new)
     for p, (ti, body) in extras.items():
         if p in new and new[p]["type"] == "file":

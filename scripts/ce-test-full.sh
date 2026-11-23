@@ -82,7 +82,8 @@ if have /var/log/ce-cryptofs-seed.log; then
 else
   F "1   no ce-cryptofs-seed.log"
 fi
-for f in ce-cryptofs-deshadowed ce-preloads-deshadowed ce-default-wallpaper ce-customization-media-reclaimed; do
+# (ce-customization-media-reclaimed is gone: 600115 stopped deleting the staged media, issue #14.)
+for f in ce-cryptofs-deshadowed ce-preloads-deshadowed ce-default-wallpaper; do
   have /var/luna/preferences/$f && P "1   flag $f" || F "1   flag $f MISSING"
 done
 have /media/cryptofs/apps/etc/ipkg/arch.conf && P "1   Preware feeds seeded" || F "1   Preware feeds missing"
@@ -610,17 +611,18 @@ if [ "$t" -lt 10 ]; then F "24  only $t account template file(s) found: layout c
 elif [ "$n" = "0" ]; then P "24  account templates: 0 of $t say \"HP webOS\""
 else F "24  $n of $t account template file(s) still say \"HP webOS\""; fi
 # boot logo: LunaSysMgr's pair and the copy bootie-images would write to NVRAM
-# (md5 = system/ copies). What bootie itself shows from NVRAM is a human check.
+# (md5 = system/ copies; b956d65's larger moon for 600120). What bootie itself shows from NVRAM
+# is a human check.
 ok=1
 for e in \
-  33a4e7866c843b87305e52b2944bb5c7:/usr/palm/sysmgr/images/hp-logo.png \
-  91978a1c9afb3765bdb6d7f5d2b2be9e:/usr/palm/sysmgr/images/hp-logo-bright.png; do
+  00699347aa118a8fa67f1e8553b3bccf:/usr/palm/sysmgr/images/hp-logo.png \
+  e9f5d2a4dca015e1ea3b329a7e4ee110:/usr/palm/sysmgr/images/hp-logo-bright.png; do
   want=${e%%:*}; f=${e#*:}
   m=$(md5sum $f 2>/dev/null | cut -c1-32)
   [ "$m" = "$want" ] || { ok=0; F "24  boot logo not CE's: $f (md5 ${m:-none})"; }
 done
 m=$(tar xzOf /boot/boot-images.tar.gz BootLogo.tga 2>/dev/null | md5sum | cut -c1-32)
-[ "$m" = "2d4d05a732fa181064e72f5a2df42e97" ] || { ok=0; F "24  boot-images.tar.gz BootLogo.tga not CE's (md5 $m)"; }
+[ "$m" = "6b201541c9a1cdcb88c8dc0005c5b3f5" ] || { ok=0; F "24  boot-images.tar.gz BootLogo.tga not CE's (md5 $m)"; }
 [ $ok = 1 ] && P "24  boot logo files are the moon (2 PNGs + boot-images BootLogo.tga)"
 # HP's name out of the wording (build/full-ce/hp_wording.py). Each entry is
 # file|text that must be there. Email and Music are cryptofs apps.
