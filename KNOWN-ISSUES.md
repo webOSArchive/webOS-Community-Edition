@@ -1,7 +1,8 @@
 # webOS Community Edition 3.2.0 — Known Issues (600121 release)
 
 **3.2.0 (600121).** #16 to #19 were found and fixed during the 3.2.0 cycle; #20 hit
-a beta and is fixed in 600121. Still open from 3.1.0: #14 (USB Settings' "Helper not
+a beta and is fixed in 600121. #21 is a first-boot race found on 600121's
+fresh flash, accepted for 3.2.0. Still open from 3.1.0: #14 (USB Settings' "Helper not
 running") and the Zoho entry, also numbered #14, which lies on Zoho's side. #4 still
 recurs and is still accepted. 3.2.0's own limits are under "3.2.0 limits" below.
 
@@ -1027,6 +1028,34 @@ straight to the fixed step.
 
 **Recovery** for a device at "!" after 600120's update: boot the device's own kernel
 with `novacom boot mem://`, let `ce-ota-finish` finish, then relink `/boot/uImage`.
+
+## 21. After a fresh flash or a Full Erase, Preware may offer a baked package as not installed — ACCEPTED for 3.2.0
+
+**Severity: low.** Found on 600121's first fresh flash (2026-11-25, TouchPad C):
+Preware offered Video Player 3.2.0 from the `modernize` feed, though the image
+bakes it.
+
+**Cause.** A first-boot race, present since 600114. When first use ends, the seed
+job appends CE's 14 package records to cryptofs's package list
+(`/media/cryptofs/apps/usr/lib/ipkg/status`). At the same moment,
+`ce-preload-versions` rewrites that file whole (read, edit, move over). A record
+appended between its read and its move is lost. On C it was
+`com.palm.app.videos`; it depends on timing, so it can be none, or any of the
+14. The seed logged "13 of 14" and still "verified complete": its check does not
+count the records. Updated devices are not affected: the OTA does not run the
+seed. A Full Erase does.
+
+**Impact, measured.** Only Preware's view: that package shows as installable.
+Installing it from Preware on C did no harm: Photos was "already patched", the
+stock player's id was "left alone", video files still open in Video Player, the
+record came back and there was no crash report. The baked copy is unaffected
+throughout. Removing that Preware copy later deletes the Tweaks setting "Pause
+video when minimized". A later update of that package restores its record by
+itself.
+
+**Fix (a later build).** `ce-preload-versions` waits for the seed's flag
+(`/var/luna/preferences/ce-cryptofs-seeded`) before it writes, and the seed's
+check counts all 14 records.
 
 ---
 
