@@ -829,7 +829,7 @@ grep -q 'var TEST_MODE = true; // webOS CE' $MIGJS 2>/dev/null && grep -q 'CE: c
   && P "ota migrate.js: configurator refusals and script errors never strand an update" \
   || F "ota migrate.js is not CE's tolerant version (an owner's bad db kind would strand an OTA)"
 DMO=/usr/bin/datamigration_ota
-grep -q 'booting the update anyway' $DMO 2>/dev/null && grep -v '^$' $DMO 2>/dev/null | tail -n 1 | grep -qx 'exit 0' \
+grep -q 'booting the update anyway' $DMO 2>/dev/null && grep -v '^$' $DMO 2>/dev/null | tail -n 1 | grep -q '^exit 0$' \
   && ! grep -q '^exec /usr/bin/datamigration' $DMO 2>/dev/null && grep -q '_w -lt 120' $DMO 2>/dev/null \
   && P "ota datamigration_ota: bounded bus waits, always exits 0" \
   || F "ota datamigration_ota is not CE's version (a failed migration would strand an OTA)"
