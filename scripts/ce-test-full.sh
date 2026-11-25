@@ -204,7 +204,8 @@ n=$(strings /usr/bin/LunaSysMgr 2>/dev/null | grep -c "HP webOS ")
 m=$(md5sum /usr/share/fonts/CE-Emoji.ttf 2>/dev/null | cut -d' ' -f1)
 [ "$m" = "1d357754da12e42f1a66080337e33e53" ] && P "7   emoji fallback font CE-Emoji.ttf" || F "7   CE-Emoji.ttf missing or wrong (md5 ${m:-none})"
 m=$(md5sum /usr/lib/libWebKitLuna.so 2>/dev/null | cut -d' ' -f1)
-[ "$m" = "9c3a2e3eba662899691ea5c54c835a62" ] && P "7   libWebKitLuna emoji patch (fallback slot + astral glyphs)" || F "7   libWebKitLuna not the emoji build (md5 $m)"
+# one md5 per model: the AT&T library differs only in .gnu_debuglink's CRC (4 bytes)
+[ "$m" = "9c3a2e3eba662899691ea5c54c835a62" -o "$m" = "794fc35dd94cbcd9bd636af27b5b948f" ] && P "7   libWebKitLuna emoji patch (fallback slot + astral glyphs)" || F "7   libWebKitLuna not the emoji build (md5 $m)"
 wm=$(pidof LunaSysMgr | awk '{print $1}')
 grep -q CE-Emoji /proc/$wm/maps 2>/dev/null && P "7   WebAppMgr has CE-Emoji.ttf loaded" || I "7   WebAppMgr hasn't loaded CE-Emoji.ttf (no web text drawn yet?)"
 # Emoji keyboard (LunaCE): its keys draw these OpenMoji images; a missing one falls back to text.
@@ -703,10 +704,22 @@ r=$(osend -P -n 1 -a com.palm.app.signin palm://$OS/token '{"handle":"oauth2:000
 echo "$r" | grep -q '"accessToken"\|"errorCode":-1[12]' && F "27  token answered on the public bus: $r" || P "27  token is not served on the public bus"
 r=$(osend -n 1 palm://$OS/token '{"handle":"oauth2:00000000000000000000000000000000"}')
 echo "$r" | grep -q '"errorCode":-11' && P "27  token answers on the private bus (unknown handle: -11)" || F "27  token on the private bus: ${r:-no answer}"
-op=""; for p in $(pidof node); do grep -q "$OS" /proc/$p/cmdline 2>/dev/null && op=$p; done
+# The service starts on a call and exits when idle, so a pid can be missing or gone
+# by the time it is read: call again and read the process right away, a few times.
+op=""; uid=""; root=""; _t=0
+while [ $_t -lt 5 ]; do
+  osend -n 1 palm://$OS/token '{"handle":"oauth2:00000000000000000000000000000000"}' >/dev/null
+  for p in $(pidof node); do
+    grep -q "$OS" /proc/$p/cmdline 2>/dev/null || continue
+    u=$(grep '^Uid' /proc/$p/status 2>/dev/null | awk '{print $2}'); rt=$(readlink /proc/$p/root 2>/dev/null)
+    [ -n "$u" ] && [ -n "$rt" ] && { op=$p; uid=$u; root=$rt; }
+  done
+  [ -n "$op" ] && break
+  _t=$((_t+1)); sleep 1
+done
 if [ -n "$op" ]; then
-  [ "$(grep '^Uid' /proc/$op/status | awk '{print $2}')" = 0 ] && [ "$(readlink /proc/$op/root)" = / ] \
-    && P "27  the service runs as root, outside a jail" || F "27  the service is jailed or not root (pid $op)"
+  [ "$uid" = 0 ] && [ "$root" = / ] \
+    && P "27  the service runs as root, outside a jail" || F "27  the service is jailed or not root (pid $op uid $uid root $root)"
 else
   F "27  the service isn't running after being called"
 fi

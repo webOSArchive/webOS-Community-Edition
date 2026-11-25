@@ -126,7 +126,7 @@ installs webOS CE updates (above).
   and on a test TouchPad set up the same way.
 - **Fresh flashes of both release Doctors**, each followed by `ce-test-full.sh`: 600121 on a
   Wi-Fi TouchPad (172 pass; the one real failure is KNOWN-ISSUES #21) and 600122 on the
-  4G/AT&T TouchPad.
+  4G/AT&T TouchPad (174 pass, 0 fail).
 - **Field testers** on 600119, 600120 and 600121 by OTA, with no open reports against
   600121.
 

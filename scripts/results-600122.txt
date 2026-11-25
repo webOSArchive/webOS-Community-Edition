@@ -1,0 +1,187 @@
+===== webOS CE automated pass — expecting BUILDMARK=600122 — Wed Nov 25 13:11:06 PST 2026 =====
+[PASS] id  BUILDMARK=600122
+[PASS] id  version string webOS CE 3.2.0
+[INFO] id  BUILDTIME=20261125202929
+[INFO] id  uptime: up 15 min,  0 users,  load average: 1.42, 2.27, 1.93
+[PASS] 0b  no ipkgservice respawn events
+[PASS] 0b  no 'respawning too fast'
+[PASS] 0   ipkgservice resident (Luna Restart prerequisite)
+[PASS] 0b  upstart never crashed/re-exec'd
+[PASS] 0b  no rdxd crash reports
+[PASS] 0b  LunaDownloadMgr running (pid 2251)
+[PASS] 0b  LunaDownloadMgr is the patched build
+[PASS] 0b  glibcurl restart path dead (patch holding)
+[PASS] 0b  LunaDownloadMgr no SEGV this boot
+[PASS] 1   cryptofs seed flag set
+[PASS] 1   seed verified complete
+[INFO] 1   seed log tail: Wed Nov 25 13:02:52 PST 2026 seed verified complete on attempt 1
+[PASS] 1   flag ce-cryptofs-deshadowed
+[PASS] 1   flag ce-preloads-deshadowed
+[PASS] 1   flag ce-default-wallpaper
+[PASS] 1   Preware feeds seeded
+[PASS] 4   com.palm.app.contacts baked, unshadowed
+[PASS] 4   com.palm.app.messaging baked, unshadowed
+[PASS] 4   com.palm.app.phone baked, unshadowed
+[PASS] 4   com.palm.app.accounts baked, unshadowed
+[INFO] 4   accounts app "version": "3.1.1"
+[PASS] 4   db8 healthy (com.palm.person:1 answers)
+[PASS] 5   synergy glibc ld-linux present
+[PASS] 5   synergy runtime dirs present
+[PASS] 5   imtransport running (pid 9662 = imlibpurpletransport)
+[PASS] 5   synergy bind mount live
+[PASS] 5   cloud-auth present
+[PASS] 5   docviewer absent (intentional)
+[PASS] 5   retired accounts (skype/yahoo) gone
+[PASS] 5   gst WebM/Opus plugins present (6/6)
+[PASS] 5   com.quickoffice.ar installed to cryptofs
+[PASS] 5   com.quickoffice.webos installed to cryptofs
+[PASS] 5   com.palm.app.photos installed to cryptofs
+[PASS] 5   QuickOffice RemoteFileService.js present (synergy patch)
+[PASS] 5   photos service patch marker present
+[PASS] 6   ipkgservice answers
+[PASS] 6   status stanza org.webosinternals.preware (1)
+[PASS] 6   status stanza org.webosinternals.govnah (1)
+[PASS] 6   status stanza com.palm.synergy.generic (1)
+[PASS] 6   status stanza com.palm.app.videos (1)
+[PASS] 6   status stanza com.palm.app.calculator (1)
+[PASS] 6   status stanza org.webosarchive.media-tls13 (1)
+[PASS] 6   com.webosarchive.usbsettings correctly absent from ipkg status
+[PASS] 6   org.webosarchive.btgamepad correctly absent from ipkg status
+[INFO] 6   feed configs: 6 enabled, 5 disabled
+[PASS] 6   webos-patches ships disabled
+[PASS] 6   webos-kernels ships disabled
+[PASS] 6   no static ipk entry (correct; registration is done at runtime)
+[PASS] 6   .ipk resolves to Preware AND is streamable (browser will hand off)
+[PASS] 6   ce-register-ipk-handler ran and verified
+[PASS] 7   novacom-at-start baked
+[INFO] 7   keyboard default: 		"x_palm_virtualkeyboard_settings": "{\"keyboard size\": -1}",
+[PASS] 7   version-prefix patch: 0 'HP webOS ' in LunaSysMgr
+[PASS] 7   emoji fallback font CE-Emoji.ttf
+[PASS] 7   libWebKitLuna emoji patch (fallback slot + astral glyphs)
+[PASS] 7   WebAppMgr has CE-Emoji.ttf loaded
+[PASS] 7   emoji keyboard images: 152 + attribution
+[PASS] 7   LunaSysMgr has the emoji keyboard + Qt emoji fallback
+[PASS] 7   SmartKeyService is CE's auto-correct
+[PASS] 7   SmartKey English dictionary present
+[PASS] 7   SmartKey corrects teh -> the
+[PASS] 7   Device Info account label de-branded (13 view files, 0 say 'HP webOS')
+[PASS] 8   HP preload com.palm.app.kindle absent
+[PASS] 8   HP preload com.palm.app.enyo-facebook absent
+[PASS] 8   HP preload com.palm.app.youtube absent
+[PASS] 8   ls-hubd clean (0 unlisted-service errors)
+[PASS] 8   trust store populated (189 entries)
+[PASS] 8   no crash artifacts
+[PASS] 0b  ipkgservice job intact (race has not fired since this flash)
+[PASS] 8   app-store root present (15 apps)
+[PASS] 8   no store repair needed (flash wiped the app store cleanly)
+[PASS] 8   power-off path unwrapped (reboot/poweroff/halt/telinit are the real binaries)
+[PASS] 8   Help app repointed at webosarchive
+[PASS] 9   com.palm.app.enyo-findapps not baked
+[PASS] 9   com.palm.app.enyo-findapps installed in cryptofs v6.3.3000 (1 stanza)
+[PASS] 9   com.palm.app.maps not baked
+[PASS] 9   com.palm.app.maps installed in cryptofs v4.0.1 (1 stanza)
+[PASS] 9   catalog ipk staged (com.palm.app.enyo-findapps_6.3.3000_all.ipk)
+[PASS] 9   maps ipk staged (com.palm.app.maps_4.0.1_all.ipk)
+[PASS] 9   stock 5.0.2900 ipk removed
+[PASS] 9   stock Calculator preload removed
+[PASS] 9   Calculator 3.2.0 baked
+[PASS] 9   the baked Calculator opens
+[PASS] 9   souphttpsrc is the Media TLS element (stock plugin absent)
+[PASS] 9   no mis-named appcatalog stanza
+[PASS] 9   catalog files extracted cleanly
+[PASS] 9   manifest: baked contacts/messaging dropped
+[PASS] 10  SimpleClock present and referenced
+[PASS] 10  stock clock faces retained
+[PASS] 10  GAMES localized in all 8 locales
+[PASS] 10  launcher page rename favorites->games configured
+[PASS] 10  photos exhibition clock installed (icon+CSS+JS)
+[PASS] 10b default search engine is DuckDuckGo in all 10 locale list(s)
+[PASS] 10b search URL points at the /lite/ endpoint
+[PASS] 10b universal-search DDG icon present
+[PASS] 10b browser DDG icon present
+[PASS] 10b browser fallback search is DuckDuckGo
+[PASS] 10b no google left in browser URLSearch.js
+[PASS] 11  staged customization media kept (Full Erase source)
+[PASS] 11  no reclaim job
+[INFO] 11  rootfs: 32276K free, 94% used
+[INFO] 11  media: wallpapers=28 ringtones=40
+[PASS] 11  no orphaned .png wallpapers
+[PASS] 11  default wallpaper 28.jpg present
+[PASS] 12  Video Player 3.2.0 baked
+[PASS] 12  Video Player unshadowed
+[PASS] 12  feed ce-install/ payload dropped
+[PASS] 12  com.palm.app.videoplayer hosts the same player
+[PASS] 12  videoplayer keeps its stock id
+[PASS] 12  no feed-install backups (*.webosce-orig) in the image
+[PASS] 12  Photos grid hands videos to the Video Player
+[PASS] 12  Tweaks toggle (Pause video when minimized) seeded
+[PASS] 12  ce-register-video-handler ran and verified
+[PASS] 12  .mp4 resolves to the Video Player, streamable
+[INFO] 12  self-test skipped: no clip at /media/internal/Videos/bars-30s-h264.mp4 (push build/work/test-media/bars-30s-h264.mp4 to run it)
+[PASS] 19  Contacts 3.2.0 baked
+[PASS] 19  Import vCards present
+[PASS] 19  Contacts ships no test code
+[PASS] 19  photos service takes Contacts photos (remove + .contactphotos)
+[PASS] 20  Calendar has Import Calendar (3.2.0 tree installed)
+[INFO] 20  calendar "version"			: "3.2.0"
+[PASS] 20  calendar framework knows Windows zone names
+[PASS] 20  zoneinfo is tzdata 2026f (America/Vancouver)
+[PASS] 20  /etc/palm/timezone.txt is CE's
+[PASS] 20  ext-timezones.json is CE's
+[PASS] 23  used-first-card marker present (no Dismissing Cards tutorial)
+[PASS] 23  USB banner (StoragedService.js is CE's)
+[PASS] 23  launcher reads the customization layout
+[PASS] 23  CE launcher layout is in the customization path
+[PASS] 23  dock save exists
+[PASS] 23  Settings page holds 21 icons
+[PASS] 23  launcher layout: Video Player right after Music
+[PASS] 23b org.webosarchive.photos.service on the bus
+[PASS] 24  all 11 App Catalog icons are the webOS App Catalog art
+[PASS] 24  account templates: 0 of 85 say "HP webOS"
+[PASS] 24  boot logo files are the moon (2 PNGs + boot-images BootLogo.tga)
+[PASS] 24  HP wording: de-branded strings, support link, vendor and Care Pack change in place
+[PASS] 24  no rootfs app names HP as its vendor
+[PASS] 24  Device Info About scene has the moon
+[PASS] 25  Messaging buddy unread-count fix present
+[PASS] 25  chatthreader 1.1.0.3 (non-buddy first message threads)
+[PASS] 26  libce-mailshim.so is the expected build
+[PASS] 26  com.palm.eas starts under the mail shim
+[PASS] 26  com.palm.imap starts under the mail shim
+[PASS] 26  com.palm.smtp starts under the mail shim
+[PASS] 26  POP is left without the shim
+[PASS] 26  Exchange validator answers under the shim
+[PASS] 26  mojomail-eas has the shim loaded
+[PASS] 27  OAuth token service files, roles and launchers present
+[PASS] 27  the sign-in page gets the provider list (public bus)
+[PASS] 27  another app is refused
+[PASS] 27  token is not served on the public bus
+[PASS] 27  token answers on the private bus (unknown handle: -11)
+[PASS] 27  the service runs as root, outside a jail
+[PASS] 28  LunaSysMgr was never refused its bus names (this log)
+[PASS] 28  LunaSysMgr has the bus-name fixes
+[PASS] 28  the application manager answers on the bus
+[PASS] 28  no crash reports
+[PASS] 28  Clock and Calculator are on the Apps tab
+[PASS] 29  the mail sign-in page is installed
+[PASS] 29  account type com.palm.oauth.google is offered
+[PASS] 29  account type com.palm.oauth.microsoft365 is offered
+[PASS] 29  account type com.palm.oauth.microsoft is offered
+[PASS] 29  Microsoft Outlook says what it brings
+[PASS] 29  Add Account shows a type's own subtitle
+[PASS] 29  the token service's providers name those account types
+[PASS] 30  Email opens an OAuth account's own sign-in page
+[PASS] 30  Email never saves a default signature as a typed one
+[PASS] 30  Email's default signature is the reworded one
+[PASS] 30  the address field's popup is guarded
+[PASS] 32  LunaSysMgr survived a phone app (pids 7273 7420 )
+[PASS] 32  the phone app is running in its card
+[PASS] 32  no crash report while the phone app opened
+[PASS] ota OTA anchor: key + verifier present
+[PASS] ota ce-ota-verify is executable
+[PASS] ota OTA key fingerprint matches the baked anchor
+[PASS] ota ce-ota-verify refuses a garbage signature
+[PASS] ota ce-ota-verify refuses a missing signature file
+[INFO] ota openssl on device: OpenSSL 0.9.8k 25 Mar 2009
+[PASS] ota migrate.js: configurator refusals and script errors never strand an update
+[PASS] ota datamigration_ota: bounded bus waits, always exits 0
+===== done =====
