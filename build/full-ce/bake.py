@@ -2507,6 +2507,106 @@ def main():
     w(MIG[2:], (json.dumps(mig, indent=4) + "\n").encode("utf-8"), 0o644)
     log(f"  migration.json: {len(dropped)} HP data migrations will not run on an update")
 
+    # migrate.js must never strand a device for what an owner installed.
+    #
+    # 2026-11-24, a daily driver on 600070 -> 600120: the payload installed, then
+    # post-update's last step stranded it ("!" www.palm.com/ROM, no retry). The
+    # first configurator run in performDataMigration got "Partial configuration
+    # - 4 ok, 3 failed": three C+DAV kinds that the configurator refuses at every
+    # normal boot too, where it is one log line. Any homebrew file in
+    # /etc/palm/db/{kinds,permissions}, /etc/palm/activities or a filecache type
+    # dir can do the same, and such packages keep the OS going (C+DAV, WebCal
+    # Sync, shared with LuneOS), so the update supports them.
+    #
+    # Foundations' Future.onError makes failCallback (process.exit(1)) the error
+    # handler of every later then(), so HP's "catch the configurator exception
+    # and keep going" after the second run is dead code: an exception at any
+    # step exits, datamigration sees no returnValue:true, post-update fails and
+    # ota.sh bricks. Three changes:
+    #   - runConfigurator never fails: it logs what was refused and succeeds.
+    #     The configurator runs at every boot and its cache was just wiped, so
+    #     whatever loads at all loads at the next boot, as it did before.
+    #   - failCallback logs and continues with the next step instead of exiting
+    #     (it reads the exception, so setting a result resumes the chain).
+    #   - TEST_MODE: a failing import or migration script is logged and not
+    #     recorded, so it runs again next time, instead of bricking.
+    # The data is already on disk: nothing in this service can make a device
+    # worse off than "!" would.
+    MJS = "./usr/palm/services/com.palm.service.migration/handlers/migrate.js"
+    mjs = read_rootfs(ROOTFS_TGZ, exact=[MJS])[MJS]["data"].decode("utf-8")
+    MJS_EDITS = [
+        ("var TEST_MODE = false;",
+         "var TEST_MODE = true; // webOS CE: a failing script never strands an update"),
+        ("\tlogger.log(\"DATA MIGRATION FAILURE CALLBACK: got exception: \" + JSON.stringify(future.exception));\n"
+         "\tprocess.exit(1);\n",
+         "\tlogger.log(\"DATA MIGRATION FAILURE CALLBACK: got exception: \" + JSON.stringify(future.exception));\n"
+         "\t// webOS CE: log and go on with the next step; exiting here strands the device\n"
+         "\tlogger.error(\"CE: continuing the migration past this error\");\n"
+         "\tfuture.result = { ceContinued: true };\n"),
+        ("function runConfigurator(types) {\n"
+         "    return palmcall(\"com.palm.configurator\", \"run\", { types: types });\n"
+         "}\n",
+         "function runConfigurator(types) {\n"
+         "    // webOS CE: a configuration the configurator refuses (an owner's homebrew\n"
+         "    // kind, permission, activity) is logged, never fatal: it is only a log\n"
+         "    // line at every normal boot too.\n"
+         "    var future = palmcall(\"com.palm.configurator\", \"run\", { types: types });\n"
+         "    future.then(function(f) {\n"
+         "        try {\n"
+         "            f.result = f.result;\n"
+         "        } catch (e) {\n"
+         "            logger.error(\"CE: configurator \" + JSON.stringify(types) + \" did not fully succeed, continuing: \" + JSON.stringify(e));\n"
+         "            f.result = { returnValue: false, ceTolerated: true };\n"
+         "        }\n"
+         "    });\n"
+         "    return future;\n"
+         "}\n"),
+    ]
+    for old, new in MJS_EDITS:
+        if mjs.count(old) != 1:
+            sys.exit(f"ERROR: migrate.js is not the stock one (missing: {old.splitlines()[0]!r})")
+        mjs = mjs.replace(old, new)
+    w(MJS[2:], mjs.encode("utf-8"), 0o644)
+    log("  migrate.js: configurator refusals and script errors are logged, never fatal")
+
+    # datamigration_ota (the new rootfs's, run by post-update in a chroot) is the
+    # last step of the update ramdisk, and its exit status alone decides between
+    # booting the new system and stranding the device: post-update returns it and
+    # ota.sh bricks on any failure. By this point the payload is installed and
+    # the partitions are back. With no data migrations left (above), what the
+    # service still does is redone at every boot, so a failure here is logged
+    # and the update boots. It also waited forever for each ls-hubd: a hub that
+    # dies on an owner's role or service file would leave the device in the
+    # ramdisk until its battery ran out. Each wait is now bounded.
+    DMO = "./usr/bin/datamigration_ota"
+    dmo = read_rootfs(ROOTFS_TGZ, exact=[DMO])[DMO]["data"].decode("utf-8")
+    DMO_EDITS = [
+        ("while [ ! -e /tmp/privateDone ]; do\n  sleep 1\ndone\n",
+         "# webOS CE: bounded, so a hub that never comes up cannot hold the device here\n"
+         "_w=0\n"
+         "while [ ! -e /tmp/privateDone ] && [ $_w -lt 120 ]; do\n  sleep 1; _w=`expr $_w + 1`\ndone\n"
+         "[ -e /tmp/privateDone ] || echo \"webOS CE: the private bus did not come up in 120 s, going on\"\n"),
+        ("while [ ! -e /tmp/publicDone ]; do\n  sleep 1\ndone\n",
+         "_w=0\n"
+         "while [ ! -e /tmp/publicDone ] && [ $_w -lt 120 ]; do\n  sleep 1; _w=`expr $_w + 1`\ndone\n"
+         "[ -e /tmp/publicDone ] || echo \"webOS CE: the public bus did not come up in 120 s, going on\"\n"),
+        ("exec /usr/bin/datamigration progressOn\n",
+         "# webOS CE: the update is installed; a migration that does not report\n"
+         "# success is logged and the new system boots (the configurator reloads every\n"
+         "# kind at every boot). A nonzero exit here strands the device at \"!\".\n"
+         "/usr/bin/datamigration progressOn\n"
+         "_rc=$?\n"
+         "echo \"datamigration returned $_rc\"\n"
+         "[ $_rc -eq 0 ] || echo \"webOS CE: the migration did not report success; booting the update anyway\"\n"
+         "exit 0\n"),
+    ]
+    for old, new in DMO_EDITS:
+        if dmo.count(old) != 1:
+            sys.exit(f"ERROR: datamigration_ota is not the stock one (missing: {old.splitlines()[0]!r})")
+        dmo = dmo.replace(old, new)
+    w(DMO[2:], dmo.encode("utf-8"), 0o755)
+    log("  datamigration_ota: bounded bus waits; a failed migration no longer strands an update")
+
     # ce-preload-versions: Calendar and Photos are staged under their stock
     # version numbers, so ipkg records those and Preware offers its feed's
     # 3.2.0 as an update to an app the device already has. The script records

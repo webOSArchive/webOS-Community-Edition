@@ -819,6 +819,20 @@ if have $OTAK && have $OTAV; then
 else
   F "ota OTA anchor missing (key=$(have $OTAK && echo yes || echo NO) verifier=$(have $OTAV && echo yes || echo NO))"
 fi
+# The update ramdisk's last step runs these two files from the NEW rootfs, and a
+# failure there strands the device at "!" (2026-11-24: an owner's C+DAV db kinds,
+# refused by the configurator at every boot). bake.py makes both tolerant; see its
+# migrate.js / datamigration_ota tiers. Guard against a bake that lost them.
+MIGJS=/usr/palm/services/com.palm.service.migration/handlers/migrate.js
+grep -q 'var TEST_MODE = true; // webOS CE' $MIGJS 2>/dev/null && grep -q 'CE: configurator ' $MIGJS 2>/dev/null \
+  && grep -q 'CE: continuing the migration past this error' $MIGJS 2>/dev/null && ! grep -q 'process.exit(1)' $MIGJS 2>/dev/null \
+  && P "ota migrate.js: configurator refusals and script errors never strand an update" \
+  || F "ota migrate.js is not CE's tolerant version (an owner's bad db kind would strand an OTA)"
+DMO=/usr/bin/datamigration_ota
+grep -q 'booting the update anyway' $DMO 2>/dev/null && grep -v '^$' $DMO 2>/dev/null | tail -n 1 | grep -qx 'exit 0' \
+  && ! grep -q '^exec /usr/bin/datamigration' $DMO 2>/dev/null && grep -q '_w -lt 120' $DMO 2>/dev/null \
+  && P "ota datamigration_ota: bounded bus waits, always exits 0" \
+  || F "ota datamigration_ota is not CE's version (a failed migration would strand an OTA)"
 # Nothing else OTA may be baked -- the client ships via Preware, authenticated by
 # this key. A daemon or Updates patch appearing here means the boundary slipped.
 for p in /usr/bin/ce-ota-daemon /usr/palm/services/org.webosarchive.ota.service /var/palm/event.d/ce-ota; do
