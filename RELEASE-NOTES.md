@@ -1,7 +1,31 @@
-# webOS CE 3.2.0 — Release Notes (DRAFT, not released)
+# webOS Community Edition 3.2.0 — Release Notes
 
-*Draft for the 3.2.0 release (planned build 600120). The 3.1.0 release notes follow below,
-unchanged.*
+**Release — BUILDMARK 600121** (release date: ____ , after the final 600070 → 600121 check)
+
+webOS CE 3.2.0 is the first CE release delivered **over the air**. A 3.1.0 TouchPad updates
+in place and keeps its apps, data, mail and settings. Its main new feature is **modern
+email sign-in** for Microsoft 365, Outlook.com and Gmail.
+
+The 3.1.0 release notes follow below, unchanged.
+
+| | TouchPad Wi-Fi (`topaz`) |
+|---|---|
+| Doctor | `webosdoctorp320hstnh-ce-600121.jar` |
+| BUILDMARK | 600121 |
+| Size | 252,085,809 bytes (240 MB) |
+| md5 | `f2563bf480eb7ed90f310198cf3c3f5e` |
+
+```
+sha256sum webosdoctorp320hstnh-ce-600121.jar
+740fa067e99983f071393f68e8a2fc3e495498b0c567193533fa11144a4542ad
+```
+
+**Wi-Fi TouchPad only.** There is no 3.2.0 image or update for the 4G/AT&T TouchPad yet;
+it stays on 3.1.0 (600071).
+
+*Testers got 600119, then 600120 (Beta 2) and 600121 (Beta 3), by OTA. The release is Beta
+3 itself, byte for byte: nothing was rebuilt to make it a release. Only the update's title
+changed, to "webOS Community Edition 3.2.0".*
 
 ## Getting 3.2.0, and staying up to date
 
@@ -35,8 +59,85 @@ device's ID (NDUID) under Device Details if you are asked for it.
   there is not enough room, and nothing is changed.
 - Only the HP TouchPad (Wi-Fi) is offered this update. The 4G/AT&T TouchPad's update is
   not ready yet.
+- Homebrew that adds its own databases (C+DAV, WebCal Sync) is fine. You don't need to
+  remove it first.
 
 **Fixed by the update:** 3.1.0's Full Erase left no ringtones or wallpapers (issue #14).
+
+## What's new in 3.2.0
+
+**Email for today's providers.** Add Account offers **Microsoft Outlook** and **Google**.
+- **Microsoft 365** (work and school) signs in with a code: the TouchPad shows it, and you
+  enter it at microsoft.com/device on any device. Mail, contacts and calendar sync over
+  Exchange ActiveSync.
+- **Outlook.com** (personal Microsoft accounts) takes the same sign-in and falls back to
+  IMAP and SMTP, mail only, without asking twice.
+- **Gmail** signs in through webOS Archive's sign-in service. Mail syncs over IMAP with
+  push (IDLE).
+- Tokens refresh by themselves. If access is revoked, Email says "Check your login and
+  password", and **Change Login Settings → Sign In Again** fixes it.
+- Plain-password IMAP and Exchange accounts work as before.
+
+**Over-the-air updates.** With **OTA Ready** from App Museum II, System Updates finds and
+installs webOS CE updates (above).
+
+**Apps**
+- **Video Player**: videos play in their own player instead of inside Photos, scrubbing no
+  longer hangs, and **HTTPS** video streams play.
+- **Calculator 3.2.0**: rotate to landscape for 24 scientific keys.
+- **Contacts: Import vCards** (2.1, 3.0, 4.0, with photos) to the on-device account.
+- **Calendar: Import Calendar** (`.ics`), with rewritten repeating events (UNTIL, COUNT,
+  cancelled dates, DST changes, Windows zone names). The local calendar is "On This
+  Device".
+- **Time zones** from tzdata 2026f (stock was from 2011).
+- **Messaging**: a buddy with no linked person no longer shows another thread's unread
+  count, and a first message from someone who isn't a buddy now gets a conversation.
+- **Photos** can save rotate and crop edits after a fresh flash or a Full Erase.
+
+**Typing**
+- **Emoji**: the keyboard's language key is now an emoji key, and emoji render (in
+  monochrome) in apps, web pages and the system UI.
+- **CE auto-correct** replaces the stock XT9 engine. It is tuned for English.
+
+**System**
+- **No HP branding**: a moon boot logo, webOS Archive icons and wording, "webOS Account"
+  and "webOS TouchPad" in place of HP's names.
+- **USB**: connecting shows a "USB Connected" banner and a dashboard item instead of a
+  popup that stays up.
+- **No false hotspot sign-in prompt** on ordinary Wi-Fi (issue #15).
+- **Launcher**: Video Player sits next to Music, and the Settings tab is alphabetical.
+
+## How this release was tested
+
+- **All three update routes on hardware**, through production Install Now: 600070 →
+  600120 → 600121, 600070 → 600119 → 600120, and 600070 → 600120 direct (172 of 172
+  checks after). 600120 → 600121 also ran on a daily-driver TouchPad that had stranded on
+  600120's update because of a C+DAV database, and on a test TouchPad set up the same way.
+- **Fresh flashes** of the earlier 3.2.0 builds (to 600119), each followed by
+  `ce-test-full.sh` and the hand tests in `Docs/TEST-PLAN.md`. 600120 and 600121 reached
+  the test TouchPads by OTA.
+- **Field testers** on 600119, 600120 and 600121 by OTA, with no open reports against
+  600121.
+
+## Known issues
+
+Full detail is in **[KNOWN-ISSUES.md](KNOWN-ISSUES.md)**. The ones you may meet:
+
+- **Gmail** shows Google's "unverified app" warning at sign-in. Continue past it. Google
+  allows an unverified app 100 users, so Gmail sign-in may stop admitting new accounts
+  before webOS Archive completes Google's verification.
+- **Auto-correct outside English** has not been evaluated. XT9's learned words are not
+  carried over.
+- **The first minute after an update** shows the launcher while apps are swapped in.
+  Leave it alone until System Updates opens by itself.
+- **USB Settings says "Helper not running"** on a fresh flash, though the helper is
+  running (KNOWN-ISSUES #14, carried over from 3.1.0).
+- **Editing a recurring Zoho event** leaves duplicates (Zoho's server and the stock
+  Exchange client; see KNOWN-ISSUES).
+- **Calendar** models one time-zone rule per year, so in a year with a permanent change
+  (Vancouver, Havana in 2026) some event times are off. System clocks are right.
+- **A crash report may appear after first-time setup**, as on 3.1.0 (KNOWN-ISSUES #4).
+- **No on-device rollback.** Recovery is the Doctor.
 
 ---
 

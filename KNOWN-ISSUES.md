@@ -1,4 +1,13 @@
-# webOS CE 3.1.0 — Known Issues (600070 release; last hardware run 2026-08-30)
+# webOS Community Edition 3.2.0 — Known Issues (600121 release)
+
+**3.2.0 (600121).** #16 to #19 were found and fixed during the 3.2.0 cycle; #20 hit
+a beta and is fixed in 600121. Still open from 3.1.0: #14 (USB Settings' "Helper not
+running") and the Zoho entry, also numbered #14, which lies on Zoho's side. #4 still
+recurs and is still accepted. 3.2.0's own limits are under "3.2.0 limits" below.
+
+The 3.1.0 record follows as it was written for 600070.
+
+## 3.1.0 (600070 release; last hardware run 2026-08-30)
 
 Everything below is reproduced, measured, or traced to a specific line. Each
 entry says what it costs a user, what is actually known, and what a fix would
@@ -27,7 +36,7 @@ measured this way — which is evidence, not closure. #4 fires per **OOBE**, and
 
 ---
 
-## 16. Full Erase leaves no ringtones or wallpapers, and the wallpaper resets on every boot — FIXED for 3.2.0, not yet on hardware
+## 16. Full Erase leaves no ringtones or wallpapers, and the wallpaper resets on every boot — FIXED in 3.2.0, verified on hardware
 
 Reported in GitHub issue #14. On 600070 (and 600028 onward), Settings → Reset
 Options → **Full Erase** brings the device back with empty ringtone and
@@ -49,10 +58,13 @@ sweatshop ringtones and wallpapers, 21.5 MB) because every 3.1.0 device has
 already deleted it. Cost: ~28 MB of rootfs on a flashed device; the 600070 to
 600114 payload's net rootfs growth went to 55 MB.
 
+**Verified on hardware:** a Full Erase of test TouchPad C, updated from 3.1.0 by OTA,
+brought the media back and wrote the SystemRestore token (Docs/OTA-PLAN.md §2.0l).
+
 **A 3.1.0 device that is not updated** keeps the fault. Re-Doctor after a Full
 Erase.
 
-## 17. The hotspot sign-in dashboard appears on an ordinary network — FIXED for 3.2.0, not yet on hardware
+## 17. The hotspot sign-in dashboard appears on an ordinary network — FIXED in 3.2.0
 
 Reported in GitHub issue #15. `PmNetConfigManager`'s connectivity check fetches
 two neighbouring URLs from a built-in list, sends no User-Agent, and decides
@@ -62,7 +74,7 @@ check that starts at yahoo always fails. 3.2.0 patches them to
 `www.example.com` and `info.cern.ch` (Docs/HOTSPOTS.md). Workaround on 3.1.0:
 dismiss the dashboard.
 
-## 19. 3.2.0 previews: Photos cannot save an edit after a fresh flash or a Full Erase — FIXED for 600119, not yet baked
+## 19. 3.2.0 previews: Photos cannot save an edit after a fresh flash or a Full Erase — FIXED in 600119, verified on hardware
 
 The rotate/crop editor writes through `org.webosarchive.photos.service`, which
 lives in the Photos preload on cryptofs. The first-boot preload pass installs
@@ -82,7 +94,10 @@ app happens to create it. The job now creates it as `jail_default.conf` does
 (for 600119). Stock 3.0.5's own triton-inst services would have the same latent
 fault.
 
-## 18. 3.2.0 previews: the launcher comes up by category with an empty dock — FIXED in 600117, not yet on a fresh flash
+**Verified on hardware:** Photos saves an edit on test TouchPad D (600070 → 600119 by
+OTA, then a Full Erase) and on C (a fresh 600119 flash).
+
+## 18. 3.2.0 previews: the launcher comes up by category with an empty dock — FIXED in 600117
 
 Every 3.2.0 image from 600101 to 600116, on a fresh flash or after a Full Erase:
 all apps and settings on the first page, two icons on Settings, nothing in the
@@ -103,7 +118,10 @@ test now checks for a dock save and a full Settings page. Recovery on an
 affected device: `rm /var/luna/preferences/launcher3/*` and restart Luna, after
 the fix is on it.
 
-## 14. USB Settings reports "Helper not running" on every fresh flash — DIAGNOSED ON HARDWARE (600070), NOT FIXED
+**Checked since 600117:** `ce-test-full.sh` checks the dock save and the full Settings
+page on every run.
+
+## 14. USB Settings reports "Helper not running" on every fresh flash — DIAGNOSED ON HARDWARE (600070), NOT FIXED, still in 3.2.0
 
 **Severity: high — it is the first thing a user sees in a shipped app, and it is
 wrong.** Listed first because it should be solved first; the numbering is
@@ -987,6 +1005,47 @@ event in memory.
 an Add. A bug report has been written for Zoho. On the TouchPad, `mojomail-eas` would need patching, or a
 background job would have to detect unlinked occurrences and force a resync. Neither is planned: both are
 fragile work against one provider's behaviour.
+
+## 20. 3.2.0 Beta 2: an update stranded at "!" when a homebrew database was refused — FIXED in 600121
+
+**Severity: high, and it hit a real device.** On 2026-11-24 a daily-driver TouchPad
+(3.1.0 with C+DAV) took 600070 → 600120 by OTA and stopped at the "!" screen.
+
+**Cause.** The install itself finished. At the last step of `post-update`, the
+migration service reloads the db8 kinds. The configurator refused C+DAV's three kinds:
+db8 stored them under a different owner than their kind files name (-3963, permission
+denied). The migration service treated a partial result as a failure, and `post-update`
+bricks the device on any failure at that stage, with no retry. The same three kinds
+fail harmlessly at every normal boot. No test device had C+DAV, so no rehearsal hit it.
+
+**Fix (600121).** The migration step logs refused kinds and carries on, and
+`datamigration_ota` waits a bounded time and always exits 0. Both run from the new
+rootfs, so every payload to 600121 carries them. Proven on a test TouchPad with a
+re-owned kind (070 → 120 stranded, then 120 → 121 completed) and on the stranded daily
+driver (120 → 121 through production Install Now). The 600070 → 600121 route goes
+straight to the fixed step.
+
+**Recovery** for a device at "!" after 600120's update: boot the device's own kernel
+with `novacom boot mem://`, let `ce-ota-finish` finish, then relink `/boot/uImage`.
+
+---
+
+## 3.2.0 limits
+
+- **Gmail and Google's 100-user cap.** Google shows an "unverified app" warning at
+  sign-in and admits at most 100 users until the app passes Google's verification.
+- **Auto-correct outside English** (German, French, Spanish, Italian) has not been
+  evaluated, and XT9's learned words are not migrated.
+- **Calendar's time-zone rules.** `getTimeZoneRules` models one rule per year, so in a
+  year with a permanent change (Vancouver, Havana in 2026) some event times are wrong.
+  The system clock is right. A fix needs a binary service patch.
+- **The first minute after an update** shows the launcher while `ce-ota-finish` swaps
+  apps in. Cosmetic.
+- **A tiny update** (600120 → 600121) can open System Updates as a black "Preferences"
+  card; carding it away clears it. Cosmetic; the larger updates never showed it.
+- **Harvy Tao's "Chinese Patch & IME"** must be removed before updating: the update
+  replaces its LunaSysMgr, and the pack cannot then be removed or reinstalled.
+- **No 4G/AT&T image or update.** AT&T TouchPads stay on 3.1.0 (600071).
 
 ## Carried over from earlier builds
 
