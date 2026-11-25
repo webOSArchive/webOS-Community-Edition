@@ -130,6 +130,9 @@ Full detail is in **[KNOWN-ISSUES.md](KNOWN-ISSUES.md)**. The ones you may meet:
   carried over.
 - **The first minute after an update** shows the launcher while apps are swapped in.
   Leave it alone until System Updates opens by itself.
+- **After a fresh flash or a Full Erase, Preware may offer a built-in app as not
+  installed**, Video Player for example. Installing it from Preware is harmless
+  (KNOWN-ISSUES #21).
 - **USB Settings says "Helper not running"** on a fresh flash, though the helper is
   running (KNOWN-ISSUES #14, carried over from 3.1.0).
 - **Editing a recurring Zoho event** leaves duplicates (Zoho's server and the stock
