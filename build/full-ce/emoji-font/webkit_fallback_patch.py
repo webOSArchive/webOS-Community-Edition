@@ -22,7 +22,13 @@ createFromFile returns NULL and nothing changes: deleting the font switches the 
 """
 import hashlib, struct, sys
 
-INPUT_MD5 = '0a44935bc6c53a1ed535039aef153fc7'   # bake tier 19b output (CE 3.1.0 / 3.2.0)
+# bake tier 19b output (CE 3.1.0 / 3.2.0), one per OEM JAR. The AT&T stock library
+# differs from the Wi-Fi one only in .gnu_debuglink's CRC (4 bytes at 0x8dff0f, a
+# section never loaded), so every address below holds the same code in both.
+INPUT_MD5 = {
+    '0a44935bc6c53a1ed535039aef153fc7',   # Wi-Fi (webosdoctorp305hstnhwifi.jar)
+    'c04bd744c60a56fbcd11ed1e644e74b3',   # AT&T (webosdoctorp305hstnhatt.jar)
+}
 FONT = '/usr/share/fonts/CE-Emoji.ttf'
 
 CALL_AT = 0x5bf080            # in PGFallbackFonts::init: bl PGContext::create@plt
@@ -98,7 +104,7 @@ def cave_code(font):
 
 
 def patch(data, font=FONT):
-    if hashlib.md5(data).hexdigest() != INPUT_MD5:
+    if hashlib.md5(data).hexdigest() not in INPUT_MD5:
         raise ValueError('libWebKitLuna.so is not the expected input (md5 %s)' % hashlib.md5(data).hexdigest())
     word = lambda a: struct.unpack_from('<I', data, a)[0]
     for a, w in EXPECT.items():

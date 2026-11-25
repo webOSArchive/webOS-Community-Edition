@@ -70,8 +70,20 @@ CRYPTOFS_APPS = "/media/cryptofs/apps"
 EXTRAS = ":customization-media"    # new_blobs key; not a path
 RECLAIM_JOB = "etc/event.d/ce-reclaim-customization-media"   # 600028-600114 only
 CUSTOMIZATION_MEDIA = "usr/lib/luna/customization/copy_binaries/media/internal"
-CUSTOMIZATION_TAR_IN_JAR = "resources/hp.tar"
-SWEATSHOP_IPK = re.compile(r"^sweatshop-hp-topaz_.*\.ipk$")
+# The customization tar is the JAR's own: recoverytool.config names it
+# (CustomizationBuild=hp.tar on the Wi-Fi TouchPad, att.tar on the AT&T one),
+# and its sweatshop ipk stages the media under the same path on both.
+RECOVERYTOOL_CONFIG = "resources/recoverytool.config"
+SWEATSHOP_IPK = re.compile(r"^sweatshop-[a-z0-9]+-topaz_.*\.ipk$")
+
+
+def customization_tar(path):
+    """The JAR member of its customization tar, e.g. resources/att.tar."""
+    cfg = zipfile.ZipFile(path).read(RECOVERYTOOL_CONFIG).decode("latin-1")
+    m = re.search(r"^CustomizationBuild=([A-Za-z0-9_.-]+\.tar)\s*$", cfg, re.M)
+    if not m:
+        sys.exit("%s: %s names no CustomizationBuild" % (path, RECOVERYTOOL_CONFIG))
+    return "resources/" + m.group(1)
 
 
 def is_customization_media(p):
@@ -80,19 +92,22 @@ def is_customization_media(p):
 
 def customization_media(path):
     """{path: (TarInfo, body)} for the sweatshop ipk's staged media in a Doctor
-    JAR's hp.tar. A bare rootfs tarball has no hp.tar: refuse, because a payload
+    JAR's customization tar (hp.tar, att.tar). A bare rootfs tarball has none: refuse, because a payload
     without this media leaves an updated device unable to recover from a Full
     Erase."""
     if not zipfile.is_zipfile(path):
-        sys.exit("%s: not a Doctor JAR, so there is no hp.tar to take the staged "
+        sys.exit("%s: not a Doctor JAR, so there is no customization tar to take the staged "
                  "customization media from" % path)
-    custo = tarfile.open(fileobj=zipfile.ZipFile(path).open(CUSTOMIZATION_TAR_IN_JAR), mode="r|")
+    member = customization_tar(path)
+    custo = tarfile.open(fileobj=zipfile.ZipFile(path).open(member), mode="r|")
+    blob = None
     for ti in custo:
         if SWEATSHOP_IPK.match(os.path.basename(norm(ti.name))):
+            if blob is not None:
+                sys.exit("%s: more than one sweatshop ipk in %s" % (path, member))
             blob = custo.extractfile(ti).read()
-            break
-    else:
-        sys.exit("%s: no sweatshop ipk in %s" % (path, CUSTOMIZATION_TAR_IN_JAR))
+    if blob is None:
+        sys.exit("%s: no sweatshop ipk in %s" % (path, member))
     out = {}
     with tarfile.open(fileobj=io.BytesIO(ar_members(blob)["data.tar.gz"]), mode="r:gz") as tf:
         for ti in tf:
@@ -288,6 +303,13 @@ def describe(d):
 
 
 def load(args):
+    # A payload never crosses models: the Doctor installed the old device's
+    # customization tar, and the new image's media must be that same carrier's.
+    if zipfile.is_zipfile(args.old) and zipfile.is_zipfile(args.new):
+        oc, nc = customization_tar(args.old), customization_tar(args.new)
+        if oc != nc:
+            sys.exit("old is a %s image and new a %s one: a payload never crosses models"
+                     % (os.path.basename(oc), os.path.basename(nc)))
     print("scanning old: %s" % args.old, file=sys.stderr)
     old_blobs, new_blobs = {}, {}
     old = scan(args.old, old_blobs)
@@ -311,14 +333,14 @@ def load(args):
     else:
         for p, (ti, body) in customization_media(args.old).items():
             if p in old and old[p]["type"] == "file":
-                sys.exit("/%s is in both the old rootfs and its hp.tar" % p)
+                sys.exit("/%s is in both the old rootfs and its customization tar" % p)
             if p not in old:
                 old[p] = record_of(ti, body)
         print("old image keeps its staged media: delivering only what changed", file=sys.stderr)
     extras = customization_media(args.new)
     for p, (ti, body) in extras.items():
         if p in new and new[p]["type"] == "file":
-            sys.exit("/%s is in both the rootfs and hp.tar" % p)
+            sys.exit("/%s is in both the rootfs and the customization tar" % p)
         if p not in new:
             new[p] = record_of(ti, body)
     new_blobs[EXTRAS] = extras

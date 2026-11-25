@@ -2933,6 +2933,27 @@ def main():
         f.write(new_tga)
     log(f"  webos   BootLogo.tga ({len(new_tga)} bytes, replaces the webOS.tar member)")
 
+    # AT&T: the Doctor skips the modem. installer.xml maps a firmware tar per
+    # modem type; with every mapping empty, ModemUpdateStage logs "Unable to get
+    # firmware for modem type ..." and finishes, the path HP's own AT&T Doctor
+    # already takes on an ERICSSON unit (ATT-VARIANT.md section 4). The 30 MB
+    # firmware tar becomes a 0-byte placeholder, as in the Wi-Fi JAR. Nothing on
+    # the device changes: att.tar's topazumtsfw-att ipk is passed through.
+    if VARIANT == "att":
+        stock_ix = open(os.path.join(WORK, "webos", "installer.xml"), encoding="utf-8").read()
+        modem_line = ('<ModemUpdater cdma="" umts="topazumtsfw.tar" world="topazumtsfw-row.tar"'
+                      '  ericsson="" sierra="" att=""/>')
+        if stock_ix.count(modem_line) != 1:
+            sys.exit("ERROR: webOS.tar installer.xml's ModemUpdater line is not stock's; "
+                     "look before skipping the modem")
+        new_ix = stock_ix.replace(modem_line, '<ModemUpdater cdma="" umts="" world=""'
+                                  '  ericsson="" sierra="" att=""/>')
+        with open(os.path.join(OUT, "webos", "installer.xml"), "w", encoding="utf-8") as f:
+            f.write(new_ix)
+        open(os.path.join(OUT, "webos", "topazumtsfw.tar"), "wb").close()
+        log("  webos   installer.xml (no modem firmware mapped: the Doctor skips the modem)")
+        log("  webos   topazumtsfw.tar (0 bytes, as in the Wi-Fi JAR)")
+
     # USB connection: a banner and the dashboard instead of the stock popup.
     rel = "usr/lib/luna/system/luna-systemui/data/StoragedService.js"
     if f"./{rel}" not in stock_names:
