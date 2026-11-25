@@ -1040,8 +1040,9 @@ job appends CE's 14 package records to cryptofs's package list
 (`/media/cryptofs/apps/usr/lib/ipkg/status`). At the same moment,
 `ce-preload-versions` rewrites that file whole (read, edit, move over). A record
 appended between its read and its move is lost. On C it was
-`com.palm.app.videos`; it depends on timing, so it can be none, or any of the
-14. The seed logged "13 of 14" and still "verified complete": its check does not
+`com.palm.app.videos`. It depends on timing, but it is common: it hit 2 of 3
+first boots on 2026-11-25 (C's fresh flash lost Videos, C's Full Erase lost
+Govnah; the 4G/AT&T flash kept all 14). Expect one of the 14 to be lost. The seed logged "13 of 14" and still "verified complete": its check does not
 count the records. Updated devices are not affected: the OTA does not run the
 seed. A Full Erase does.
 
