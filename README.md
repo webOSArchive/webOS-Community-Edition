@@ -22,6 +22,9 @@ webOS CE 3.2.0 adds more features and bugs fixes that were not available in the 
 - Emoji: the keyboard's language key is now an emoji key, and emoji render (in  monochrome) in apps, web pages and the system UI.
 - CE auto-correct: replaces the stock XT9 engine with a modern open source alternative. It is tuned for English.
 
+<a href="Screenshots/Accounts.png"><img src="Screenshots/Accounts.png" width="256">
+<a href="Screenshots/Emoji.png"><img src="Screenshots/Emoji.png" width="256">
+
 ### System
 - **No HP branding**: Following the Luna theme, the boot logo has been replaced, webOS Archive icons and wording, "webOS Account"  and "webOS TouchPad" in place of HP's names.
 - USB: connecting shows a "USB Connected" banner and a dashboard item instead of a popup that stays up (like the "Just Charge" patch, but better!)
