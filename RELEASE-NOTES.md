@@ -1,6 +1,6 @@
 # webOS Community Edition 3.2.0 — Release Notes
 
-**Release — BUILDMARK 600121** (release date: ____ , after the final 600070 → 600121 check)
+**Release — BUILDMARK 600121 (Wi-Fi) and 600122 (4G/AT&T)** (release date: ____ )
 
 webOS CE 3.2.0 is the first CE release delivered **over the air**. A 3.1.0 TouchPad updates
 in place and keeps its apps, data, mail and settings. Its main new feature is **modern
@@ -8,24 +8,31 @@ email sign-in** for Microsoft 365, Outlook.com and Gmail.
 
 The 3.1.0 release notes follow below, unchanged.
 
-| | TouchPad Wi-Fi (`topaz`) |
-|---|---|
-| Doctor | `webosdoctorp320hstnh-ce-600121.jar` |
-| BUILDMARK | 600121 |
-| Size | 252,085,809 bytes (240 MB) |
-| md5 | `f2563bf480eb7ed90f310198cf3c3f5e` |
+Two images ship. Flash the one that matches your device: they are *not* interchangeable.
+
+| | TouchPad Wi-Fi (`topaz`) | TouchPad 4G / AT&T (`topaz4g`) |
+|---|---|---|
+| Doctor | `webosdoctorp320hstnh-ce-600121.jar` | `webosdoctorp320hstnhatt-ce-600122.jar` |
+| BUILDMARK | 600121 | 600122 |
+| Size | 252,085,809 bytes (240 MB) | 282,886,874 bytes (270 MB) |
+| md5 | `f2563bf480eb7ed90f310198cf3c3f5e` | `6f4a8e882832374f3d8e2b27c71e0d56` |
 
 ```
 sha256sum webosdoctorp320hstnh-ce-600121.jar
 740fa067e99983f071393f68e8a2fc3e495498b0c567193533fa11144a4542ad
+
+sha256sum webosdoctorp320hstnhatt-ce-600122.jar
+1d628d6a56f6486f712fec595e2abb9332d4823612dab14de2b31d0e1cb05eea
 ```
 
-**Wi-Fi TouchPad only.** There is no 3.2.0 image or update for the 4G/AT&T TouchPad yet;
-it stays on 3.1.0 (600071).
+*Testers got 600119, then 600120 (Beta 2) and 600121 (Beta 3), by OTA. The Wi-Fi release is
+Beta 3 itself, byte for byte: nothing was rebuilt to make it a release. Only the update's
+title changed, to "webOS Community Edition 3.2.0".*
 
-*Testers got 600119, then 600120 (Beta 2) and 600121 (Beta 3), by OTA. The release is Beta
-3 itself, byte for byte: nothing was rebuilt to make it a release. Only the update's title
-changed, to "webOS Community Edition 3.2.0".*
+**The 4G/AT&T image (600122) is the same CE build**, baked against HP's AT&T Doctor as for
+3.1.0 (`ATT-VARIANT.md`). One difference: **the Doctor no longer updates the modem.** Its
+firmware has not changed in years, and HP's own AT&T Doctor already skipped it on the
+Ericsson modems these TouchPads carry. The radio software on the device is unchanged.
 
 ## Getting 3.2.0, and staying up to date
 
@@ -57,8 +64,9 @@ device's ID (NDUID) under Device Details if you are asked for it.
 - The update needs about 76 MB free on the system partition. Devices with many system
   patches or packages (Qt5 and its SDK, for one) have less; System Updates says so if
   there is not enough room, and nothing is changed.
-- Only the HP TouchPad (Wi-Fi) is offered this update. The 4G/AT&T TouchPad's update is
-  not ready yet.
+- Both TouchPads are offered the update: Wi-Fi from 3.1.0 (600070), 4G/AT&T from 3.1.0
+  (600071). The 4G TouchPad's system partition is fuller, so it has less room to spare
+  (see Known issues).
 - Homebrew that adds its own databases (C+DAV, WebCal Sync) is fine. You don't need to
   remove it first.
 
@@ -109,13 +117,16 @@ installs webOS CE updates (above).
 
 ## How this release was tested
 
-- **All three update routes on hardware**, through production Install Now: 600070 →
-  600120 → 600121, 600070 → 600119 → 600120, and 600070 → 600120 direct (172 of 172
-  checks after). 600120 → 600121 also ran on a daily-driver TouchPad that had stranded on
-  600120's update because of a C+DAV database, and on a test TouchPad set up the same way.
-- **Fresh flashes** of the earlier 3.2.0 builds (to 600119), each followed by
-  `ce-test-full.sh` and the hand tests in `Docs/TEST-PLAN.md`. 600120 and 600121 reached
-  the test TouchPads by OTA.
+- **3.1.0 → 3.2.0 direct, through production Install Now:** 600070 → 600121 on two
+  lived-in Wi-Fi TouchPads, and 600071 → 600122 on a 4G/AT&T TouchPad. Each finished and
+  verified on its own, with no crash report.
+- **The beta routes on hardware:** 600070 → 600120 → 600121, 600070 → 600119 → 600120, and
+  600070 → 600120 direct (172 of 172 checks after). 600120 → 600121 also ran on a
+  daily-driver TouchPad that had stranded on 600120's update because of a C+DAV database,
+  and on a test TouchPad set up the same way.
+- **Fresh flashes of both release Doctors**, each followed by `ce-test-full.sh`: 600121 on a
+  Wi-Fi TouchPad (172 pass; the one real failure is KNOWN-ISSUES #21) and 600122 on the
+  4G/AT&T TouchPad.
 - **Field testers** on 600119, 600120 and 600121 by OTA, with no open reports against
   600121.
 
@@ -133,6 +144,10 @@ Full detail is in **[KNOWN-ISSUES.md](KNOWN-ISSUES.md)**. The ones you may meet:
 - **After a fresh flash or a Full Erase, Preware may offer a built-in app as not
   installed**, Video Player for example. Installing it from Preware is harmless
   (KNOWN-ISSUES #21).
+- **The 4G/AT&T TouchPad has little room left** on its system partition after the update
+  (31 MB free on the one tested, against about 62 MB on a Wi-Fi TouchPad). 3.2.0 itself
+  installs fine; a later update may need room freed first. OTA Ready says so before it
+  changes anything.
 - **USB Settings says "Helper not running"** on a fresh flash, though the helper is
   running (KNOWN-ISSUES #14, carried over from 3.1.0).
 - **Editing a recurring Zoho event** leaves duplicates (Zoho's server and the stock

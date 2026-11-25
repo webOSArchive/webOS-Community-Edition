@@ -1075,7 +1075,13 @@ check counts all 14 records.
   card; carding it away clears it. Cosmetic; the larger updates never showed it.
 - **Harvy Tao's "Chinese Patch & IME"** must be removed before updating: the update
   replaces its LunaSysMgr, and the pack cannot then be removed or reinstalled.
-- **No 4G/AT&T image or update.** AT&T TouchPads stay on 3.1.0 (600071).
+- **Little room for later updates on the 4G/AT&T TouchPad.** It reaches 3.2.0 with `/` at
+  94% (31 MB free on the one tested: 89 MB before the update, which grows `/` by 58 MB);
+  the Wi-Fi TouchPads end at 89% with about 62 MB. OTA Ready refuses an update that needs
+  more than it has (growth + the largest file + 8 MB) and changes nothing, so a 4G update
+  after 3.2.0 must stay under about 15 MB of growth, or first free room on `/` (such as the
+  28 MB of staged customization media, KNOWN-ISSUES #16). A Doctor flash sets `/` back to
+  the image's own size.
 
 ## Carried over from earlier builds
 

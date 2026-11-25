@@ -161,8 +161,12 @@ payload and its own release entry, or a reflash; decide which.
 
 ## Open after 600120
 
-1. **AT&T.** No 3.2.0 AT&T image exists. Bake the AT&T variant, diff against 600071, sign,
-   one run. The AT&T daily driver has only 89 MB free on `/`: check the payload's `space`.
+1. **AT&T: done (2026-11-25).** Bake 600122 (`CE_VARIANT=att`, the Doctor skips the modem);
+   600071 -> 600122 ran through production on `6863778a` and finished and verified.
+   **Headroom:** that device went from 89 MB to 31 MB free on `/` (94%). Any later AT&T OTA
+   must keep growth + largest file + 8 MB under what is free, or free room first (the
+   staged customization media is the obvious 28 MB). Check `space` in manifest-inputs.json
+   against a real 4G before signing.
 2. **The client baked into the image:** not planned; only if there is another OTA (above).
 3. Smaller: a failure after the data tar has started writing (would leave a half-updated
    rootfs the recovery above does not repair); a power cut during the ramdisk; why LunaCE
