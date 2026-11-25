@@ -1,0 +1,101 @@
+#!/bin/sh
+
+#########
+# SETUP #
+#########
+echo "Setting up processes"
+
+# Need to start these manually since upstart isn't running
+
+# run pmsyslogd
+echo "Running pmsyslogd"
+/usr/bin/pmsyslogd -z -f 6 -m &
+sleep 1
+
+# NOV-123943: Disable node "fork server"; it will be re-enabled if neccessary
+# the next time the device is booted with upstart
+rm -f /var/palm/node/fork
+
+# run ls-hubd_private
+EXTRA_FLAGS= 
+
+if grep -qs "qemux86" /etc/hostname; then
+   # enable inet on emulator
+   EXTRA_FLAGS="-n"
+fi
+
+echo "Running ls-hubd private"
+/usr/bin/ls-hubd ${EXTRA_FLAGS} -b /tmp/privateDone --conf /etc/ls2/ls-private.conf --pmloglib &
+
+#sleep until the private bus is up
+# webOS CE: bounded, so a hub that never comes up cannot hold the device here
+_w=0
+while [ ! -e /tmp/privateDone ] && [ $_w -lt 120 ]; do
+  sleep 1; _w=`expr $_w + 1`
+done
+[ -e /tmp/privateDone ] || echo "webOS CE: the private bus did not come up in 120 s, going on"
+
+echo "Running ls-hubd public"
+/usr/bin/ls-hubd ${EXTRA_FLAGS} -b /tmp/publicDone --conf /etc/ls2/ls-public.conf --public --pmloglib &
+
+# sleep until the public bus is up
+_w=0
+while [ ! -e /tmp/publicDone ] && [ $_w -lt 120 ]; do
+  sleep 1; _w=`expr $_w + 1`
+done
+[ -e /tmp/publicDone ] || echo "webOS CE: the public bus did not come up in 120 s, going on"
+
+# set up tokens; keymanager needs them
+/sbin/tokens --mount
+sleep 1
+
+# run keymanager
+echo "Running keymanager"
+test -x /var/local/kminit && /var/local/kminit && rm /var/local/kminit
+/usr/bin/keymanager &
+sleep 1
+
+# We need the user's PIN to write to the real keystore. So instead, initialize the keymanager to store
+# keys in a backup keystore, which will get imported into the real keystore when the keymanager is initialized
+# after reboot.
+luna-send -n 1 palm://com.palm.keymanager/initialize '{"migrate":true, "dbpath":"/var/palm/data/otakeys.db"}'
+
+
+echo "Running filecache"
+/usr/bin/filecache &
+sleep 1
+
+# run LunaSysService (to get locale)
+echo "Running LunaSysService"
+/usr/bin/LunaSysService &
+sleep 5
+
+echo "Running db8"
+if [ -d /var/dblog ]; then
+    mv /var/dblog/* /var/db
+    rmdir /var/dblog
+fi
+
+echo "Running mojodb"
+/usr/bin/mojodb-luna -c /etc/palm/mojodb.conf /var/db &
+sleep 5
+
+# run activitymanager
+echo "Running activitymanager"
+/usr/bin/activitymanager -c {\"log\":{\"appender\":{\"type\":\"syslog\"},\"levels\":{\"default\":\"info\"}}} &
+sleep 5
+
+
+#############
+# MIGRATION #
+#############
+
+# webOS CE: the update is installed; a migration that does not report
+# success is logged and the new system boots (the configurator reloads every
+# kind at every boot). A nonzero exit here strands the device at "!".
+/usr/bin/datamigration progressOn
+_rc=$?
+echo "datamigration returned $_rc"
+[ $_rc -eq 0 ] || echo "webOS CE: the migration did not report success; booting the update anyway"
+exit 0
+
