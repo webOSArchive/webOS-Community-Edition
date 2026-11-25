@@ -1,3 +1,41 @@
+# webOS Community Edition 3.2.0
+
+This follow-up release is available as the first OTA (Over the Air) Update in more than a decade. Download <a href="https://appcatalog.webosarchive.org/app/OTAReady">OTA Ready</a> on your 3.1.0 TouchPad to start the process. (Not running 3.1.0? [See below](#webos-community-edition-310) for details.)
+
+You can also download 3.2.0 as a Doctor for a full system flash. See Releases for downloads.
+
+<a href="Meta/webOS-Moon-Bright.png"><img src="Meta/webOS-Moon-Bright.png" width="256">
+
+## Features
+
+webOS CE 3.2.0 adds more features and bugs fixes that were not available in the final commercial release, or from previous community contributions...
+
+### Modern Email
+- Add Account offers **Microsoft Outlook** and **Google**.
+- **Microsoft 365** (work and school) signs in with a code: the TouchPad shows it, and you  enter it at microsoft.com/device on any device. Mail, contacts and calendar sync over  Exchange ActiveSync.
+- **Outlook.com** (personal Microsoft accounts) takes the same sign-in and falls back to  IMAP and SMTP, mail only, without asking twice.
+- **Gmail** signs in through webOS Archive's sign-in service. Mail syncs over IMAP with  push (IDLE).
+- Tokens refresh by themselves. If access is revoked, Email says "Check your login and  password", and **Change Login Settings → Sign In Again** fixes it.
+- Plain-password IMAP and Exchange accounts work as before.
+
+### Typing
+- Emoji: the keyboard's language key is now an emoji key, and emoji render (in  monochrome) in apps, web pages and the system UI.
+- CE auto-correct: replaces the stock XT9 engine with a modern open source alternative. It is tuned for English.
+
+### System
+- **No HP branding**: Following the Luna theme, the boot logo has been replaced, webOS Archive icons and wording, "webOS Account"  and "webOS TouchPad" in place of HP's names.
+- USB: connecting shows a "USB Connected" banner and a dashboard item instead of a popup that stays up (like the "Just Charge" patch, but better!)
+- No false hotspot sign-in prompt on ordinary Wi-Fi (issue #15).
+- Launcher: Video Player sits next to Music, and the Settings tab is alphabetical.
+
+### Apps
+- Calculator: rotate to landscape for 24 scientific keys.
+- Contacts: Import vCards (2.1, 3.0, 4.0, with photos) to the on-device account built-in
+- Calendar: Import Calendar (`.ics`), with rewritten repeating events (UNTIL, COUNT,  cancelled dates, DST changes, Windows zone names). The local calendar is now "On This  Device".
+- Time zones now using **tzdata 2026f** (replacing stock timezones from 2011).
+- Messaging: a buddy with no linked person no longer shows another thread's unread  count, and a first message from someone who isn't a buddy now gets a conversation.
+- Photos can save rotate and crop edits after a fresh flash or a Full Erase.
+
 # webOS Community Edition 3.1.0
 
 This release represents 15 years of cummulative effort to preserve, restore, improve and maintain Palm and HP's mobile webOS. 
