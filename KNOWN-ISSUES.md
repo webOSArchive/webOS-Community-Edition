@@ -1034,6 +1034,7 @@ with `novacom boot mem://`, let `ce-ota-finish` finish, then relink `/boot/uImag
 
 - **Gmail and Google's 100-user cap.** Google shows an "unverified app" warning at
   sign-in and admits at most 100 users until the app passes Google's verification.
+  Accepted: Google may never verify it, and the community is well under 100 users.
 - **Auto-correct outside English** (German, French, Spanish, Italian) has not been
   evaluated, and XT9's learned words are not migrated.
 - **Calendar's time-zone rules.** `getTimeZoneRules` models one rule per year, so in a

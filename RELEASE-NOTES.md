@@ -124,8 +124,8 @@ installs webOS CE updates (above).
 Full detail is in **[KNOWN-ISSUES.md](KNOWN-ISSUES.md)**. The ones you may meet:
 
 - **Gmail** shows Google's "unverified app" warning at sign-in. Continue past it. Google
-  allows an unverified app 100 users, so Gmail sign-in may stop admitting new accounts
-  before webOS Archive completes Google's verification.
+  allows an unverified app 100 users. Google may never verify it, and the TouchPad
+  community is well under 100 Gmail users, so this is accepted.
 - **Auto-correct outside English** has not been evaluated. XT9's learned words are not
   carried over.
 - **The first minute after an update** shows the launcher while apps are swapped in.
