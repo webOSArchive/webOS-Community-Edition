@@ -38,7 +38,8 @@ file-effects on the build host into `build/overlays/full-ce/`, then
 `build/build-ce-doctor.sh overlays/full-ce` regenerates the ipkg md5 database,
 runs `integcheck` and repacks the JAR. `AddToImage/` is the statement of intent
 for image contents, and `build/full-ce/manifests/<BUILDMARK>.json` records the
-inputs and output of every build. Detail: [build/README.md](../build/README.md)
+inputs and output of every build. **Setting up and building from scratch, and
+shipping an OTA: [BUILDING.md](../BUILDING.md).** Detail: [build/README.md](../build/README.md)
 and [build/full-ce/README.md](../build/full-ce/README.md).
 
 ## Root documents
@@ -46,6 +47,7 @@ and [build/full-ce/README.md](../build/full-ce/README.md).
 | Doc | What it covers |
 |-----|----------------|
 | **[README.md](../README.md)** | The project front page: what CE is, how to get it, where to get help. |
+| **[BUILDING.md](../BUILDING.md)** | Setting up a build machine, baking a Doctor (Wi-Fi and AT&T), testing it, and building, signing and rolling out an OTA update. |
 | **[RELEASE-NOTES.md](../RELEASE-NOTES.md)** | What ships in 3.2.0 (and, below it, 3.1.0), how each release was tested, and the known issues a user may meet. |
 | **[KNOWN-ISSUES.md](../KNOWN-ISSUES.md)** | Every issue reproduced but not yet fixed: what it costs a user, what is known, and what a fix would have to do. |
 | **[ATT-VARIANT.md](../ATT-VARIANT.md)** | The 4G/AT&T (`topaz4g`) build: how it is derived from HP's AT&T Doctor, what differs from Wi-Fi, and its test record (600071, 600122). |

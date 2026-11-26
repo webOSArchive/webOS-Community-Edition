@@ -265,5 +265,6 @@ Building the image is out-of-scope for this document and will be covered elsewhe
 
 ## For Developers
 
+To build a Doctor or an OTA update yourself, start with **[BUILDING.md](BUILDING.md)**.
 Build notes, design documents and the verification record are in
 **[Docs/](Docs/)** — start with [Docs/PLAN.md](Docs/PLAN.md), which indexes them.
