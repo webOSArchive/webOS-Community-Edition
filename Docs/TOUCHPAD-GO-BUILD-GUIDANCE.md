@@ -29,6 +29,34 @@ both lines to the values in the **stock Go image's** `/etc/palm-build-info`.
 `/etc/palm-install-info`, which comes from the stock Go customization. Take `BUILDNUMBER` from
 the stock image too. Don't guess it.
 
+**See it for yourself.** These commands are read-only. Run them over novacom on a flashed
+Go; under novacom, `luna-send` needs `</dev/null` or it hangs.
+
+```sh
+grep BUILD /etc/palm-build-info
+for k in buildName machineName deviceName; do
+  luna-send -n 1 palm://com.palm.preferences/systemProperties/Get \
+    "{\"key\":\"com.palm.properties.$k\"}" </dev/null
+done
+```
+
+Read on the last build (600122-based), 2026-11-26:
+
+```
+BUILDNAME=Nova-ATT-Topaz
+BUILDNUMBER=86
+BUILDTIME=20261125202929
+BUILDMARK=600122
+{ "com.palm.properties.buildName": "Nova-ATT-Topaz", "returnValue": true }
+{ "com.palm.properties.machineName": "opal", "returnValue": true }
+{ "com.palm.properties.deviceName": "webOS TouchPad Go", "returnValue": true }
+```
+
+`machineName` and `deviceName` are already correct; those are what apps use to detect the
+Go. Only the build name is stale. The system reads it from `/etc/palm-build-info` and
+publishes it as the `com.palm.properties.buildName` property. After the fix, both the file
+and that property should read `Nova-HP-Opal`.
+
 **Leave the other lines as CE sets them:**
 
 - `PRODUCT_VERSION_STRING=webOS CE 3.2.0`. Device Info shows it, CE packages check it, and
