@@ -75,7 +75,6 @@ and [build/full-ce/README.md](../build/full-ce/README.md).
 | **[SCOPE-3.1-CE.md](SCOPE-3.1-CE.md)** | The historical 3.1.0 design: repack feasibility, tiered feature set, branding, decisions. A banner lists what has changed since. |
 | **[TEARDOWN.md](TEARDOWN.md)** | Analysis of the OEM 3.0.5 Doctor JAR: structure, signing, the TrenchCoat flash recipe, and the webOS rootfs. The starting point. |
 | **[TEST-PLAN.md](TEST-PLAN.md)** | The verification run for the current build: what has been checked, what still needs a human, and how to capture evidence. |
-| **[TOUCHPAD-GO-BUILD-GUIDANCE.md](TOUCHPAD-GO-BUILD-GUIDANCE.md)** | Guidance for the separate TouchPad Go (`opal`) meta-doctor project derived from CE 3.2.0. Not a CE image. |
 | **[unimplemented-accounts.method.md](unimplemented-accounts.method.md)** | Hand-over to the account-server project: `getPreferences` is unimplemented server-side. Not a system-image issue. |
 | **[USB-SETTINGS-HOTFIX.md](USB-SETTINGS-HOTFIX.md)** | Specification for a USB Settings "Helper not running" hotfix (diagnosed on 600070; not built). |
 | **[VIDEO-3.2.0-NOTES.md](VIDEO-3.2.0-NOTES.md)** | The Video Player and Media TLS as shipped in 3.2.0: state and learnings. |
