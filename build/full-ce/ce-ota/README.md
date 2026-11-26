@@ -13,7 +13,8 @@ delivered over an untrusted channel: if the key shipped in a later update, that
 update would itself be unauthenticated, which is the problem it exists to solve.
 Everything else in the OTA client can arrive later via Preware and be authenticated
 by this key. See `OTA-IMAGE-INTEGRATION.md` §1 and `IMAGE-SIDE-DECISIONS.md` §1 in
-the OTA project, and `Docs/OTA-STRATEGY.md` §5 here.
+the OTA project; the signing design is in its `OTA-3.1.0.md` Part II and
+`keys/README.md`.
 
 RSA-4096, signatures SHA-256 PKCS#1 v1.5. Chosen for the stock OpenSSL 0.9.8k
 (2009) at `/usr/bin/openssl` — which this image does NOT replace (our TLS work adds

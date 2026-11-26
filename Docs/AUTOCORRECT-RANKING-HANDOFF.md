@@ -3,12 +3,18 @@
 Written 2026-11-20. For whoever takes up the ranking in `packages/smartkey` (CE's
 auto-correct engine, `SmartKeyService`).
 
+**Status 2026-11-26:** overtaken. The engine change was committed in `c4ed085` (with the
+margin rule of §4 and a rebuilt `prebuilt/usr/bin/SmartKeyService`), baked from 600111
+onward (`446bcf2`), and shipped in webOS CE 3.2.0 (600121/600122). Lunacy is still not
+edited from this project.
+
 **What this is and is not.** The user typed "trest" on the HP 10 G2, which runs Lunacy's
 keyboard, expected "treat" and got "rest"; and saw the space bar hang for seconds there.
 I read Lunacy's `LunaKeyboard/Corrector.kt` and CE's engine, and tried a change to CE's
 engine in a scratch copy. **Nothing was changed in LunaKeyboard, and nothing is changed in
 this repo's engine**: Lunacy's working tree is clean, and the patch below is a proposal with
-measurements, not a commit. Lunacy is not edited from this project.
+measurements, not a commit (as of writing; since committed, see the status above). Lunacy
+is not edited from this project.
 
 ## 1. The symptom in CE's engine
 
@@ -97,6 +103,10 @@ took 4 to 6 ms on the build machine, as before.
 the word alone is defensible. What changes is which word the bubble offers first.
 
 ### Not done, and needed before this is committed
+
+(Since done for English: `tools/eval.py` was run and the change committed and baked, §4.
+Other languages and a TouchPad trial remain open; non-English auto-correct is a listed
+3.2.0 limit in `KNOWN-ISSUES.md`.)
 
 - **`tools/eval.py` was not run.** It needs `skcli`, which needs Hunspell's headers
   (`hunspell.hxx`), and this machine has none; it also needs the AOSP word list and the

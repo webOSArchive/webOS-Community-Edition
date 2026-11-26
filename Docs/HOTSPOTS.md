@@ -50,7 +50,8 @@ for a live community host:
 
 The google and bing entries are unchanged.
 
-yahoo and hp were swapped for vNext (issue #15). The probe sends no
+yahoo and hp were swapped in 3.2.0 (issue #15; commit `4f49e5a`, first baked
+in 600115). The probe sends no
 `User-Agent`, and by 2026 yahoo answered that with a 429 and hp.com with an
 empty 302, so neither page had a `<title>`. Each check fetches two neighbouring
 entries and says `captivePortal` only when both have no title; yahoo and hp were

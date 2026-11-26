@@ -1,6 +1,10 @@
 # Video player rewrite — plan
 
-**Status: parked on the `video-player` branch for a future 3.2.0
+**Status 2026-11-26: historical plan; current state in
+`Docs/VIDEO-3.2.0-NOTES.md`.** The player shipped in 3.2.0 (merged in
+242c20b, baked since 600072, released in 600121/600122).
+
+**Original status: parked on the `video-player` branch for a future 3.2.0
 (2026-09-14). For the current state, install path, 3.2.0 checklist and every
 learning, read `Docs/VIDEO-3.2.0-NOTES.md` first — this file is the original
 plan plus the phase log, and its later sections describe designs that were

@@ -41,7 +41,9 @@ The source for each one is in the repository's `apps/` folder.
 | Photos | `apps/com.palm.app.photos/resources/` | rotate and crop editor, exhibition clock | the same |
 | Calculator | `apps/com.palm.app.calculator/resources/` | new scientific (landscape) mode | the same |
 | Contacts | `apps/com.palm.app.contacts/` | now built from the open-source Contacts app | **no `resources/` folder at all**. The app is English-only today. A translation needs the whole table, built from the `$L("...")` strings in the JavaScript (about 100) |
-| Videos | `apps/com.palm.app.videos/resources/` | new app | new table: translate all of `en.json` (14 strings), and add `resources/<locale>/appinfo.json` for the title "Video Player" |
+| Videos | `apps/com.palm.app.videos/resources/` | new app | `en.json` lists all 14 strings. Draft `de`, `es`, `fr` and `it` tables and launcher titles (`resources/<locale>/appinfo.json`, "Video Player") already exist: native speakers, please review those drafts; for any other locale, add a table and an `appinfo.json` |
+| Sign In | `apps/com.palm.app.signin/` | new in 3.2.0: the mail sign-in page (Microsoft 365 / Gmail) | **no `resources/` folder at all**. A translation needs the whole table, built from the `$L("...")` strings in `source/MailSignIn.js` (about 30) |
+| Email | `apps/com.palm.app.email/resources/` | 3.2.0 mail work: Change Login Settings opens an OAuth account's sign-in page; default signatures | compare your 3.0.5 file to `en.json`; the default signature (`-- Sent from my HP TouchPad`) is reworded by the bake, so check its translation |
 
 ## 3. Changed system files
 

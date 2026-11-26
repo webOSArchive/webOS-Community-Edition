@@ -3,7 +3,7 @@
 **3.2.0 (600121).** #16 to #19 were found and fixed during the 3.2.0 cycle; #20 hit
 a beta and is fixed in 600121. #21 is a first-boot race found on 600121's
 fresh flash, accepted for 3.2.0. Still open from 3.1.0: #14 (USB Settings' "Helper not
-running") and the Zoho entry, also numbered #14, which lies on Zoho's side. #4 still
+running") and #22 (Zoho recurring edits, numbered #14 before 2026-11-26), which lies on Zoho's side. #4 still
 recurs and is still accepted. 3.2.0's own limits are under "3.2.0 limits" below.
 
 The 3.1.0 record follows as it was written for 600070.
@@ -222,7 +222,7 @@ would reach them as an ordinary app update. A one-file signed hotpatch of
 that would verify it. Note it would *not* exercise their open item #4, the
 unverified armed flash — a benign payload bounds a failed apply, not a broken
 flash path. Authoritative OTA status lives in `OTA-3.1.0.md` in the
-`webos-update-exploration` repo, not in our stale `Docs/OTA-STRATEGY.md`.
+`webos-update-exploration` repo, not in the old `Docs/OTA-STRATEGY.md` (deleted 2026-11-26).
 
 `state_save` has the same write-then-latch shape and fails identically, so
 `armed=yes` never persists and the OTG controller is re-armed every boot.
@@ -254,7 +254,7 @@ but never gets `conversations`. On CE, `findByIM` also misses linked buddies
   `herrie/milestone1-channel-routing`. Synergy devices have the same bug.
 
 **Verified on topaz** with messages injected into db8 (see
-`WEBOS-CHAT-HANDOFF.md`). Not yet verified with a real send from an account
+`Docs/WEBOS-CHAT-HANDOFF.md`). Not yet verified with a real send from an account
 that isn't a buddy. The enabler's removal restore hasn't been run.
 
 ---
@@ -977,7 +977,7 @@ is documented so a stack trace in the log is not mistaken for a real failure.
 
 ---
 
-## 14. Editing a recurring Zoho event leaves duplicates on the TouchPad — Zoho and stock `mojomail-eas`
+## 22. Editing a recurring Zoho event leaves duplicates on the TouchPad — Zoho and stock `mojomail-eas`
 
 **What the user sees.** After a recurring event in a Zoho Exchange account is edited, for example by moving
 one occurrence in Zoho's web calendar, Calendar shows duplicate occurrences on the affected dates. A

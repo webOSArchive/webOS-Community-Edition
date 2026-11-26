@@ -18,6 +18,14 @@ in `preload.c`, and `Docs/email-app-for-ce.md` (one Email app bug). The mail
 part of `preload.c` still starts at line 1260. They are folded into phases 1,
 3 and 4 below.
 
+**Status 2026-11-26:** all five phases shipped in webOS CE 3.2.0, released as 600121
+(Wi-Fi) and 600122 (AT&T) and delivered to the field by OTA (`RELEASE-NOTES.md`). The OTA
+side of phase 5 is done: `ce-ota-finish` reinstalls Email from the image's staged ipk
+(`Docs/OTA-PLAN.md` §2.2 (12) and the hardware runs that record it). The Microsoft client
+id did not change: `providers.json` still carries `95d7ba4d-…`, last changed in `8c8a98e`
+(2026-11-19), so 3.2.0 shipped with the original registration. The paragraph below is the
+2026-11-20 status, kept as written.
+
 **Status (2026-11-20):** phases 1 to 4 are built and baked. Phases 1 and 2 are in images
 from 600104, phases 3 and 4 from 600105; the latest image is 600107. Google signs in through
 the deployed broker; Microsoft signs in by device code, without the broker. Phase 5
@@ -28,9 +36,8 @@ so far carry the old one. The behaviours not yet seen working are listed at the 
 phase 3. Each phase's results are at the end of its section.
 
 **Release:** all five phases ship in **webOS CE 3.2.0**, as its main feature
-(decided 2026-11-09). So 600102 is not the final 3.2.0 image. The release
-waits for phase 5's bake, and that bake is tested with
-`Docs/TEST-PLAN.md` §26. The phases set the build order inside 3.2.0.
+(decided 2026-11-09). Phase 5's bake was tested with `Docs/TEST-PLAN.md` §26,
+and the release shipped as 600121/600122 (above); 600102 was an interim image. The phases set the build order inside 3.2.0.
 
 ---
 
@@ -97,7 +104,7 @@ server-side work.
 5. Test on a TouchPad:
    - **Zoho** (legacy Exchange): add, sync, send. An event created on the
      TouchPad shows the right time in Zoho's web calendar across a DST week.
-   - Recheck KNOWN-ISSUES #14.
+   - Recheck KNOWN-ISSUES #22 (Zoho recurring edits).
    - Throttling: send a canned 503 with `Retry-After` from a test server.
      Email says "temporarily unavailable", not "check your login".
    - No new rdxd reports from mojomail-eas.
@@ -124,7 +131,7 @@ server-side work.
   ("CE shim London weekly 10:00 Oct 2027 (3)") shows at 2:00, 2:00 and 3:00 AM Pacific on 19
   and 26 October and 2 November 2027: 10:00 in London each time, with the clocks going back
   on 31 October. Palm's unfixed zone would have put 26 October an hour late.
-- Phase 1's tests are done. Left open: KNOWN-ISSUES #14, which Zoho says it has fixed.
+- Phase 1's tests are done. Left open: KNOWN-ISSUES #22 (Zoho recurring edits), which Zoho says it has fixed.
 - An OTA or any live update must replace the library by rename, never by copying over it:
   the running service crashes at exit otherwise.
 
@@ -282,7 +289,7 @@ TouchPad test passes, so later phases are tested on top of it.
   its subscription early cancels the download, as on stock. A message with the same
   attachment sent from Gmail was accepted by Gmail's SMTP and never seen to arrive; why is
   not known.
-- Not yet seen: moving or deleting one occurrence of a series, a meeting reply, Ping and
+- Unverified at release (3.2.0 shipped without these being seen; not pending work): moving or deleting one occurrence of a series, a meeting reply, Ping and
   IDLE push, signing in again after a revoked sign-in, an AADSTS refusal's wording, and an
   attachment of several MB.
 - The account types are named `com.palm.oauth.*`, not `org.webosarchive.ce.*`: the stock
@@ -364,7 +371,7 @@ strings.
 | # | Decision | Recommendation |
 |---|---|---|
 | D1 | ~~Phase 1 in 3.2.0, or after?~~ | **Decided 2026-11-09:** all phases are in 3.2.0. |
-| D2 | ~~Google on CE: through the broker, or not at all?~~ | **Decided 2026-11-17:** through the broker. Google approved up to 100 users, with a warning at sign-in. Revisit before the count nears 100. |
+| D2 | ~~Google on CE: through the broker, or not at all?~~ | **Decided 2026-11-17:** through the broker. Google approved up to 100 users, with a warning at sign-in. Revisit before the count nears 100. The cap was accepted for 3.2.0 (`KNOWN-ISSUES.md`, "3.2.0 limits": Google may never verify the app, and the community is well under 100 users). |
 | D3 | ~~Token transport from the shim: `luna-send` subprocess, or an in-process `LSCall`?~~ | **Decided 2026-11-19:** `luna-send`, with the token kept in the shim. Measured at 0.5 s (1.4 s cold) on a TouchPad. |
 | D4 | In interim bakes before phase 3, are the 16.1 adapters compiled out or compiled in but inert? | Compiled out. Nothing reaches a flash unverified. All of them are on in the final 3.2.0 bake. |
 

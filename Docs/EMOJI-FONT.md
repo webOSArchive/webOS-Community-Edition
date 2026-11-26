@@ -4,6 +4,13 @@
 emoji in every web view (§1–§6), and colour emoji as images in the apps where
 people read each other's text (§7). This is the plan, and the recipe for building it.
 
+**Status 2026-11-26:** shipped in webOS CE 3.2.0 (600121 Wi-Fi, 600122 AT&T): the
+fallback font (full Noto Emoji, §9), the WebKit patch, astral emoji in web views (§9) and
+the keyboard's emoji key (§8). Wired into the bake by `28a9e4c` and `de5a389`, first baked
+in 600101 (`cd271b2`). Emoji render **in monochrome** everywhere (`RELEASE-NOTES.md`).
+The colour-image part (§7) did **not** ship: there is no shared `emoji.js`, and Email and
+Contacts are unchanged; §7 is deferred.
+
 **Status 2026-11-04:** the §4 patch is built
 (`build/full-ce/emoji-font/webkit_fallback_patch.py`) and wired into bake tier
 19b. On a TouchPad (CE 3.2.0, bind-mounted) the patched library loads
@@ -12,7 +19,7 @@ people read each other's text (§7). This is the plan, and the recipe for buildi
 - the FE0F box is gone;
 - Korean, Japanese, both Chinese scripts and U+3001/3002 render as before.
 
-Not baked yet.
+Not baked yet. (Since baked; see the 2026-11-26 status above.)
 
 ## 1. What is possible, and what is not
 
@@ -22,7 +29,7 @@ that stack and none of them can be fixed:
 
 | Limit | Evidence | Consequence |
 |---|---|---|
-| The text path is 16-bit | `PSoftContext2D::DrawText(unsigned short*, …)`, `PFTFont::Exists(unsigned short)`, `PFTFontContext::GetFallback(unsigned short)` | Emoji above U+FFFF (😀 👍 and every ZWJ sequence, roughly 3,600 of them) draw as two half-width boxes, one per surrogate |
+| The text path is 16-bit | `PSoftContext2D::DrawText(unsigned short*, …)`, `PFTFont::Exists(unsigned short)`, `PFTFontContext::GetFallback(unsigned short)` | Emoji above U+FFFF (😀 👍 and every ZWJ sequence, roughly 3,600 of them) draw as two half-width boxes, one per surrogate. **Wrong, see §9:** the box came from one early return in `GlyphPage::fill`, now patched, and astral emoji render |
 | Glyphs are monochrome masks | `PFTCache<PSoftPixmap>::LoadMask`. There is no colour path, FreeType is 2.3.x-era, and there are no CBDT/sbix/COLR tables | Colour emoji are impossible |
 | No usable webfonts | No `CachedFont`, `RemoteFontFace` or `FontCustomPlatformData` symbols. An `@font-face` test failed on hardware | A CSS font-stack fix is not available |
 
@@ -232,7 +239,8 @@ from `/proc/self/maps`. Leaving it read-only crashed `QEglFSWindow`.
 Qt's FreeType engine reads astral code points, so shipping the full Noto Emoji
 instead of the BMP subset would also give the system UI 😀 in monochrome
 (WebKit would still use only the BMP part). Not done. The keyboard doesn't need
-it, since §8 draws images.
+it, since §8 draws images. (Since done: the shipped `CE-Emoji.ttf` is the full Noto
+Emoji, about 889 KB, and WebKit draws astral emoji too; see §9.)
 
 ## 6. Bake and release wiring
 
@@ -243,7 +251,9 @@ it, since §8 draws images.
      it.
   3. Apply the §4 patch to the overlay's `libWebKitLuna.so`. 19b's output is the
      input, so order the tiers.
-- **Size**: about 60 KB of rootfs; the root has 119 MB free.
+- **Size**: about 60 KB of rootfs; the root has 119 MB free. (Out of date: the shipped
+  font is the full Noto Emoji, about 889 KB (§9), and `/` is much fuller in 3.2.0; an
+  AT&T TouchPad has about 31 MB free after the OTA. See `RELEASE-NOTES.md`.)
 - **`ce-test-full.sh`**:
   - the font exists and is the right md5;
   - the patched lib's md5 is in the allow-list;
@@ -259,8 +269,12 @@ it, since §8 draws images.
 
 ## 7. Colour emoji: images in the apps where people read each other's text
 
+**Deferred (2026-11-26): not in 3.2.0.** None of the work items below was done. 3.2.0
+ships monochrome emoji only (§9); Messaging keeps its own EmojiOne images. The section is
+kept as the plan.
+
 The font (§3–§4) gives monochrome glyphs for the 170 BMP emoji everywhere.
-Colour is impossible through any font on this renderer (§1), so 3.2.0 adds it
+Colour is impossible through any font on this renderer (§1), so the plan was to add it
 the one way that works here: **replace emoji with images, in the apps that show
 other people's text.** CE's Messaging already does this. 3.2.0 generalises it.
 
@@ -309,7 +323,8 @@ other people's text.** CE's Messaging already does this. 3.2.0 generalises it.
   at once, but it touches escaping and performance in every app. Revisit once
   the per-app version has shipped.
 - Colour in the Browser.
-- Emoji input: the keyboard has no emoji keys. That is LunaCE work.
+- Emoji input: the keyboard has no emoji keys. That is LunaCE work. (Superseded: §8,
+  LunaCE `edc7408`, adds the emoji key.)
 
 **Tests:**
 - One message, one email and one contact note containing ☀️ ❤️ 😀 👍🏽 🇨🇦
@@ -346,7 +361,8 @@ everything that shows colour emoji (§7), replacing Messaging's EmojiOne.
 - **Verified on hardware** (CE 3.2.0, bind-mounted build, test-only hook):
   - pages 1–3 render;
   - the textarea read `61 62 2615 63 64 d83d de01 65 66` after "ab" ☕ "cd" 😁 "ef".
-- **Not yet tried by touch:** toggling, paging and the hold pop-up.
+- **Not yet tried by touch:** toggling, paging and the hold pop-up. (Superseded: §9
+  records the user typing emoji with the emoji key on a TouchPad.)
 
 **Bake wiring (2026-11-04):**
 - LunaCE `bin/LunaSysMgr-LunaCE-topaz` is refreshed (`67433cc`), byte-identical
@@ -354,7 +370,8 @@ everything that shows colour emoji (§7), replacing Messaging's EmojiOne.
 - Tier 7 ships `packages/ce-emoji/images/72` and `ATTRIBUTION.txt` to
   `/usr/palm/frameworks/ce-emoji/`, and those files are in the inputs stamp.
 - `ce-test-full.sh` checks all 152 images and that LunaSysMgr has the emoji code.
-- Ready for the next bake, which hasn't been run.
+- Ready for the next bake, which hasn't been run. (Since baked: first in 600101,
+  `cd271b2`, and shipped in 3.2.0.)
 
 ## 9. Emoji above U+FFFF now render (2026-11-04)
 

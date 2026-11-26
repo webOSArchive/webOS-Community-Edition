@@ -1,3 +1,21 @@
+> **Status 2026-11-26: this is the historical 3.1.0 design.** Section numbers
+> are kept (other docs cite them). Decisions that have changed since:
+>
+> - **§9 #1 and §3, device scope "`topaz` Wi-Fi only":** an AT&T (`topaz4g`)
+>   build ships too: 600071 for 3.1.0 and 600122 for 3.2.0
+>   (**[ATT-VARIANT.md](../ATT-VARIANT.md)**).
+> - **§9 #2 and the Tier 3 note, bootstrap OTA from stock 3.0.5 and two-form
+>   (baked + ipk) components:** dropped. OTAs start at 3.1.0; a 3.0.5 device is
+>   flashed with the Doctor. The OTA client is not baked: OTA Ready comes from
+>   App Museum II, and 3.1.0 reached 3.2.0 by OTA
+>   (**[OTA-HANDOFF.md](OTA-HANDOFF.md)**).
+> - **Tier 2 "all userspace on stock kernel" and the "would force replacing
+>   the stock kernel" note:** the image bakes UberKernel 3.0.5-93
+>   (`AddToImage/PatchOrReplace`, baked by `bake.py`). The hardware features
+>   themselves are still userspace.
+>
+> Current state: **[PLAN.md](PLAN.md)** and **[RELEASE-NOTES.md](../RELEASE-NOTES.md)**.
+
 > **DESIGN DOC — decisions below are as-planned; some changed in the shipped
 > build.** As of the **600024** release candidate (see RELEASE-NOTES.md):
 >
@@ -108,7 +126,7 @@ Tier-1 + Tier-2 system additions are on the order of ~15–25 MB against the roo
 > legacy→modern-TLS two-session upgrade), plus **ongoing 3.1+ OTAs**. Every CE
 > component therefore ships in **two forms** — baked into this rootfs (files +
 > regenerated md5sums) *and* as a signed ipk with a postinst (for OTA) — driven by
-> one shared component manifest. See **`OTA-STRATEGY.md`** for the full design,
+> one shared component manifest. See **`OTA-STRATEGY.md`** (since deleted; see `Docs/OTA-HANDOFF.md`) for the full design,
 > the transport/size/security analysis, and the incremental effort (~2–3 weeks of
 > mostly server work).
 
@@ -193,7 +211,7 @@ A build script (`build-ce-doctor.sh`) that:
 | # | Decision | Choice |
 |---|----------|--------|
 | 1 | Device scope | **`topaz` Wi-Fi only** |
-| 2 | Update path | **Keep OTA / Updates reroute** (OTA Ready + patched Updates app, pre-placed LS2 roles). Server backend is ours — support a **bootstrap OTA from OEM 3.0.5 → CE 3.1** and **ongoing 3.1+ OTAs**. Full design in **`OTA-STRATEGY.md`** |
+| 2 | Update path | **Keep OTA / Updates reroute** (OTA Ready + patched Updates app, pre-placed LS2 roles). Server backend is ours — support a **bootstrap OTA from OEM 3.0.5 → CE 3.1** and **ongoing 3.1+ OTAs**. Full design in **`OTA-STRATEGY.md`** (since deleted) |
 | 3 | QupZilla browser | **Excluded** — TLS-modernized stock browser only |
 | 4 | Version identity | **Rename `PRODUCT_VERSION_STRING` → "webOS 3.1 Community Edition (3.0.5 base)"; keep `BUILDNAME=Nova-HP-Topaz`** (+ `/etc/webos-ce-release`) |
 | 5 | Mail TLS | **Included** (EAS/IMAP/POP/SMTP on modern TLS + IMAP tag fix) |

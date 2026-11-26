@@ -1,4 +1,13 @@
-# OTA plan — CE 3.1.0 → 3.2.0, then stock 3.0.5 → CE
+# OTA plan — CE 3.1.0 → 3.2.0 (Path B, stock 3.0.5 → CE, dropped)
+
+**Status 2026-11-26: Path A shipped; Path B was dropped.** CE 3.2.0 went out by
+OTA as 600121 (Wi-Fi, from 600070, 600105 and 600120) and 600122 (AT&T, from
+600071). Every route is a signed manifest in production at swupdate.webosarchive.org,
+driven by OTA Ready 3.0.0 from App Museum II. Decided 2026-11-21: OTAs start at
+3.1.0, and 3.0.5 → 3.1.0 is the Doctor, so §3 is kept only as a record. The
+current state and what to do next are in [OTA-HANDOFF.md](OTA-HANDOFF.md). §2.0 to
+§2.0m below are the run log up to 600119; the status paragraph that follows is
+the one of 2026-11-20, kept as written.
 
 **Status, 2026-11-20:** the payload generator, the device check and `ce-ota-finish`
 exist. An unsigned 600070 → 600109 payload was applied by hand to a running 3.1.0
@@ -12,15 +21,17 @@ OTA client has not driven any of it. The rest of
 this document is the plan of 2026-10-04. The OTA reference stays
 `../webos-update-exploration/OTA-3.1.0.md` (trust model, client, server; read-only
 from this repo). This document is the image side's plan for the two payloads, and
-for what the image build has to produce for them. `OTA-STRATEGY.md` is the older
-design; its §2 bootstrap plan is superseded by Path B below.
+for what the image build has to produce for them. (The older design,
+`OTA-STRATEGY.md`, was deleted on 2026-11-26; its §2 bootstrap plan was superseded by
+Path B below, itself dropped since.)
 
 Two paths, in this order:
 
 - **Path A — CE 3.1.0 → CE 3.2.0.** Small, known delta, one known starting state.
   Its job is to **learn and prove the delivery mechanism** — above all the armed
   flash, which has never run end to end (OTA-3.1.0 open item #4).
-- **Path B — stock HP webOS 3.0.5 → CE.** Same mechanism, carrying ~118 MB of
+- **Path B — stock HP webOS 3.0.5 → CE.** *(Dropped 2026-11-21: 3.0.5 devices
+  get the Doctor.)* Same mechanism, carrying ~118 MB of
   change onto devices we did not build, without wiping them. Only starts once A has
   proven the mechanism on hardware.
 
@@ -34,7 +45,7 @@ Both paths answer the same question: *what turns rootfs X into rootfs Y?* The ba
 already produces Y exactly, and the harness already produces the full image
 rootfs (`build/work/webos/rootfs.ce.tar.gz`). So the payload should be **generated
 by diffing two complete rootfs tarballs**, not assembled from a list of ipks and
-postinst replays (the approach in `OTA-STRATEGY.md` §2.4, written before the bake
+postinst replays (the approach in the old `OTA-STRATEGY.md` §2.4, written before the bake
 became the single source of truth):
 
 | From | To | Old rootfs source |
@@ -828,6 +839,13 @@ without help except the first.
     minutes. A failure after the data tar has started writing would leave a
     half-updated rootfs that this does not repair; not tested.
 
+### 2.0n After 600119: the release builds (pointer)
+
+The runs after §2.0m are not logged here. 600120 (2026-11-23) and the release,
+600121 (2026-11-24), the AT&T build 600122 (2026-11-25), the signed manifests and
+the 2026-11-24 post-update brick on a daily driver (fixed in 600121) are recorded in
+[OTA-HANDOFF.md](OTA-HANDOFF.md) and KNOWN-ISSUES.md #20.
+
 ### 2.1 The delta as planned (600070 → 600075, from the tracked overlays; superseded by §2.0's measurement)
 
 | Change | Paths | Notes |
@@ -848,8 +866,8 @@ without help except the first.
 | Boot logo (d6c4c78, not yet baked) | `/usr/palm/sysmgr/images/{hp-logo,hp-logo-bright}.png`, `/boot/boot-images.tar.gz` | the moon replaces the HP badge. The two PNGs are the pulsing logo and need nothing more. The still logo bootie draws first is in NVRAM, which a rootfs diff cannot reach: see §2.2 (10) |
 | HP wording (`hp_wording.py`, not yet baked) | `/etc/prefs/properties/{deviceName,deviceNameBranded}`; string tables and a few `.js` files in Accounts, Software Manager, the system UI, `accounts.ui` and the accounts library; Messaging's `FirstLaunchConstants.js`; Contacts' `ContactCountDialog.js`; the staged Email and Music ipks | "HP TouchPad" becomes "webOS TouchPad", "HP" dropped elsewhere; also "webOS Archive" as the vendor in about 170 `appinfo.json`/`packageinfo.json`/manifest files, www.webosarchive.org for the dead hpwebos.com/support, and Help's Care Pack check removed (`HelpApp.js`). The rootfs files need nothing more. **Email and Music live in cryptofs**, so an installed device keeps the old text: see §2.2 (11). A device's own name is stored when it is set up, so the new default only shows on a fresh flash |
 | Default wallpaper (not yet baked) | **add** `/usr/lib/luna/customization/copy_binaries/media/internal/wallpapers/28.jpg`; `ce-firstboot-tweaks` and `ce-default-wallpaper` name `28.jpg` | the moon replaces `22.jpg` as the default. Both jobs are flag-done on a 3.1.0 device and the customization copy runs once per flash, so an OTA neither delivers the file to `/media/internal` nor changes anyone's wallpaper. If 3.2.0 should offer it, `ce-ota-finish` copies the file into `/media/internal/wallpapers/`; it should not switch a wallpaper the owner is already using |
-| Emoji fallback font (planned, `EMOJI-FONT.md`) | **add** `/usr/share/fonts/CE-Emoji.ttf` (+ OFL text), **patched** `/usr/lib/libWebKitLuna.so` (fifth fallback slot) | lib is held open by BrowserServer/WebAppMgr — fine in the ramdisk, a reason not to hotpatch |
-| Colour emoji images (planned, `EMOJI-FONT.md` §7) | **add** `/usr/palm/frameworks/ce-emoji/` (shared `emoji.js` + EmojiOne PNGs, ~10.5 MB); **changed** Messaging (images move out of its app dir), Email, Contacts | Email is a cryptofs app: its patch goes in `ce-ota-finish`, not the rootfs diff |
+| Emoji fallback font (shipped in 3.2.0, `EMOJI-FONT.md`) | **add** `/usr/share/fonts/CE-Emoji.ttf` (+ OFL text), **patched** `/usr/lib/libWebKitLuna.so` (fifth fallback slot) | lib is held open by BrowserServer/WebAppMgr — fine in the ramdisk, a reason not to hotpatch |
+| Colour emoji images (deferred past 3.2.0, `EMOJI-FONT.md` §7) | **add** `/usr/palm/frameworks/ce-emoji/` (shared `emoji.js` + EmojiOne PNGs, ~10.5 MB); **changed** Messaging (images move out of its app dir), Email, Contacts | Email is a cryptofs app: its patch goes in `ce-ota-finish`, not the rootfs diff |
 | Photos hand-off | the staged `/usr/palm/ipkgs/com.palm.app.photos/…ipk` is repacked | **no effect on an installed device**: Photos already lives in cryptofs |
 | Tweaks definition | under `/usr/palm/ce-seed/cryptofs/…` | the seed only runs once per flash |
 | Version | `/etc/palm-build-info`, `/etc/prefs/properties/{buildMark,buildDate}` | |
@@ -1030,6 +1048,11 @@ The rootfs diff can't express these:
 
 ### 2.3 Delivery tier: armed flash, on purpose
 
+> **Resolved (2026-11-26).** All of A0 to A3 happened: the armed flash is how every
+> CE OTA installs (§2.0g onward), the manifests are signed offline and bound to
+> their from-build, OTA Ready 3.0.0 drives them, and the AT&T route (600071 →
+> 600122) has its own payload and manifest. The plan as written follows.
+
 Path A *could* go as a hotpatch: everything above can be replaced on a running
 system. **Recommendation: ship it through the armed flash anyway**, because the
 point of Path A is to learn the mechanism Path B can't avoid (LunaSysMgr and the
@@ -1071,6 +1094,11 @@ to its BUILDMARK.
 
 ## 3. Path B — stock 3.0.5 → CE
 
+> **Abandoned (decided 2026-11-21).** OTAs start at 3.1.0; a 3.0.5 device takes the
+> Doctor to 3.1.0 and then the OTA, and OTA Ready says "Not eligible" on 3.0.5. The
+> server's 3.0.5-era OTA code was removed on 2026-11-23. Nothing below was built.
+> Kept as the record of what Path B would have needed.
+
 ### 3.1 What changes compared with A
 
 | | A | B |
@@ -1082,7 +1110,7 @@ to its BUILDMARK.
 | Transport | modern HTTPS | stock OpenSSL 0.9.8k, but signed payloads are fine over plain HTTP |
 | Read-only root | yes | no (3.0.5 is rw). The ramdisk doesn't care |
 
-**Simplification of the old plan:** `OTA-STRATEGY.md` §2 chained two sessions
+**Simplification of the old plan:** the old `OTA-STRATEGY.md` §2 (since deleted) chained two sessions
 (TLS upgrade over legacy transport, then the CE payload over HTTPS). With
 signature-based integrity (OTA-3.1.0 Part II), the manifest and payload can travel
 over **plain HTTP**. That leaves **one session**. Only the small offer request
@@ -1152,6 +1180,10 @@ needs TLS, and that can fall back to plain HTTP with minimal fields.
 
 ## 4. Decisions needed
 
+> **All resolved (2026-11-26).** 1: the armed flash (§2.0g onward). 2: Path B
+> dropped (§3). 3: the generator lives here, in `build/ota/`. 4: decided 2026-11-20,
+> both handler jobs also start on `stopped finish` (2fd151f, §2.0 item 5).
+
 1. Should Path A use the armed flash (recommended, to learn it) or a hotpatch (no
    reboot, but proves less for B)?
 2. Path B target: current CE (3.2.0) or 3.1.0 as originally stated?
@@ -1166,9 +1198,10 @@ needs TLS, and that can fall back to plain HTTP with minimal fields.
 
 - `otaready-app/org.webosarchive.otaready_1.2.0_all.ipk` predates the
   read-only-root restore fix in its own source, and its version wasn't bumped. Its
-  `prerm` still remounts rw without restoring ro.
+  `prerm` still remounts rw without restoring ro. *(Superseded: the client is now
+  OTA Ready 3.0.0, whose `prerm` restores a read-only root.)*
 - **The docs contradict each other on the kernel.** `OTA-3.1.0.md:68` and
-  `OTA-STRATEGY.md` say CE is stock-kernel / userspace-only, but CE bakes UberKernel
+  the old `OTA-STRATEGY.md` said CE is stock-kernel / userspace-only, but CE bakes UberKernel
   under the stock filename (`bake.py` tier 12; device `/boot/uImage-…` md5
   `f120c02c…` vs stock 3,341,940 bytes). The fingerprint still reads it as stock
   because the name is unchanged.

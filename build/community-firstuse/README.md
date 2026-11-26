@@ -7,6 +7,15 @@ comes from the community **webosaccount ipk** in `AddToImage/OOBE/` (the built
 `webos-community-account` app, verified working on hardware as a standalone
 re-sign-in app); this component adapts it to run as the *real* first-boot OOBE.
 
+> **Pinned at webosaccount 1.1.12** (`AddToImage/OOBE/`, commit ca007ea,
+> 2026-08-17). CE's first-use is that snapshot plus the `oobe/` deltas here; later
+> releases of `webos-community-account` (1.1.13 … 1.2.0) do **not** reach the image.
+> The CE-only first-use behaviour (Wi-Fi join, completion, Skip Account Setup)
+> lives only in `oobe/`, never upstream. To move the pin: replace the ipk in
+> `AddToImage/OOBE/`, re-run `make-overlay.sh` (its `patch -f` fails loudly if an
+> `oobe/` patch no longer applies), rework any patch that fails, then bake and
+> flash-test first use on hardware, including Skip Account Setup.
+
 ```
 community-firstuse/
 ├── make-overlay.sh        # generator: AddToImage/OOBE ipk + oobe/ deltas

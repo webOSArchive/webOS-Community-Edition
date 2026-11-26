@@ -2436,7 +2436,7 @@ def main():
     # the daemon, the bridge service, the patched Updates UI -- can arrive via
     # Preware afterwards and be authenticated BY this key.
     # (OTA project: OTA-IMAGE-INTEGRATION.md rev2 §1 + §11 option A;
-    #  here: Docs/OTA-STRATEGY.md §5.)
+    #  signing design: OTA-3.1.0.md Part II and keys/README.md there.)
     #
     # The verifier deliberately uses the STOCK /usr/bin/openssl (0.9.8k, 2009),
     # which this image does not replace -- the TLS tier adds /usr/lib/ssl11 and

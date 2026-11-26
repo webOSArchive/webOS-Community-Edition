@@ -4,10 +4,15 @@ This Doctor is built from `webosdoctorp305hstnhwifi.jar` and targets the
 **Wi-Fi TouchPad** (`topaz`). HP shipped the 4G TouchPad (`topaz4g`) with its
 own Doctor, so the two have always been separate images.
 
-Nothing here is a decision to *exclude* 4G. It is a record of the one place CE
-now behaves differently depending on whether a radio is present, so that if a
-4G build is ever wanted the difference is already written down rather than
-rediscovered from a crash log.
+> **Status 2026-11-26:** a 4G/AT&T build exists and ships. 600071 (3.1.0) and
+> 600122 (3.2.0) are built from HP's AT&T Doctor; the PmWanDaemon gate below
+> passed on real `topaz4g` hardware (ATT-VARIANT.md §6), and 600122 scored
+> 174 PASS / 0 FAIL on a fresh flash (`scripts/results-600122.txt`). See
+> **[ATT-VARIANT.md](../ATT-VARIANT.md)** for the build and its test record.
+
+This doc is a record of the one place CE behaves differently depending on
+whether a radio is present. It was written before any 4G build; the sections
+below keep that original reasoning.
 
 ## PmWanDaemon
 
@@ -71,14 +76,12 @@ Deliberately *not* done:
   would mean `PmWsfDaemon` never restarts if it died. That is a real regression
   on hardware neither the change nor its author can test.
 
-### If a 4G build is ever made
+### On a 4G TouchPad
 
-The gate should need no change: on `topaz4g` the tokens are present, the
-`pre-start` passes, and PmWanDaemon behaves as stock. It is untested on real 4G
-hardware — the logic is derived from the stock job's own conditions, not from a
-device — so it is the first thing to check if WAN misbehaves there.
+The gate needed no change: on `topaz4g` the tokens are present, the `pre-start`
+passes, and PmWanDaemon behaves as stock. This was predicted from the stock
+job's own conditions and then confirmed on the 600071 flash (ATT-VARIANT.md §6).
 
-Everything else in this image is radio-agnostic as far as is known. The Wi-Fi
-Doctor has never been flashed to a 4G TouchPad here, and the partition layout
-and modem firmware differ, so treat a 4G image as a separate exercise rather
-than assuming this one transfers.
+The 4G TouchPad still gets its own image: the Wi-Fi Doctor is not flashed to
+it, since the customization and modem firmware differ. The AT&T build is
+derived from HP's AT&T Doctor; see ATT-VARIANT.md.

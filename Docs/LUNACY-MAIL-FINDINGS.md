@@ -33,7 +33,9 @@ to the new client at its next refresh, and every one of them fails.
    the old one, so `providers.json` should name it for them: a `legacyClientId` beside the new
    `clientId`, used when an account has none. CE stamps such accounts with whatever id is in
    `providers.json` when the new code first runs, which is enough for CE because nothing has
-   shipped. Lunacy has shipped: a device can go straight from an old release to one that
+   shipped. (Status 2026-11-26: CE has since shipped, in 3.2.0, but it stamps `client` at
+   sign-in (`oauth-core.js` ~231), so every 3.2.0 account already carries its id and CE
+   still needs no legacy id. This finding stays open on Lunacy's side.) Lunacy has shipped: a device can go straight from an old release to one that
    already has the new id, so it needs the old id written down.
 4. Signing an account in again makes it the new client's (`done()` writes the new id over the
    old), so accounts move across over time without anyone being forced.

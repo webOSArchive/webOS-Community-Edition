@@ -1,5 +1,8 @@
 # Import vCards: notes for Lunacy
 
+**Status 2026-11-26:** delivered; Lunacy took it in its commit `0be17c0` (2026-11-02,
+"Contacts: Import vCards from webOS CE, to the on-device account").
+
 For the agent adding webOS CE's Import vCards to Lunacy. The feature first landed in this repo at
 commit `7bd5641` (Contacts 3.2.0). **Take it from `6eae747` or later:** a copy from before then
 imports into the default account, which can be Exchange, and has the garbled progress text. It

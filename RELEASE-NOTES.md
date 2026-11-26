@@ -232,7 +232,7 @@ Two additions on top of RC3, both small in surface and deliberately so — the r
 
 The verifier deliberately uses the device's original 2009 OpenSSL rather than the modern TLS stack CE adds, so it works identically on stock webOS 3.0.5 and on CE — a device does not need the modern crypto it might be installing in order to check the signature on it.
 
-Verified on the flashed image with the real offline key: a signed manifest verifies, and a single flipped byte, a truncated signature, or the wrong key are all refused. Design notes are in `Docs/OTA-STRATEGY.md` §5.
+Verified on the flashed image with the real offline key: a signed manifest verifies, and a single flipped byte, a truncated signature, or the wrong key are all refused. Design notes are in the OTA project's `OTA-3.1.0.md` Part II (trust model and signature format) and `keys/README.md`.
 
 ---
 

@@ -2,10 +2,19 @@
 
 **Status: diagnosed and reproduced on hardware (600070, released). Fix not written.**
 
+**Status 2026-11-26:** still open, and still in 3.2.0 (600121/600122): the baked
+ipk is still `com.webosarchive.usbsettings_1.1.9`, the latch in
+`usbctl-watchd.sh` (`LAST_STATUS="$s"` before the write, ~line 299) is
+unchanged, and `bake.py` still seeds no ipkg status stanza for it. The
+technical fix below stands. The OTA landscape in §2 and Option C has moved on:
+3.2.0 itself shipped by OTA, OTA Ready 3.0.0 is the client in production, and
+the armed flash was proven on 2026-11-20 (`Docs/OTA-HANDOFF.md`, now the OTA
+source of truth). With those blockers gone, the fix can ride the next CE OTA.
+
 This document says what a hotfix has to do and why. It is a specification, not a
 change log — nothing described here has been built.
 
-Related: `KNOWN-ISSUES.md` #14 (the fault itself, with the hardware evidence).
+Related: `KNOWN-ISSUES.md`, the entry "USB Settings reports 'Helper not running' on every fresh flash" (the fault itself, with the hardware evidence).
 
 ---
 
@@ -72,9 +81,14 @@ overlay copy would be silently reverted by the next build.
 read-only root, baked at flash time. Fixing the ipk fixes the *next* image;
 it does nothing for devices already in the field.
 
-Two channels exist: Preware, and the community OTA. The OTA is further along than
-`Docs/OTA-STRATEGY.md` suggests — that document is stale; the authoritative one is
-`OTA-3.1.0.md` in the `webos-update-exploration` repo.
+Two channels exist: Preware, and the community OTA. The authoritative OTA
+document is now `Docs/OTA-HANDOFF.md` (when this section was written it was
+`OTA-3.1.0.md` in the `webos-update-exploration` repo).
+
+*Status 2026-11-26:* the rest of this section is the 2026-09 picture. Since
+then OTA Ready 3.0.0 replaced 1.2.0 and is in production (App Museum II),
+3.2.0 shipped as a real OTA payload (so "no real payload exists" no longer
+holds), and the armed flash was proven on hardware on 2026-11-20.
 
 600070 bakes only the OTA **trust anchor**: `/usr/bin/ce-ota-verify` and
 `/usr/share/ce-ota/keys/ce-ota-signing.pub`. The client is not in the image. But
@@ -112,14 +126,15 @@ So 1.1.10 is worth shipping to 3.0.5 on its own merits.
 ### 2.2 The hazard on the CE side: a bus-name clash
 
 CE **seeds no ipkg status stanza** for `com.webosarchive.usbsettings`.
-`STATUS_SEED_DESC` (`bake.py:2438-2469`) covers govnah, synergy, backup and the
-TLS patch set only. Preware's `isInstalled` is a pure name match against
+`STATUS_SEED_DESC` (`bake.py:3232`, plus `PATCH_SEED` for the TLS patch set right
+after it) covers Govnah, Synergy, Backup, Videos and Calculator — not
+usbsettings (still true 2026-11-26). Preware's `isInstalled` is a pure name match against
 `/media/cryptofs/apps/usr/lib/ipkg/status`, so on a CE device USB Settings shows
 as **not installed today**, and a 1.1.10 of the same id would arrive as a fresh
 install into `/media/cryptofs/apps` — not as an upgrade of the baked copy.
 
 That install brings a *service* directory with it, and bake.py's de-shadow pass
-already states the cost (`bake.py:3291-3293`):
+already states the cost (`bake.py`, ~line 4209):
 
 > a stale cryptofs SERVICE is worse than a stale app dir: the roles LunaSysMgr
 > generated for it claim the same bus name the baked image now claims
@@ -209,6 +224,12 @@ see the version guard in §3.1). Users on CE see a package whose purpose is
 opaque, so the description has to carry its own explanation.
 
 ### Option C — ship it as the first community OTA payload
+
+*Status 2026-11-26:* written before any OTA shipped. "OTA Ready v2" became
+OTA Ready 3.0.0 (in production); open item #5 (no real payload) closed when
+3.2.0 shipped by OTA, so this would no longer be the *first* payload; open item
+#4 (the unverified armed flash) closed on 2026-11-20. What remains is simply:
+put the fixed daemon in the next CE OTA. See `Docs/OTA-HANDOFF.md`.
 
 Deliver the patched daemon through OTA Ready v2 instead of as a Preware package
 of our own: a signed manifest naming one file, verified on-device by the baked
@@ -332,6 +353,8 @@ next image is what actually resolves it.
 ### Recommendation
 
 **Option C if OTA Ready v2 is close; Option B only if it is not.**
+*(2026-11-26: the OTA channel is live — OTA Ready 3.0.0 — so this resolves to
+C: ship the fix in the next CE OTA.)*
 
 C is the one that leaves something behind — a proven channel — and it costs users
 nothing they have not already paid. It is also the only option that makes §2.2
@@ -506,4 +529,4 @@ generally owns the cable.
 toggle is `disabled: true`, a read-only indicator — so the toggle is the fix for
 someone who has no cable to hand, or whose port never armed because the device
 has sat on a PC connection since boot (`arm_otg_once` skips arming while
-`host_connected = 1`). See `KNOWN-ISSUES.md` #14.
+`host_connected = 1`). See the USB Settings "Helper not running" entry in `KNOWN-ISSUES.md`.

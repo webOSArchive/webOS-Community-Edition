@@ -46,7 +46,8 @@ Details: [Docs/EMOJI-FONT.md](https://github.com/webOSArchive/webOS-Community-Ed
 3. **Messaging's own emoji images.** CE's Messaging swaps emoji for EmojiOne PNGs (`emojify()`
    in `utilities/utils.js`), and Lunacy runs that app.
    - CE has picked **OpenMoji** as its one art set and plans to replace Messaging's EmojiOne
-     later. That isn't done yet.
+     later. That was not done in 3.2.0: CE's Messaging still uses EmojiOne (status
+     2026-11-26).
    - Lunacy could keep EmojiOne, follow CE to OpenMoji when CE ships it, or skip the swap and
      let Chromium draw native emoji. That's a look-and-feel decision, not a bug.
 
@@ -64,6 +65,8 @@ A replacement for the TouchPad's `SmartKeyService` (`com.palm.smartKey`), which 
 XT9 from 2011. It's on CE `main` (merge `c08ceec`) in
 [packages/smartkey](https://github.com/webOSArchive/webOS-Community-Edition/tree/main/packages/smartkey).
 It isn't in a CE image yet: the dictionaries are 23 MB and need a smaller format first.
+(Status 2026-11-26: since baked, from 600102 (`0bc41ff`), and shipped in webOS CE 3.2.0,
+where it replaces the stock XT9 engine.)
 
 - **The service shell:** openwebos `smartkey-hun` (Apache-2.0), with all 17 methods of the
   stock API (`search`, `learn`, `processTaps`, user words, auto-replace, and so on).

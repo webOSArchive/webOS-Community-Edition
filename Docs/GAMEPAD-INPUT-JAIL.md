@@ -17,7 +17,7 @@ bind alone does not let an app open anything.
 
 ## 1. What CE already ships
 
-`build/full-ce/bake.py:2908` inserts two lines into stock
+`build/full-ce/bake.py:3848` inserts two lines into stock
 `/etc/jail_pdk.conf`, anchored on its `mkdir /dev`:
 
 ```

@@ -5,6 +5,9 @@ TouchPad, built from HP's `webosdoctorp305hstnhatt.jar` the same way the Wi-Fi
 image is built from `...wifi.jar`. Flashed and tested on hardware 2026-08-31:
 **90 PASS / 0 FAIL**, the same score the Wi-Fi 600070 run gets.
 
+**3.2.0:** the AT&T build is `webosdoctorp320hstnhatt-ce-600122.jar` (BUILDMARK
+600122); see §10. Sections 1-9 describe the 3.1.0 build, 600071.
+
 Read `Docs/4G-TOUCHPAD.md` first — it records what the Wi-Fi image assumes about a
 radio. This doc is what happened when we actually built for one.
 
@@ -244,3 +247,32 @@ Boot-log noise, all pre-existing and none AT&T-specific: `imtransport` pre-start
 declining once before starting (the documented unseeded-interpreter race),
 `woce-backupd` exiting once then coming up, and `tempdb` terminating with status
 2 (the open `tempdb-*` replay follow-up). All three settle.
+
+## 10. 3.2.0: BUILDMARK 600122
+
+`webosdoctorp320hstnhatt-ce-600122.jar` is the CE 3.2.0 Doctor for the AT&T
+TouchPad: `CE_VARIANT=att` of the same tree as the Wi-Fi release, 600121
+(commit `5189314`; `build/full-ce/manifests/600122.json`). `att.tar` is
+byte-identical to 600071's.
+
+**The Doctor skips the modem.** §4's passthrough is gone: for `att`, `bake.py`
+writes an `installer.xml` that maps no modem firmware and makes
+`topazumtsfw.tar` a 0-byte placeholder, as in the Wi-Fi JAR. `ModemUpdateStage`
+then takes the path HP's own AT&T Doctor already took on this ERICSSON unit:
+`Unable to get firmware for modem type ERICSSON`, then `Finished`. The radio
+software on the device is unchanged.
+
+**Proven on hardware (2026-11-25):**
+
+- **OTA, 600071 -> 600122**, through production Install Now on the AT&T
+  TouchPad: finished and verified on its own (`Docs/OTA-HANDOFF.md`).
+- **Fresh flash of 600122**: the Doctor skipped the modem as above, and
+  `ce-test-full.sh` scored **174 PASS / 0 FAIL** (`scripts/results-600122.txt`,
+  commit `9a7cce9`).
+
+**Headroom on `/`.** The 071 -> 122 update grows `/` by about 58 MB. The tested
+device went from 89 MB to **31 MB free (94%)**; Wi-Fi TouchPads end at 89% with
+about 62 MB. A later AT&T OTA must fit in what is left (growth + largest file +
+8 MB) or free room first, such as the 28 MB of staged customization media
+(KNOWN-ISSUES.md, Docs/OTA-HANDOFF.md). A Doctor flash resets `/` to the image's
+own size.

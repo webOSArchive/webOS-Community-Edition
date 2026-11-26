@@ -1,5 +1,12 @@
 # webOS Chat for CE: plan
 
+**Status 2026-11-26:** deliverable 1 is the Preware Chat Enabler (§1; KNOWN-ISSUES #15 cites Enabler 3.1.1).
+Deliverable 2 (§2, baking it into the image) did **not** ship in 3.2.0 and is
+deferred past 3.2.0: `bake.py` has no enabler tier, `AddToImage/PatchOrReplace`
+holds only chatthreader 1.1.0.3 (not the enabler ipk), and `bake.py` still
+splices `packages/webos-chat/imwrap-resident-wait.block`. The opt-in vs
+default decision in §2 is still open.
+
 Scope for two deliverables, 2026-10-12. Background and measurements:
 `WEBOS-CHAT-FINDINGS.md`.
 
@@ -29,7 +36,7 @@ The Oscar changes (asks 1–3 in the findings) landed in Oscar `dc79cfd`
 **Status (2026-10-13):** `scripts/webos-chat-enabler.sh feed` builds
 `build/work/ipk/org.webosarchive.webos-chat_3.1.0_armv7.ipk`. The whole package passed install,
 chat, update, Accounts removal, Preware removal and restart on topaz (CE 3.1.0), compared
-side by side with a stock 3.0.5 TouchPad. Results are in `WEBOS-CHAT-HANDOFF.md`.
+side by side with a stock 3.0.5 TouchPad. Results are in `Docs/WEBOS-CHAT-HANDOFF.md`.
 
 - **Oscar:** pinned in `packages/webos-chat/OSCAR_COMMIT` (`bf5daed`). It adds the hidden setup
   page `org.webosarchive.chat.setup`, the public `enable` method, the plugin alias patch, and
@@ -180,7 +187,9 @@ The cleanup:
     - other Synergy connectors still work.
 11. **Luna Restart from the power menu afterwards:** no freeze.
 
-## 2. CE 3.2.0 (baked)
+## 2. CE 3.2.0 (baked) — DEFERRED past 3.2.0 (status 2026-11-26)
+
+None of this section shipped in 3.2.0; it is the plan for a later release.
 
 ### Approach
 
@@ -208,6 +217,9 @@ The cleanup:
    finds the fixed file and leaves it alone.
 
 ### Revisit: the transport watchdog (replaced in the 3.1.0 enabler, still in the 3.2.0 bake)
+
+*Status 2026-11-26:* not done — the block is still spliced by `bake.py` and
+the block file still exists.
 
 **What it was:** `imwrap-resident-wait.block` (imlibpurpleservice `15f09c9` + `a40e37c`). The
 imtransport job and ls-hubd both launched the transport. The job's launch waited behind the
@@ -252,7 +264,7 @@ replaced 60 s later and signed in 4 s after that; a 90 s Wi-Fi outage keeps the 
   invariant: mounted isn't writable, so verify before setting any flag. The
   `start` activity runs before first use, when there's no token, and that has
   to be a harmless no-op.
-- **Opt-in vs default.** This needs your decision. Baking makes it default-on
+- **Opt-in vs default.** This needs your decision (still open 2026-11-26). Baking makes it default-on
   for every signed-in member who has a username. The options:
   - default on;
   - baked but dormant until a setting is switched on;

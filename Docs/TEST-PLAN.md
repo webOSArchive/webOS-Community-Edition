@@ -1,5 +1,17 @@
 # webOS CE 3.2.0 Flash Test Plan
 
+> **Status 2026-11-26: 3.2.0 is released as 600121 (Wi-Fi) and 600122 (4G/AT&T).**
+> Automated fresh-flash results:
+> - 600121: `scripts/results-600121-run2.txt`, 172 pass / 2 fail. The two fails are the
+>   Videos status stanza (KNOWN-ISSUES #21) and the §27 token-service check catching the
+>   service as it exited idle. Run 1, `scripts/results-600121.txt`, started inside the
+>   first-boot seed window.
+> - 600122: `scripts/results-600122.txt`, 174 pass / 0 fail.
+>
+> The OTA routes (§16) were proven on hardware and in production: see RELEASE-NOTES.md
+> "How this release was tested" and `Docs/OTA-HANDOFF.md`. The block below is the
+> 600102-era template. Its markers are hand-filled and have been left as they are.
+
 **600102 is the build under test. It is baked but no results are recorded
 yet.** Every result marker was reset to `[ ]` for 3.2.0. The 3.1.0 results
 (600070: 90 PASS / 0 FAIL on two devices, a 7-cycle reboot soak, a clean
@@ -59,7 +71,7 @@ Open going in:     - LunaSysMgr crash loop after OOBE Skip on 600100 (§0b):
                      unevaluated (§22).
                    - The OTA payload and ce-ota-finish do not exist yet, so
                      §16 cannot run until they do.
-                   - KNOWN-ISSUES #14 (Zoho recurring edits) is a server and
+                   - KNOWN-ISSUES #22 (Zoho recurring edits; #14 at the time) is a server and
                      mojomail-eas issue, not a 3.2.0 regression.
 ```
 
@@ -588,8 +600,8 @@ retry through the helper, so the backup dies on its first step.
 The **only** OTA component in the image, and the only one that cannot be added
 later: a trust root delivered over an untrusted channel is not a trust root. The
 client — daemon, bridge service, patched Updates UI — is deliberately NOT baked;
-it arrives via Preware and is authenticated by this key. (`OTA-STRATEGY.md` §5;
-the OTA project's `OTA-IMAGE-INTEGRATION.md` rev 2.)
+it arrives via Preware and is authenticated by this key. (the OTA project's `OTA-3.1.0.md` Part II and
+`keys/README.md`; `OTA-IMAGE-INTEGRATION.md` rev 2.)
 
 **3.2.0:** the key and `ce-ota-verify` have not changed since 3.1.0 (no commit
 touches them after `f72945f`, and bake.py still pins `3f02d369…`). So the
@@ -668,9 +680,15 @@ unknown-status whitelist inherits from `Object.prototype`.
 ## 16. CE 3.1.0 → 3.2.0 by OTA (Path A)  *(new in 3.2.0)*
 
 This is the reason 3.2.0 exists. The plan is in `Docs/OTA-PLAN.md` §2, and the
-client and server are in `../webos-update-exploration/OTA-3.1.0.md`. Nothing
-here can run until the payload generator and `ce-ota-finish` exist (OTA-PLAN
-A1). Until then every item stays `[ ]`, not `[Skipped]`.
+client and server are in `../webos-update-exploration/OTA-3.1.0.md`.
+
+**Status 2026-11-26:** the payload generator (`build/ota/`) and `ce-ota-finish`
+exist. These routes ran on hardware:
+- 600070 → 600121 and 600071 → 600122 through production Install Now;
+- the beta routes 600070 → 600119/600120 → 600121.
+
+The record is in RELEASE-NOTES.md "How this release was tested" and
+`Docs/OTA-HANDOFF.md`. The items below were not filled in item by item.
 
 **Acceptance: convergence (OTA-PLAN §1.3).** A device that got 3.2.0 by OTA
 must match a flashed 600102 device.
@@ -898,14 +916,16 @@ The 3.2.0 goal is no HP branding anywhere.
       (chatthreader 1.1.0.3, KNOWN-ISSUES #15). A real send from a stranger's
       account if one is available; otherwise inject a
       `com.palm.immessage.libpurple:1` record (recipe in
-      `WEBOS-CHAT-HANDOFF.md`).
+      `Docs/WEBOS-CHAT-HANDOFF.md`).
 - [ ] A message from a known buddy still threads into the existing
       conversation
 
-## 26. Email: Microsoft 365, Gmail, Outlook.com  *(3.2.0's main feature, not yet baked)*
+## 26. Email: Microsoft 365, Gmail, Outlook.com  *(3.2.0's main feature, baked from 600105)*
 
-Plan and design: `Docs/EMAIL-MODERNIZATION-PLAN.md`. 600102 has none of it, so
-this section applies to the bake that carries phase 5. Fill in the items as
+Plan and design: `Docs/EMAIL-MODERNIZATION-PLAN.md`. **Status 2026-11-26:** mail
+has been baked since 600105, and phases 1–5 shipped in 600121/600122. The
+automated checks are `ce-test-full.sh` sections 26, 27, 29 and 30. 600102 had none of it, so this
+section applied to the bake that carried phase 5. Fill in the items as
 each phase lands. The plan's §4 is the gate for every bake.
 
 - [ ] **Legacy Exchange untouched:** a "Microsoft Exchange" account on Zoho

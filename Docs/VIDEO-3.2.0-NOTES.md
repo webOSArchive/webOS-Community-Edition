@@ -1,6 +1,16 @@
 # Videos player + Media TLS — state and learnings (for 3.2.0)
 
-**Branch `video-player`, parked 2026-09-14.** Everything here works on
+**Status 2026-11-26: shipped in 3.2.0.** The branch was merged to main in
+242c20b, baked into every image since 600072 (2a187e8), and released in 600121
+(Wi-Fi) and 600122 (AT&T), which reach existing devices by OTA
+(`RELEASE-NOTES.md`, "Video Player"). Checklist items 1-4 in §4 are done;
+5-7 stay open. One open issue touches it: KNOWN-ISSUES #21 (after a fresh
+flash or a Full Erase, Preware may offer Video Player as not installed — a
+first-boot race that drops its status record; the baked copy is unaffected).
+§1's "daily-driven" column and §9 describe the pre-bake dev TouchPad and are
+historical.
+
+*Original header (2026-09-14):* **Branch `video-player`, parked 2026-09-14.** Everything here works on
 hardware as post-flash packages; nothing has been baked into an image. This
 file is the handoff for folding the work into a future 3.2.0. The original
 plan and the Phase 0 measurements are in `Docs/VIDEO-PLAYER-REWRITE.md`.
@@ -11,11 +21,11 @@ plan and the Phase 0 measurements are in `Docs/VIDEO-PLAYER-REWRITE.md`.
 
 | Component | What it is | State | Bundle |
 |---|---|---|---|
-| **Videos** (`com.palm.app.videos` 3.2.0) | Enyo 1.0 player built on `VideoEngine`, a serialized seek/load gate over `<video>` | Daily-driven on the dev TouchPad | `AddToImage/NewApps/com.palm.app.videos_3.2.0_all.ipk` |
+| **Videos** (`com.palm.app.videos` 3.2.0) | Enyo 1.0 player built on `VideoEngine`, a serialized seek/load gate over `<video>` | Daily-driven on the dev TouchPad (pre-bake; baked since 600072) | `AddToImage/NewApps/com.palm.app.videos_3.2.0_all.ipk` |
 | **Photos hand-off** | Album-grid tap on a video launches Videos | Installed by the Videos postinst | (in the Videos ipk) |
 | **`com.palm.app.videoplayer`** | The stock id apps launch by name now hosts the same Enyo player | Installed by the Videos postinst | (in the Videos ipk) |
 | **Video handlers** | Every video type opens in Videos | Postinst + `ce-register-video-handler` job (bake) | (in the Videos ipk) |
-| **Media TLS 1.3** (`org.webosarchive.media-tls13` 1.0.0) | GStreamer `souphttpsrc` replacement on the CE libcurl/OpenSSL 1.1 | Daily-driven on the dev TouchPad | `AddToImage/NewApps/org.webosarchive.media-tls13_1.0.0_armv7.ipk` |
+| **Media TLS 1.3** (`org.webosarchive.media-tls13` 1.0.0) | GStreamer `souphttpsrc` replacement on the CE libcurl/OpenSSL 1.1 | Daily-driven on the dev TouchPad (pre-bake; baked since 600072) | `AddToImage/NewApps/org.webosarchive.media-tls13_1.0.0_armv7.ipk` |
 
 The two packages are independent; install order does not matter. Videos
 without Media TLS plays everything but HTTPS; Media TLS without Videos gives
@@ -77,7 +87,7 @@ build inputs (`curlhttpsrc/`, recreated by `scripts/media-tls13.sh setup`).
 ## 4. Folding into 3.2.0 — checklist
 
 Reviewed 2026-11-03, ahead of the 3.2.0 bake. Existing 3.1.0 devices reach
-3.2.0 by **OTA** (`Docs/OTA-PLAN.md` Path A), not by feed ipks; the feed ipks
+3.2.0 by **OTA** (`Docs/OTA-PLAN.md` Path A; current OTA truth: `Docs/OTA-HANDOFF.md`), not by feed ipks; the feed ipks
 are for stock 3.0.5 / standalone users.
 
 Done — in `bake.py` and in every image since 600072 (none of them flashed yet):
@@ -101,16 +111,24 @@ Done — in `bake.py` and in every image since 600072 (none of them flashed yet)
 - Feed ipk in `AddToImage/NewApps` matches `apps/com.palm.app.videos` file for
   file (includes the plainer "Can't connect to the video source." error, 4eb6761).
 
-Still to do:
-1. **Flash and verify** the Video Player and Media TLS — neither has been
+Still to do (status 2026-11-26: items 1-4 done, 5-7 open):
+1. **DONE** — 600121 and 600122 fresh flashes pass every Video Player check
+   (`scripts/ce-test-full.sh` §12) and "souphttpsrc is the Media TLS element"
+   (§9). Original item: **Flash and verify** the Video Player and Media TLS — neither has been
    through a flashed image.
-2. `scripts/ce-test-full.sh` video section (the self-test recipes in §7) and
+2. **DONE** — `scripts/ce-test-full.sh` §12 "video player (3.2.0)". Its
+   self-test step runs only when the test clip is pushed (skipped on the
+   600121 run). Original item: `scripts/ce-test-full.sh` video section (the self-test recipes in §7) and
    the reboot/playback soak (plan Phase 3).
-3. **OTA (3.1.0 → 3.2.0):** `ce-register-video-handler` starts on
+3. **DONE** — `ce-register-video-handler` now also starts on `stopped finish`,
+   so it runs every boot (until its flag exists), including after an OTA; and
+   `build/full-ce/ce-ota/ce-ota-finish.sh` `step_feeds` removes feed copies
+   that the baked version shadows. Original item: **OTA (3.1.0 → 3.2.0):** `ce-register-video-handler` starts on
    `first-use-finished`, which an OTA'd device never emits, so `ce-ota-finish`
    must register the handlers; it must also de-shadow any cryptofs Video
    Player / Media TLS a user installed from the feed (`Docs/OTA-PLAN.md` §2.2).
-4. Guard against **two `souphttpsrc`s**: the OTA must not restore the stock
+4. **DONE** — `step_feeds` also deletes leftover `.webosce-orig` backups
+   (gstreamer plugins, videoplayer, Photos). Original item: Guard against **two `souphttpsrc`s**: the OTA must not restore the stock
    plugin next to ours (the winner would be load-order dependent), and must
    remove a feed-installed copy's `.webosce-orig` backups.
 5. Optional hardening (proposed, not done): if `/usr/lib/ssl11` is missing,
@@ -293,7 +311,7 @@ the top-left; HTTPS by replacing the binary, **no local proxy**; app id
 `com.palm.app.videos` at 3.2.0; the streaming-server requirements document
 lives in the streaming server's own project.
 
-## 9. Dev TouchPad state (c37f7a34…)
+## 9. Dev TouchPad state (c37f7a34…) — historical (2026-09, before the bake)
 
 Both packages installed via their postinsts; Photos' grid patched; the stock
 souphttpsrc kept as `/usr/lib/gstreamer-0.10/libgstsouphttpsrc.so.webosce-orig`;
