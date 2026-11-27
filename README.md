@@ -1,6 +1,6 @@
 # webOS Community Edition 3.2.0
 
-This follow-up release is available as the first OTA (Over the Air) Update in more than a decade. Download <a href="https://appcatalog.webosarchive.org/app/OTAReady">OTA Ready</a> on your 3.1.0 TouchPad to start the process. (Not running 3.1.0? [See below](#webos-community-edition-310) for details.)
+This follow-up release is available as the first OTA (Over the Air) Update for the [HP TouchPad](https://shop.webosarchive.org/) in more than a decade. Download <a href="https://appcatalog.webosarchive.org/app/OTAReady">OTA Ready</a> on your 3.1.0 TouchPad to start the process. (Not running 3.1.0? [See below](#webos-community-edition-310) for details.)
 
 You can also download 3.2.0 as a Doctor for a full system flash. See Releases for downloads.
 
@@ -41,9 +41,9 @@ webOS CE 3.2.0 adds more features and bugs fixes that were not available in the 
 
 # webOS Community Edition 3.1.0
 
-This release represents 15 years of cummulative effort to preserve, restore, improve and maintain Palm and HP's mobile webOS. 
+This release represents 15 years of cumulative effort to preserve, restore, improve and maintain Palm and HP's mobile webOS. 
 
-Although other versions exist, the most-commonly found modern release was 3.0.5 for the HP Touchpad, with a build date of 2011-12-21.
+Although other versions exist, the most-commonly found modern release was 3.0.5 for the [HP Touchpad](https://shop.webosarchive.org/), with a build date of 2011-12-21.
 It was released shortly before HP sold the platform to LG, who use a descendant OS in their Smart TVs. At that time
 HP also open-sourced the majority of the OS, making it possible for the community to continue using it -- although without
 any of the web services, App Catalog, or other capabilities provided by a manufacturer.
